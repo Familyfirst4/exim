@@ -5,6 +5,7 @@
 /* Copyright (c) The Exim Maintainers 2020 - 2022 */
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "lf_functions.h"
@@ -47,7 +48,7 @@ nis_find(void * handle, const uschar * filename, const uschar * keystring,
   const uschar * opts)
 {
 int rc;
-uschar *nis_data;
+uschar * nis_data;
 int nis_data_length;
 do_cache = do_cache;   /* Placate picky compilers */
 if ((rc = yp_match(CCS handle, CCS filename, CCS keystring, length,

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "lf_functions.h"
@@ -80,9 +81,7 @@ uschar buffer[4096];
 if (opts)
   {
   int sep = ',';
-  uschar * ele;
-
-  while ((ele = string_nextinlist(&opts, &sep, NULL, 0)))
+  for (const uschar * ele; ele = string_nextinlist(&opts, &sep, NULL, 0); )
     if (Ustrcmp(ele, "ret=full") == 0)
       { ret_full = TRUE; break; }
   }
@@ -290,8 +289,8 @@ for (BOOL this_is_eol, last_was_eol = TRUE;
       this_is_comment = (this_is_comment || (buffer[0] == 0 || buffer[0] == '#'));
       if (this_is_comment) continue;
       if (!isspace((uschar)buffer[0])) break;
-      while (isspace((uschar)*s)) s++;
-      *(--s) = ' ';
+      Uskip_whitespace(&s);
+      *--s = ' ';
       }
     if (this_is_comment) continue;
 
@@ -420,7 +419,7 @@ gstring *
 lsearch_version_report(gstring * g)
 {
 #ifdef DYNLOOKUP
-g = string_fmt_append(g, "Library version: lsearch: Exim version %s\n", EXIM_VERSION_STR));
+g = string_fmt_append(g, "Library version: lsearch: Exim version %s\n", EXIM_VERSION_STR);
 #endif
 return g;
 }

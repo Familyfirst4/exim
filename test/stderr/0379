@@ -1,15 +1,16 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 dropping to exim gid; retaining priv uid
-locking TESTSUITE/spool/db/retry.lockfile
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: defer@myhost.test.ex
@@ -24,6 +25,7 @@ routing aaaa@myhost.test.ex
 --------> defer router <--------
 local_part=aaaa domain=myhost.test.ex
 checking local_parts
+aaaa in local_parts? no (end of list)
 defer router skipped: local_parts mismatch
 --------> aaaa_redirect router <--------
 local_part=aaaa domain=myhost.test.ex
@@ -42,8 +44,8 @@ aaaa_redirect router generated bbbb@myhost.test.ex
   errors_to=NULL transport=NULL
   uid=unset gid=unset home=NULL
 routed by aaaa_redirect router
-  envelope to: aaaa@myhost.test.ex
-  transport: <none>
+  envelope to:	aaaa@myhost.test.ex
+  transport:	<none>
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing defer@myhost.test.ex
 --------> defer router <--------
@@ -59,7 +61,6 @@ defer router: defer for defer@myhost.test.ex
   message: forced defer
 LOG: MAIN
   == defer@myhost.test.ex R=defer defer (-1): forced defer
-locking TESTSUITE/spool/db/retry.lockfile
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: bbbb@myhost.test.ex
@@ -74,10 +75,12 @@ routing cccc@myhost.test.ex
 --------> defer router <--------
 local_part=cccc domain=myhost.test.ex
 checking local_parts
+cccc in local_parts? no (end of list)
 defer router skipped: local_parts mismatch
 --------> aaaa_redirect router <--------
 local_part=cccc domain=myhost.test.ex
 checking local_parts
+cccc in local_parts? no (end of list)
 aaaa_redirect router skipped: local_parts mismatch
 --------> bc router <--------
 local_part=cccc domain=myhost.test.ex
@@ -91,17 +94,19 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=cccc
 routed by bc router
-  envelope to: cccc@myhost.test.ex
-  transport: t1
+  envelope to:	cccc@myhost.test.ex
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing bbbb@myhost.test.ex
 --------> defer router <--------
 local_part=bbbb domain=myhost.test.ex
 checking local_parts
+bbbb in local_parts? no (end of list)
 defer router skipped: local_parts mismatch
 --------> aaaa_redirect router <--------
 local_part=bbbb domain=myhost.test.ex
 checking local_parts
+bbbb in local_parts? no (end of list)
 aaaa_redirect router skipped: local_parts mismatch
 --------> bc router <--------
 local_part=bbbb domain=myhost.test.ex
@@ -114,8 +119,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=bbbb
 routed by bc router
-  envelope to: bbbb@myhost.test.ex
-  transport: t1
+  envelope to:	bbbb@myhost.test.ex
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -125,22 +130,21 @@ After routing:
   Failed addresses:
   Deferred addresses:
     defer@myhost.test.ex
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1237 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => bbbb <aaaa@myhost.test.ex> R=bc T=t1
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1238 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => cccc <aaaa@myhost.test.ex> R=bc T=t1
-locking TESTSUITE/spool/db/retry.lockfile
 >>>>>>>>>>>>>>>> Exim pid=p1236 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
 LOG: queue_run MAIN
   Start queue run: pid=p1234 -qf
-locking TESTSUITE/spool/db/retry.lockfile
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: defer@myhost.test.ex
 unique = defer@myhost.test.ex
@@ -167,8 +171,7 @@ After routing:
   Failed addresses:
   Deferred addresses:
     defer@myhost.test.ex
-locking TESTSUITE/spool/db/retry.lockfile
->>>>>>>>>>>>>>>> Exim pid=p1237 (qrun-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1239 (qrun-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: queue_run MAIN
   End queue run: pid=p1234 -qf
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

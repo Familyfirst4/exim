@@ -2,7 +2,7 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2018 - 2022 */
+/* Copyright (c) The Exim Maintainers 2018 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
 
@@ -51,13 +51,17 @@ Do not put spaces between # and the 'define'.
 #define DISABLE_D_OPTION
 #define DISABLE_DNSSEC
 #define DISABLE_DKIM
+#define DISABLE_ESMTP_LIMITS
 #define DISABLE_EVENT
+#define DISABLE_EXIM_FILTER
 #define DISABLE_OCSP
 #define DISABLE_PIPE_CONNECT
 #define DISABLE_PRDR
 #define DISABLE_QUEUE_RAMP
+#define DISABLE_SIEVE_FILTER
 #define DISABLE_TLS
 #define DISABLE_TLS_RESUME
+#define DISABLE_WELLKNOWN
 
 #define ENABLE_DISABLE_FSYNC
 
@@ -150,6 +154,7 @@ Do not put spaces between # and the 'define'.
 #define SUPPORT_CRYPTEQ
 #define SUPPORT_DANE
 #define SUPPORT_DMARC
+#define DMARC_API 100400
 #define DMARC_TLD_FILE "/etc/exim/opendmarc.tlds"
 #define SUPPORT_I18N
 #define SUPPORT_I18N_2008
@@ -163,6 +168,14 @@ Do not put spaces between # and the 'define'.
 #define SUPPORT_SPF
 #define SUPPORT_SRS
 #define SUPPORT_TRANSLATE_IP_ADDRESS
+
+/* Required to support dynamic-module build */
+#define SUPPORT_ARC
+#define SUPPORT_DKIM
+#define SUPPORT_EXIM_FILTER
+#define SUPPORT_PERL
+#define SUPPORT_SIEVE_FILTER
+#define SUPPORT_RADIUS
 
 #define SYSLOG_LOG_PID
 #define SYSLOG_LONG_LINES
@@ -185,6 +198,7 @@ Do not put spaces between # and the 'define'.
 #define USE_OPENSSL
 #define USE_READLINE
 #define USE_TCP_WRAPPERS
+#define USE_SQLITE
 #define USE_TDB
 
 #define WHITELIST_D_MACROS
@@ -208,8 +222,10 @@ Do not put spaces between # and the 'define'.
 #define EXPERIMENTAL_BRIGHTMAIL
 #define EXPERIMENTAL_DCC
 #define EXPERIMENTAL_DSN_INFO
-#define EXPERIMENTAL_ESMTP_LIMITS
 #define EXPERIMENTAL_QUEUEFILE
+#define EXPERIMENTAL_SRV_SMTPS
+#define EXPERIMENTAL_TLS_EARLY_BANNER
+#define EXPERIMENTAL_XCLIENT
 
 
 /* For developers */

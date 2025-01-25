@@ -1,7 +1,9 @@
 #! /bin/sh
 
+# Copyright (c) The Exim Maintainers 2023
 # Copyright (c) University of Cambridge, 1995 - 2007
 # See the file NOTICE for conditions of use and distribution.
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 # Except when they appear in comments, the following placeholders in this
 # source are replaced when it is turned into a runnable script:
@@ -40,7 +42,7 @@ rm=RM_COMMAND
 multikill_cmd=EXIWHAT_MULTIKILL_CMD
 multikill_arg=EXIWHAT_MULTIKILL_ARG
 
-# In other operating systems, Exim has to use "ps" and "egrep" to find the
+# In other operating systems, Exim has to use "ps" and "grep" to find the
 # processes itself. In those cases, the next three variables are used:
 
 ps_cmd=EXIWHAT_PS_CMD
@@ -55,7 +57,7 @@ signal=EXIWHAT_KILL_SIGNAL
 # See if this installation is using the esoteric "USE_NODE" feature of Exim,
 # in which it uses the host's name as a suffix for the configuration file name.
 
-if test "x$1" = x--version
+if [ "x$1" = x--version -o "x$1" = x-v ]
 then
     echo "`basename $0`: $0"
     echo "build: EXIM_RELEASE_VERSIONEXIM_VARIANT_VERSION"
@@ -131,7 +133,7 @@ if [ "$multikill_cmd" != "" ] && type "$multikill_cmd" >/dev/null 2>&1; then
 
 else
   $ps_cmd $ps_arg | \
-    egrep "$egrep_arg" | \
+    grep -E "$egrep_arg" | \
     awk "{print \"kill $signal \"\$1}" | \
     uniq | sh
 fi

@@ -24,6 +24,8 @@ test.ex.     SOA     exim.test.ex. hostmaster.exim.test.ex 1430683638 1200 120 6
 
 test.ex.     TXT     "A TXT record for test.ex."
 s/lash       TXT     "A TXT record for s/lash.test.ex."
+long         TXT     "This is a max-length chunk 789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234" "A short chunk" "A final chunk"
+long         TXT     "Second RR"
 
 cname        CNAME   test.ex.
 
@@ -405,6 +407,8 @@ _smtp2._tcp.srv03   SRV  0 0 88 ten-4.test.ex.
 
 _smtp._tcp.srv27    SRV  0 0 PORT_S localhost
 
+_smtps._tcp         SRV  42 2 PORT_D localhost
+
 
 ; -------- With some for CSA testing plus their A records -------
 
@@ -435,6 +439,7 @@ AA a-aa        A V4NET.0.0.100
 
 ; full suite dns chain, sha512
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
 ; | openssl pkey -pubin -outform DER \
 ; | openssl dgst -sha512 \
@@ -447,7 +452,7 @@ mxnondane512ee              MX  1  dane512ee
 DNSSEC dane512ee            A      HOSTIPV4
 DNSSEC nodane               A      HOSTIPV4
 
-DNSSEC _1225._tcp.dane512ee TLSA  3 1 2 c67ee9fe126c0d4e941540ea5136884fcd750d78f2868163345ba40b6af503666803c6a29ca37c52925947ce6ecc568dc5249da1a8ccfabcd1824629ec8e92c0
+DNSSEC _PORT_D._tcp.dane512ee TLSA 3 1 2 e8173aaefffadc6c96700f7f396a17b8e590ebd15b081f1455abb152afecceb16a5534707ecd64611c8b6d8b9111f82e3fa954b98c6b230cda0e9be386747b71
 
 # mx of mxdane owns a secure A and TLSA record
 # used in 5802
@@ -464,22 +469,24 @@ daneinsecchain              CNAME  dane512ee
 
 ; A-only, sha256
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
 ; | openssl pkey -pubin -outform DER \
 ; | openssl dgst -sha256 \
 ; | awk '{print $2}'
 ;
 DNSSEC dane256ee            A      HOSTIPV4
-DNSSEC _1225._tcp.dane256ee TLSA  3 1 1 9177e577d294f52da8eb206eb53e7963fb8d354bb4a1a62aa8318101dbc11e46
+DNSSEC _PORT_D._tcp.dane256ee TLSA 3 1 1 e9f6e8fe73b130c720eb1fb5c94eaff522ec6f9759ed4c6815351d827b1226a7
 
 ; full MX, sha256, TA-mode
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.com/CA/CA.pem -fingerprint -sha256 -noout \
 ; | awk -F= '{print $2}' | tr -d : | tr '[A-F]' '[a-f]'
 ;
 DNSSEC mxdane256ta          MX  1  dane256ta
 DNSSEC dane256ta            A      HOSTIPV4
-DNSSEC _1225._tcp.dane256ta TLSA 2 0 1 0d41f0b28cf41f19f6f5fe116300e2cc8c60764547271f5de37f6323478d6e50
+DNSSEC _PORT_D._tcp.dane256ta TLSA 2 0 1 0d643c1ebcdf2cb83634e0c2f5102c1e268983401c9f4d8711d60b44d7fb7a3e
 
 
 ; full MX, sha256, TA-mode, cert-key-only
@@ -489,6 +496,7 @@ DNSSEC _1225._tcp.dane256ta TLSA 2 0 1 0d41f0b28cf41f19f6f5fe116300e2cc8c6076454
 ; As it happens it is also an intermediate cert in the CA-rooted chain, as this
 ; was initially thought to be a factor.
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.com/CA/Signer.pem -noout -pubkey \
 ; | openssl pkey -pubin -outform DER \
 ; | openssl dgst -sha256 \
@@ -496,7 +504,7 @@ DNSSEC _1225._tcp.dane256ta TLSA 2 0 1 0d41f0b28cf41f19f6f5fe116300e2cc8c6076454
 ;
 DNSSEC mxdane256tak          MX  1  dane256tak
 DNSSEC dane256tak            A      HOSTIPV4
-DNSSEC _1225._tcp.dane256tak TLSA 2 1 1 1eb5225459d5d901183855ef1e853235a6c31b91deed292751e4536dbf0ab9ea
+DNSSEC _PORT_D._tcp.dane256tak TLSA 2 1 1 beabbe636030e4c26d15a015e878c2a607ed5a87774443ffbc6991ec01d2b6b1
 
 
 
@@ -507,8 +515,8 @@ DNSSEC                      MX  2   danelazy2
 DNSSEC danelazy             A       HOSTIPV4
 DNSSEC danelazy2            A       127.0.0.1
 
-DNSSEC _1225._tcp.danelazy  CNAME   test.again.dns.
-DNSSEC _1225._tcp.danelazy2 CNAME   test.again.dns.
+DNSSEC _PORT_D._tcp.danelazy  CNAME   test.again.dns.
+DNSSEC _PORT_D._tcp.danelazy2 CNAME   test.again.dns.
 
 ; hosts with no TLSA (just missing here, hence the TLSA NXDMAIN is _insecure_; a broken dane config)
 ; 1 for dane-required, 2 for merely requested
@@ -517,28 +525,48 @@ DNSSEC dane.no.2            A       127.0.0.1
 
 ; a broken dane config (or under attack) where the TLSA lookup fails (as opposed to there not being one)
 DNSSEC danebroken1          A       127.0.0.1
-_1225._tcp.danebroken1      CNAME   test.fail.dns.
+_PORT_D._tcp.danebroken1      CNAME   test.fail.dns.
 
 ; a broken dane config (or under attack) where the TLSA record is wrong
 ; (127.0.0.1 for merely dane-requested, but having gotten the TLSA it is supposedly definitive)
 DNSSEC danebroken2          A       127.0.0.1
-DNSSEC _1225._tcp.danebroken2 TLSA 2 0 1 cb0fa60000000000000000000000000000000000000000000000000000000000
+DNSSEC _PORT_D._tcp.danebroken2 TLSA 2 0 1 cb0fa60000000000000000000000000000000000000000000000000000000000
 
 ; a broken dane config (or under attack) where the TLSA record is correct but not DNSSEC-assured
 ; (record copied from dane256ee above)
+; TLSA_AUTOGEN
+; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
+; | openssl pkey -pubin -outform DER \
+; | openssl dgst -sha256 \
+; | awk '{print $2}'
 ; 3 for dane-requested, 4 for dane-required
 DNSSEC danebroken3          A       127.0.0.1
-_1225._tcp.danebroken3 TLSA 2 0 1 9177e577d294f52da8eb206eb53e7963fb8d354bb4a1a62aa8318101dbc11e46
+_PORT_D._tcp.danebroken3 TLSA 2 0 1 beabbe636030e4c26d15a015e878c2a607ed5a87774443ffbc6991ec01d2b6b1
+; TLSA_AUTOGEN
+; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
+; | openssl pkey -pubin -outform DER \
+; | openssl dgst -sha256 \
+; | awk '{print $2}'
 DNSSEC danebroken4          A       HOSTIPV4
-_1225._tcp.danebroken4 TLSA 2 0 1 9177e577d294f52da8eb206eb53e7963fb8d354bb4a1a62aa8318101dbc11e46
+_PORT_D._tcp.danebroken4 TLSA 2 0 1 beabbe636030e4c26d15a015e878c2a607ed5a87774443ffbc6991ec01d2b6b1
 
 ; a broken dane config (or under attack) where the address record is correct but not DNSSEC-assured
 ; (TLSA record copied from dane256ee above)
 ; 5 for dane-requested, 6 for dane-required
+; TLSA_AUTOGEN
+; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
+; | openssl pkey -pubin -outform DER \
+; | openssl dgst -sha256 \
+; | awk '{print $2}'
 danebroken5          A       127.0.0.1
-DNSSEC _1225._tcp.danebroken5 TLSA 2 0 1 9177e577d294f52da8eb206eb53e7963fb8d354bb4a1a62aa8318101dbc11e46
+DNSSEC _PORT_D._tcp.danebroken5 TLSA 2 0 1 beabbe636030e4c26d15a015e878c2a607ed5a87774443ffbc6991ec01d2b6b1
+; TLSA_AUTOGEN
+; openssl x509 -in aux-fixed/exim-ca/example.com/server1.example.com/server1.example.com.pem -noout -pubkey \
+; | openssl pkey -pubin -outform DER \
+; | openssl dgst -sha256 \
+; | awk '{print $2}'
 danebroken6          A       HOSTIPV4
-DNSSEC _1225._tcp.danebroken6 TLSA 2 0 1 9177e577d294f52da8eb206eb53e7963fb8d354bb4a1a62aa8318101dbc11e46
+DNSSEC _PORT_D._tcp.danebroken6 TLSA 2 0 1 beabbe636030e4c26d15a015e878c2a607ed5a87774443ffbc6991ec01d2b6b1
 
 ; a good dns config saying there is no dane support, by securely returning NOXDOMAIN for TLSA lookups
 ; 3 for dane-required, 4 for merely requested
@@ -546,13 +574,23 @@ DNSSEC _1225._tcp.danebroken6 TLSA 2 0 1 9177e577d294f52da8eb206eb53e7963fb8d354
 DNSSEC dane.no.3            A       HOSTIPV4
 DNSSEC dane.no.4            A       127.0.0.1
 
-DNSSEC NXDOMAIN _1225._tcp.dane.no.3 TLSA 2 0 1 eec923139018c540a344c5191660ecba1ac3708525a98bfc338e17f31d3fa741
-DNSSEC NXDOMAIN _1225._tcp.dane.no.4 TLSA 2 0 1 eec923139018c540a344c5191660ecba1ac3708525a98bfc338e17f31d3fa741
+DNSSEC NXDOMAIN _PORT_D._tcp.dane.no.3 TLSA 2 0 1 eec923139018c540a344c5191660ecba1ac3708525a98bfc338e17f31d3fa741
+DNSSEC NXDOMAIN _PORT_D._tcp.dane.no.4 TLSA 2 0 1 eec923139018c540a344c5191660ecba1ac3708525a98bfc338e17f31d3fa741
 
 ; a mixed-usage set of TLSA records, EE one failing.  TA one coped from dane256ta.
+;
+; TLSA_AUTOGEN
+; openssl x509 -in aux-fixed/exim-ca/example.com/CA/CA.pem -fingerprint -sha256 -noout \
+; | awk -F= '{print $2}' | tr -d : | tr '[A-F]' '[a-f]'
+;
 DNSSEC danemixed            A      127.0.0.1
-DNSSEC _1225._tcp.danemixed TLSA  2 0 1 0d41f0b28cf41f19f6f5fe116300e2cc8c60764547271f5de37f6323478d6e50
+DNSSEC _PORT_D._tcp.danemixed TLSA  2 0 1 0d643c1ebcdf2cb83634e0c2f5102c1e268983401c9f4d8711d60b44d7fb7a3e
 DNSSEC                      TLSA  3 1 1 8276000000000000000000000000000000000000000000000000000000000000
+
+; have the TLSA lookup, only, return SERVFAIL
+;
+DNSSEC daneservfail         A      127.0.0.1
+DNSSEC _PORT_D._tcp.daneservfail CNAME test.again.dns.
 
 ; ------- Testing delays ------------
 
@@ -567,6 +605,7 @@ DELAY=1500 delay1500 A HOSTIPV4
 ;
 ; Deliberate bad version, having extra backslashes
 ; sha256-hash-only version.... appears to be too long, gets truncated
+; Bad records, missing a value for the key
 ;
 ; Another, 512-bit (with a Notes field)
 ; 512 requiring sha1 hash
@@ -575,6 +614,8 @@ DELAY=1500 delay1500 A HOSTIPV4
 sel._domainkey TXT "v=DKIM1; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXRFf+VhT+lCgFhhSkinZKcFNeRzjYdW8vT29Rbb3NadvTFwAd+cVLPFwZL8H5tUD/7JbUPqNTCPxmpgIL+V5T4tEZMorHatvvUM2qfcpQ45IfsZ+YdhbIiAslHCpy4xNxIR3zylgqRUF4+Dtsaqy3a5LhwMiKCLrnzhXk1F1hxwIDAQAB"
 sel_bad._domainkey TXT "v=DKIM1\; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXRFf+VhT+lCgFhhSkinZKcFNeRzjYdW8vT29Rbb3NadvTFwAd+cVLPFwZL8H5tUD/7JbUPqNTCPxmpgIL+V5T4tEZMorHatvvUM2qfcpQ45IfsZ+YdhbIiAslHCpy4xNxIR3zylgqRUF4+Dtsaqy3a5LhwMiKCLrnzhXk1F1hxwIDAQAB"
 sel_sha256._domainkey TXT "v=DKIM1; h=sha256; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXRFf+VhT+lCgFhhSkinZKcFNeRzjYdW8vT29Rbb3NadvTFwAd+cVLPFwZL8H5tUD/7JbUPqNTCPxmpgIL+V5T4tEZMorHatvvUM2qfcpQ45IfsZ+YdhbIiAslHCpy4xNxIR3zylgqRUF4+Dtsaqy3a5LhwMiKCLrnzhXk1F1hxwIDAQAB"
+sel_nullkey._domainkey TXT "v=DKIM1; p="
+sel_snullkey._domainkey TXT "v=DKIM1; p= "
 
 ses._domainkey TXT "v=DKIM1; n=halfkilo; p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAL6eAQxd9didJ0/+05iDwJOqT6ly826Vi8aGPecsBiYK5/tAT97fxXk+dPWMZp9kQxtknEzYjYjAydzf+HQ2yJMCAwEAAQ=="
 ses_sha1._domainkey TXT "v=DKIM1; h=sha1; p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAL6eAQxd9didJ0/+05iDwJOqT6ly826Vi8aGPecsBiYK5/tAT97fxXk+dPWMZp9kQxtknEzYjYjAydzf+HQ2yJMCAwEAAQ=="
@@ -596,5 +637,9 @@ sed._domainkey TXT "v=DKIM1; k=ed25519; p=sPs07Vu29FpHT/80UXUcYHFOHifD4o2ZlP2+XU
 
 sedw._domainkey TXT "v=DKIM1; k=ed25519; p=MCowBQYDK2VwAyEAsPs07Vu29FpHT/80UXUcYHFOHifD4o2ZlP2+XUh9g6E="
 
+
+; ------- DMARC ---------
+
+_dmarc TXT v=DMARC1; p=none
 
 ; End

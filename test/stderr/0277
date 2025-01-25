@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -12,23 +13,32 @@ sender_rcvhost = [V4NET.2.3.4]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.2.3.4]
-host in "V4NET.2.3.4"? yes (matched "V4NET.2.3.4")
-host in host_lookup? yes (matched "+lookup_hosts")
+host in host_lookup?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+  host in "V4NET.2.3.4"?
+   ╎list element: V4NET.2.3.4
+   ╎host in "V4NET.2.3.4"? yes (matched "V4NET.2.3.4")
+  end sublist lookup_hosts
+  host in host_lookup? yes (matched "+lookup_hosts")
 looking up host name for V4NET.2.3.4
-DNS lookup of 4.3.2.V4NET.in-addr.arpa (PTR) using fakens
-DNS lookup of 4.3.2.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
-returning DNS_NOMATCH
-DNS: couldn't fake dnsa len
-DNS: no SOA record found for neg-TTL
- writing neg-cache entry for 4.3.2.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
+ DNS lookup of 4.3.2.V4NET.in-addr.arpa (PTR) using fakens
+ DNS lookup of 4.3.2.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
+ returning DNS_NOMATCH
+ DNS: couldn't fake dnsa len
+ DNS: no SOA record found for neg-TTL
+  writing neg-cache entry for 4.3.2.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
 LOG: host_lookup_failed MAIN
   no host name found for IP address V4NET.2.3.4
 sender_fullhost = [V4NET.2.3.4]
 sender_rcvhost = [V4NET.2.3.4]
 set_process_info: pppp handling incoming connection from [V4NET.2.3.4]
 host in host_reject_connection? no (option unset)
-cached yes match for +lookup_hosts
-host in sender_unqualified_hosts? yes (matched "+lookup_hosts" - cached)
+host in sender_unqualified_hosts?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+ cached yes match for +lookup_hosts
+  host in sender_unqualified_hosts? yes (matched "+lookup_hosts" - cached)
 host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
@@ -38,10 +48,11 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from [V4NET.2.3.4] closed by QUIT
+  SMTP connection from [V4NET.2.3.4] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 configuration file is TESTSUITE/test-config
@@ -55,14 +66,39 @@ sender_rcvhost = [V4NET.6.7.8]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.6.7.8]
-host in "V4NET.2.3.4"? no (end of list)
-host in "V4NET.6.7.8"? yes (matched "V4NET.6.7.8")
-host in host_lookup? no (matched "!+never_hosts")
+host in host_lookup?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+  host in "V4NET.2.3.4"?
+   ╎list element: V4NET.2.3.4
+  host in "V4NET.2.3.4"? no (end of list)
+  end sublist lookup_hosts
+ list element: !+never_hosts
+  start sublist never_hosts
+  host in "V4NET.6.7.8"?
+   ╎list element: V4NET.6.7.8
+   ╎host in "V4NET.6.7.8"? yes (matched "V4NET.6.7.8")
+  end sublist never_hosts
+  host in host_lookup? no (matched "!+never_hosts")
 set_process_info: pppp handling incoming connection from [V4NET.6.7.8]
 host in host_reject_connection? no (option unset)
-cached no match for +lookup_hosts
-host in "V4NET.1.1.1"? no (end of list)
-host in "<; V4NET.2.2.2 ; +n1_hosts"? no (end of list)
+host in sender_unqualified_hosts?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+ cached no match for +lookup_hosts
+ list element: !+n2_hosts
+  start sublist n2_hosts
+   list separator: ';'
+  host in " V4NET.2.2.2 ; +n1_hosts"?
+   ╎list element: V4NET.2.2.2
+   ╎list element: +n1_hosts
+   ╎ start sublist n1_hosts
+   ╎  host in "V4NET.1.1.1"?
+   ╎   list element: V4NET.1.1.1
+   ╎  host in "V4NET.1.1.1"? no (end of list)
+   ╎ end sublist n1_hosts
+  host in " V4NET.2.2.2 ; +n1_hosts"? no (end of list)
+  end sublist n2_hosts
 host in sender_unqualified_hosts? yes (end of list)
 host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
@@ -73,10 +109,11 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from [V4NET.6.7.8] closed by QUIT
+  SMTP connection from [V4NET.6.7.8] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1236
 configuration file is TESTSUITE/test-config
@@ -90,25 +127,50 @@ sender_rcvhost = [V4NET.10.11.12]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.10.11.12]
-host in "V4NET.2.3.4"? no (end of list)
-host in "V4NET.6.7.8"? no (end of list)
+host in host_lookup?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+  host in "V4NET.2.3.4"?
+   ╎list element: V4NET.2.3.4
+  host in "V4NET.2.3.4"? no (end of list)
+  end sublist lookup_hosts
+ list element: !+never_hosts
+  start sublist never_hosts
+  host in "V4NET.6.7.8"?
+   ╎list element: V4NET.6.7.8
+  host in "V4NET.6.7.8"? no (end of list)
+  end sublist never_hosts
 host in host_lookup? yes (end of list)
 looking up host name for V4NET.10.11.12
-DNS lookup of 12.11.10.V4NET.in-addr.arpa (PTR) using fakens
-DNS lookup of 12.11.10.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
-returning DNS_NOMATCH
-DNS: couldn't fake dnsa len
-DNS: no SOA record found for neg-TTL
- writing neg-cache entry for 12.11.10.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
+ DNS lookup of 12.11.10.V4NET.in-addr.arpa (PTR) using fakens
+ DNS lookup of 12.11.10.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
+ returning DNS_NOMATCH
+ DNS: couldn't fake dnsa len
+ DNS: no SOA record found for neg-TTL
+  writing neg-cache entry for 12.11.10.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
 LOG: host_lookup_failed MAIN
   no host name found for IP address V4NET.10.11.12
 sender_fullhost = [V4NET.10.11.12]
 sender_rcvhost = [V4NET.10.11.12]
 set_process_info: pppp handling incoming connection from [V4NET.10.11.12]
 host in host_reject_connection? no (option unset)
-cached no match for +lookup_hosts
-host in "V4NET.1.1.1"? no (end of list)
-host in "<; V4NET.2.2.2 ; +n1_hosts"? no (end of list)
+host in sender_unqualified_hosts?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+ cached no match for +lookup_hosts
+ list element: !+n2_hosts
+  start sublist n2_hosts
+   list separator: ';'
+  host in " V4NET.2.2.2 ; +n1_hosts"?
+   ╎list element: V4NET.2.2.2
+   ╎list element: +n1_hosts
+   ╎ start sublist n1_hosts
+   ╎  host in "V4NET.1.1.1"?
+   ╎   list element: V4NET.1.1.1
+   ╎  host in "V4NET.1.1.1"? no (end of list)
+   ╎ end sublist n1_hosts
+  host in " V4NET.2.2.2 ; +n1_hosts"? no (end of list)
+  end sublist n2_hosts
 host in sender_unqualified_hosts? yes (end of list)
 host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
@@ -119,10 +181,11 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from [V4NET.10.11.12] closed by QUIT
+  SMTP connection from [V4NET.10.11.12] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1237
 configuration file is TESTSUITE/test-config
@@ -136,26 +199,51 @@ sender_rcvhost = [V4NET.1.1.1]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.1.1.1]
-host in "V4NET.2.3.4"? no (end of list)
-host in "V4NET.6.7.8"? no (end of list)
+host in host_lookup?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+  host in "V4NET.2.3.4"?
+   ╎list element: V4NET.2.3.4
+  host in "V4NET.2.3.4"? no (end of list)
+  end sublist lookup_hosts
+ list element: !+never_hosts
+  start sublist never_hosts
+  host in "V4NET.6.7.8"?
+   ╎list element: V4NET.6.7.8
+  host in "V4NET.6.7.8"? no (end of list)
+  end sublist never_hosts
 host in host_lookup? yes (end of list)
 looking up host name for V4NET.1.1.1
-DNS lookup of 1.1.1.V4NET.in-addr.arpa (PTR) using fakens
-DNS lookup of 1.1.1.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
-returning DNS_NOMATCH
-DNS: couldn't fake dnsa len
-DNS: no SOA record found for neg-TTL
- writing neg-cache entry for 1.1.1.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
+ DNS lookup of 1.1.1.V4NET.in-addr.arpa (PTR) using fakens
+ DNS lookup of 1.1.1.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
+ returning DNS_NOMATCH
+ DNS: couldn't fake dnsa len
+ DNS: no SOA record found for neg-TTL
+  writing neg-cache entry for 1.1.1.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
 LOG: host_lookup_failed MAIN
   no host name found for IP address V4NET.1.1.1
 sender_fullhost = [V4NET.1.1.1]
 sender_rcvhost = [V4NET.1.1.1]
 set_process_info: pppp handling incoming connection from [V4NET.1.1.1]
 host in host_reject_connection? no (option unset)
-cached no match for +lookup_hosts
-host in "V4NET.1.1.1"? yes (matched "V4NET.1.1.1")
-host in "<; V4NET.2.2.2 ; +n1_hosts"? yes (matched "+n1_hosts")
-host in sender_unqualified_hosts? no (matched "!+n2_hosts")
+host in sender_unqualified_hosts?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+ cached no match for +lookup_hosts
+ list element: !+n2_hosts
+  start sublist n2_hosts
+   list separator: ';'
+  host in " V4NET.2.2.2 ; +n1_hosts"?
+   ╎list element: V4NET.2.2.2
+   ╎list element: +n1_hosts
+   ╎ start sublist n1_hosts
+   ╎  host in "V4NET.1.1.1"?
+   ╎   list element: V4NET.1.1.1
+   ╎   host in "V4NET.1.1.1"? yes (matched "V4NET.1.1.1")
+   ╎ end sublist n1_hosts
+   ╎host in " V4NET.2.2.2 ; +n1_hosts"? yes (matched "+n1_hosts")
+  end sublist n2_hosts
+  host in sender_unqualified_hosts? no (matched "!+n2_hosts")
 host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
@@ -165,10 +253,11 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from [V4NET.1.1.1] closed by QUIT
+  SMTP connection from [V4NET.1.1.1] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1238
 configuration file is TESTSUITE/test-config
@@ -182,25 +271,45 @@ sender_rcvhost = [V4NET.2.2.2]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.2.2.2]
-host in "V4NET.2.3.4"? no (end of list)
-host in "V4NET.6.7.8"? no (end of list)
+host in host_lookup?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+  host in "V4NET.2.3.4"?
+   ╎list element: V4NET.2.3.4
+  host in "V4NET.2.3.4"? no (end of list)
+  end sublist lookup_hosts
+ list element: !+never_hosts
+  start sublist never_hosts
+  host in "V4NET.6.7.8"?
+   ╎list element: V4NET.6.7.8
+  host in "V4NET.6.7.8"? no (end of list)
+  end sublist never_hosts
 host in host_lookup? yes (end of list)
 looking up host name for V4NET.2.2.2
-DNS lookup of 2.2.2.V4NET.in-addr.arpa (PTR) using fakens
-DNS lookup of 2.2.2.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
-returning DNS_NOMATCH
-DNS: couldn't fake dnsa len
-DNS: no SOA record found for neg-TTL
- writing neg-cache entry for 2.2.2.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
+ DNS lookup of 2.2.2.V4NET.in-addr.arpa (PTR) using fakens
+ DNS lookup of 2.2.2.V4NET.in-addr.arpa (PTR) gave HOST_NOT_FOUND
+ returning DNS_NOMATCH
+ DNS: couldn't fake dnsa len
+ DNS: no SOA record found for neg-TTL
+  writing neg-cache entry for 2.2.2.V4NET.in-addr.arpa-PTR-xxxx, ttl -1
 LOG: host_lookup_failed MAIN
   no host name found for IP address V4NET.2.2.2
 sender_fullhost = [V4NET.2.2.2]
 sender_rcvhost = [V4NET.2.2.2]
 set_process_info: pppp handling incoming connection from [V4NET.2.2.2]
 host in host_reject_connection? no (option unset)
-cached no match for +lookup_hosts
-host in "<; V4NET.2.2.2 ; +n1_hosts"? yes (matched "V4NET.2.2.2")
-host in sender_unqualified_hosts? no (matched "!+n2_hosts")
+host in sender_unqualified_hosts?
+ list element: +lookup_hosts
+  start sublist lookup_hosts
+ cached no match for +lookup_hosts
+ list element: !+n2_hosts
+  start sublist n2_hosts
+   list separator: ';'
+  host in " V4NET.2.2.2 ; +n1_hosts"?
+   ╎list element: V4NET.2.2.2
+   ╎host in " V4NET.2.2.2 ; +n1_hosts"? yes (matched "V4NET.2.2.2")
+  end sublist n2_hosts
+  host in sender_unqualified_hosts? no (matched "!+n2_hosts")
 host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
@@ -210,6 +319,6 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from [V4NET.2.2.2] closed by QUIT
+  SMTP connection from [V4NET.2.2.2] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

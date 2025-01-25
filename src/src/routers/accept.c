@@ -2,12 +2,15 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
+
+#ifdef ROUTER_ACCEPT		/* Remainder of file */
 #include "rf_functions.h"
 #include "accept.h"
 
@@ -36,7 +39,7 @@ accept_router_options_block accept_router_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy entries */
-void accept_router_init(router_instance *rblock) {}
+void accept_router_init(driver_instance *rblock) {}
 int accept_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -53,8 +56,10 @@ int accept_router_entry(router_instance *rblock, address_item *addr,
 /* Called for each instance, after its options have been read, to enable
 consistency checks to be done, or anything else that needs to be set up. */
 
-void accept_router_init(router_instance *rblock)
+void
+accept_router_init(driver_instance * r)
 {
+router_instance * rblock = (router_instance *)r;
 /*
 accept_router_options_block *ob =
   (accept_router_options_block *)(rblock->options_block);
@@ -103,17 +108,17 @@ accept_router_options_block *ob =
   (accept_router_options_block *)(rblock->options_block);
 */
 int rc;
-uschar *errors_to;
-uschar *remove_headers;
-header_line *extra_headers;
+const uschar * errors_to;
+uschar * remove_headers;
+header_line * extra_headers;
 
 DEBUG(D_route) debug_printf("%s router called for %s\n  domain = %s\n",
-  rblock->name, addr->address, addr->domain);
+  rblock->drinst.name, addr->address, addr->domain);
 
 /* Set up the errors address, if any. */
 
-rc = rf_get_errors_address(addr, rblock, verify, &errors_to);
-if (rc != OK) return rc;
+if ((rc = rf_get_errors_address(addr, rblock, verify, &errors_to)) != OK)
+  return rc;
 
 /* Set up the additional and removable headers for the address. */
 
@@ -125,15 +130,43 @@ header munging. Initialization ensures that there is a transport except when
 verifying. */
 
 if (!rf_get_transport(rblock->transport_name, &(rblock->transport),
-  addr, rblock->name, NULL)) return DEFER;
+  addr, rblock->drinst.name, NULL)) return DEFER;
 
 addr->transport = rblock->transport;
 addr->prop.errors_address = errors_to;
 addr->prop.extra_headers = extra_headers;
 addr->prop.remove_headers = remove_headers;
 
-return rf_queue_add(addr, addr_local, addr_remote, rblock, pw)? OK : DEFER;
+return rf_queue_add(addr, addr_local, addr_remote, rblock, pw) ? OK : DEFER;
 }
 
+
+
+# ifdef DYNLOOKUP
+#  define accept_router_info _router_info
+# endif
+
+router_info accept_router_info =
+{
+.drinfo = {
+  .driver_name =	US"accept",
+  .options =		accept_router_options,
+  .options_count =	&accept_router_options_count,
+  .options_block =	&accept_router_option_defaults,
+  .options_len =	sizeof(accept_router_options_block),
+  .init =		accept_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		ROUTER_MAGIC,
+# endif
+  },
+.code =			accept_router_entry,
+.tidyup =		NULL,     /* no tidyup entry */
+.ri_flags =		ri_yestransport
+};
+
 #endif	/*!MACRO_PREDEF*/
+#endif	/*ROUTER_ACCEPT*/
+
 /* End of routers/accept.c */
+/* vi: aw ai sw=2
+*/

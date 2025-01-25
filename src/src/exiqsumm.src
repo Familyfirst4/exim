@@ -2,6 +2,11 @@
 
 # Mail Queue Summary
 # Christoph Lameter, 21 May 1997
+#
+# Copyright (c) The Exim Maintainers 2023
+# SPDX-License-Identifier: GPL-2.0-or-later
+# See the file NOTICE for conditions of use and distribution.
+
 # Modified by Philip Hazel, June 1997
 # Bug fix: June 1998 by Philip Hazel
 #   Message sizes not listed by -bp with K or M
@@ -45,7 +50,7 @@ use warnings;
 BEGIN { pop @INC if $INC[-1] eq '.' };
 use File::Basename;
 
-if (@ARGV && $ARGV[0] eq '--version') {
+if (@ARGV && ($ARGV[0] eq '--version' || ($ARGV[0] eq '-v'))) {
     print basename($0) . ": $0\n",
         "build: EXIM_RELEASE_VERSIONEXIM_VARIANT_VERSION\n",
         "perl(runtime): $]\n";
@@ -117,9 +122,12 @@ if (/^$/o || /^\s*D\s\S+/o) { next; }
 # If it's the first line of a message, pick out the data. Note: it may
 # have text after the final > (e.g. frozen) so don't insist that it ends >.
 
-if (/^([\d\s]{2,3}\w)\s+(\S+)\s(\S+)\s\<(\S*)\>/o)
+if (/^	   (?<age>[\d\s]{2,3}\w)
+      \s+  (?<size>\S+)
+      \s   (?<id>\S+)
+      \s\< (?<src>\S*) \>/ox)
   {
-  ($age,$size,$id,$src)=($1,$2,$3,$4);
+  ($age,$size,$id,$src)=($+{age},$+{size},$+{id},$+{src});
   $src =~ s/([^\@]*)\@(.*?)$/$2/o;
   if (/\*\*\*\sfrozen\s\*\*\*/o) { $frozen=1; } else { $frozen=0; }
   if ($src eq "") { $bounce=1; $src="<>"; } else { $bounce=0; }
@@ -175,4 +183,5 @@ printf("%5d  %.6s  %6s  %6s  %.80s\n",
   $count, &print_volume_rounded($volume), $max_age, $min_age, "TOTAL");
 print "\n";
 
+# vim:ft=perl:
 # End

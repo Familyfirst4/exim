@@ -498,6 +498,8 @@ Enable using EXPERIMENTAL_ARC=yes in your Local/Makefile.
 You must also have DKIM present (not disabled), and you very likely
 want to have SPF enabled.
 
+It is possible to build as a dynamic-load module: set also SUPPORT_ARC=2.
+
 
 Verification
 --
@@ -513,7 +515,9 @@ standard header.
   add_header = :at_start:${authresults {<admd-identifier>}}
 
 	Note that it would be wise to strip incoming messages of A-R headers
-	that claim to be from our own <admd-identifier>.
+	that claim to be from our own <admd-identifier>.  Eg:
+
+  remove_header = \N^(?i)Authentication-Results\s*::\s*example.org;\N
 
 There are four new variables:
 
@@ -611,53 +615,91 @@ and a whitespace-separated port number must be given.
 
 
 
-Logging protocol unusual states
+XCLIENT proxy support
 ---------------------------------------------------------------
-An extra log_selector, "protocol_detail" has been added in the default build.
-The name may change in future, hence the Experimenal status.
+Per https://www.postfix.org/XCLIENT_README.html
 
-Currrently the only effect is to enable logging, under TLS,
-of a TCP RST received directly after a QUIT (in server mode).
+XCLIENT is an ESMTP extension supporting an inbound proxy.
+The only client immplementation known is in Nginx
+(https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html)
 
-Outlook is consistently doing this; not waiting for the SMTP response
-to its QUIT, not properly closing the TLS session and not properly closing
-the TCP connection.  Previously this resulted is an error from SSL_write
-being logged.
+If compiled with EXPERIMENTAL_XCLIENT=yes :-
+
+As a server, Exim will advertise XCLIENT support (conditional on a new option
+"hosts_xclient") and service XCLIENT commands with parameters
+  ADDR
+  NAME
+  PORT
+  LOGIN
+  DESTADDR
+  DESTPORT
+A fresh HELO/EHLO is required after a succesful XCLIENT, and the usual
+values are derived from that (making the HELO and PROTO paramemters redundant).
+
+An XCLIENT command must give both ADDR and PORT parameters if no previous
+XCLIENT has succeeded in the SMTP session.
+
+After a success:
+  $proxy_session variable becomes "yes"
+  $proxy_local_address, $proxy_local_port have the proxy "inside" values
+  $proxy_external_address, $proxy_external_port have the proxy "outside" values
+  $sender_host_address, $sender_host_port have the remot client values
 
 
 
-Limits ESMTP extension
+SRV SMTPS
 ---------------------------------------------------------------
-Per https://datatracker.ietf.org/doc/html/draft-freed-smtp-limits-01
+Per https://www.ietf.org/archive/id/draft-nurpmeso-smtp-tls-srv-03.html
 
-If compiled with EXPERIMENTAL_ESMTP_LIMITS=yes :-
+If compiled with EXPERIMENTAL_SRV_SMTPS=yes :-
 
-As a server, Exim will advertise, in the EHLO response, the limit for RCPT
-commands set by the recipients_max main-section config option (if it is set),
-and the limit for MAIL commands set by the smtp_accept_max_per_connection
-option.
+This supports a DNS record which specifies that a given server for
+a domain accepts tls-on-connect connections on a specified port,
+or can do STARTTLS on the usual port (25).  In either case the
+record is equivalent to an MX record.
 
-Note that as of writing, smtp_accept_max_per_connection is expanded but
-recipients_max is not.
+The Exim implementation uses the existing smtp transport "check_srv"
+option; if it has a value of "smtps" and the SRV lookup succeeds
+with a port number other than 25 then that port is used for a tls-on-connect
+connection.  If the port number is 25, a standard connection is used but
+STARTTLS must succeed.
 
-A new main-section option "limits_advertise_hosts" controls whether
-the limits are advertised; the default for the option is "*".
+Note that the option value can be a list.  Elements are used in
+left-to-right order for SRV lookups, until one succeeds or there are
+none left.  If a SRV lookup succeeds then no MX lookup is done.
+If none succeed then the normal sequence of MX and A/AAAA lookups is done.
 
-As a client, Exim will:
+Requirement for TLS activated by this means takes priority over the
+"hosts_require_tls" transport option; requirement for tls-on-connect takes
+priority over the "protocol" option.  Connections requiring STARTTLS acivated
+by this means will fail if the host matches the "hosts_avoid_tls" option or
+(if appropriate) the "hosts_verify_avoid_tls" option.
 
- - note an advertised MAILMAX; the lower of the value given and the
- value from the transport connection_max_messages option is used.
 
- - note an advertised RCPTMAX; the lower of the
- value given and the value from the transport max_rcpt option is used.
- Parallisation of transactions is not done if due to a RCPTMAX, unlike
- max_rcpt.
+There are no changes for server-side support; only suitable configuration
+for listening on a separate port (for tls-on-connect), opening any required
+firewall holes for that port, and provisioning a DNS record are needed.
 
- - note an advertised RCPTDOMAINMAX, and behave as if the transport
- multi_domains option was set to false.  The value advertised is ignored.
 
-Values advertised are only noted for TLS connections and ones for which
-the server does not advertise TLS support.
+
+TLS Early Banner
+---------------------------------------------------------------
+
+If compiled with EXPERIMENTAL_TLS_EARLY_BANNER=yes  :-
+
+TLS-on-connect connections using TLSv1.3 will, if permitted by the new
+main-config option "tls_early_banner_hosts" (default empty) and no need for
+client certificate verification, have the server transmit the SMTP banner
+immediately after it's TLS Finished record rather than waiting for the client's
+Certificate and Finished.
+
+This saves one full round-trip time.
+
+The GnuTLS documentation describes this use of TLS as
+"part of protocol design with no known security implications".
+
+The feature can be usefully combined with TCP Fast Open.
+
 
 
 --------------------------------------------------------------

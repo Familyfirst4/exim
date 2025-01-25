@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -23,6 +24,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 mail.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [V4NET.0.0.0]
 sender_rcvhost = [V4NET.0.0.0] (helo=test)
@@ -33,7 +37,7 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<x@y>
-processing "accept" (TESTSUITE/test-config 13)
+processing inline ACL "accept"
 accept: condition test succeeded in inline ACL
 end of inline ACL: ACCEPT
 SMTP>> 250 Accepted
@@ -43,27 +47,28 @@ search_tidyup called
 >>Headers received:
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
 search_tidyup called
 >>Headers after rewriting and local additions:
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from [V4NET.0.0.0] (helo=test)
 	by mail.test.ex with smtp (Exim x.yz)
 	(envelope-from <x@y>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for x@y;
 	Tue, 2 Mar 1999 09:44:33 +0000
 LOG: MAIN
   <= x@y H=(test) [V4NET.0.0.0] P=smtp S=sss
-SMTP>> 250 OK id=10HmaX-0005vi-00
+receive_msg: tidyup
+SMTP>> 250 OK id=10HmaX-000000005vi-0000
 smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 mail.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [V4NET.0.0.0] closed by QUIT
+  SMTP connection from (test) [V4NET.0.0.0] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

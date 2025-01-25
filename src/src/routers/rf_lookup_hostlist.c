@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
@@ -49,9 +50,9 @@ Returns:               OK
 */
 
 int
-rf_lookup_hostlist(router_instance *rblock, address_item *addr,
-  uschar *ignore_target_hosts, int lookup_type, int hff_code,
-  address_item **addr_new)
+rf_lookup_hostlist(router_instance * rblock, address_item * addr,
+  const uschar * ignore_target_hosts, int lookup_type, int hff_code,
+  address_item ** addr_new)
 {
 BOOL self_send = FALSE;
 
@@ -173,7 +174,7 @@ for (host_item * prev = NULL, * h = addr->host_list, *next_h; h; h = next_h)
       {
       DEBUG(D_route)
         debug_printf("%s router timed out and pass_on_timeout set\n",
-          rblock->name);
+          rblock->drinst.name);
       return PASS;
       }
     addr->message = string_sprintf("host lookup for %s did not complete "
@@ -198,7 +199,7 @@ for (host_item * prev = NULL, * h = addr->host_list, *next_h; h; h = next_h)
     addr->basic_errno = ERRNO_UNKNOWNHOST;
     addr->message =
       string_sprintf("lookup of host \"%s\" failed in %s router%s",
-        h->name, rblock->name,
+        h->name, rblock->drinst.name,
         f.host_find_failed_syntax? ": syntax error in name" : "");
 
     if (hff_code == hff_defer) return DEFER;

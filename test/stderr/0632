@@ -1,17 +1,25 @@
 
 ******** SERVER ********
 Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ PATH=<munged>
 adding SSLKEYLOGFILE=TESTSUITE/spool/sslkeys
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
 daemon_smtp_port overridden by -oX:
-  <: 1225
+  <: PORT_D
 creating notifier socket
+try option notifier_socket
  ╭considering: $spool_directory/exim_daemon_notify
+ ├──────value: TESTSUITE/spool
  ├considering: /exim_daemon_notify
  ├───────text: /exim_daemon_notify
- ├──expanding: $spool_directory/exim_daemon_notify
+ ├───expanded: $spool_directory/exim_daemon_notify
  ╰─────result: TESTSUITE/spool/exim_daemon_notify
  TESTSUITE/spool/exim_daemon_notify
 listening on all interfaces (IPv6) port PORT_D
@@ -20,889 +28,963 @@ pid written to TESTSUITE/spool/exim-daemon.pid
 LOG: MAIN
   exim x.yz daemon started: pid=p1234, no queue runs, listening for SMTP on port PORT_D
 daemon running with uid=EXIM_UID gid=EXIM_GID euid=EXIM_UID egid=EXIM_GID
-Listening...
 Connection request from 127.0.0.1 port sssss
+try option smtp_accept_max_per_host
 search_tidyup called
+p1235 try option smtp_active_hostname
 p1235 Process p1235 is handling incoming connection from [127.0.0.1]
-p1235  ╭considering: $smtp_active_hostname ESMTP Exim $version_number $tod_full
-p1235  ├considering:  ESMTP Exim $version_number $tod_full
-p1235  ├───────text:  ESMTP Exim 
-p1235  ├considering: $version_number $tod_full
-p1235  ├considering:  $tod_full
-p1235  ├───────text:  
+p1235 try option message_size_limit
+p1235 try option acl_smtp_connect
+p1235 try option smtp_banner
+p1235  ╭considering: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+p1235  ├──────value: myhost.test.ex
+p1235  ├considering: ░ESMTP░Exim░$version_number░$tod_full
+p1235  ├───────text: ░ESMTP░Exim░
+p1235  ├considering: $version_number░$tod_full
+p1235  ├──────value: x.yz
+p1235  ├considering: ░$tod_full
+p1235  ├───────text: ░
 p1235  ├considering: $tod_full
-p1235  ├──expanding: $smtp_active_hostname ESMTP Exim $version_number $tod_full
-p1235  ╰─────result: myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+p1235  ├──────value: Tue,░2░Mar░1999░09:44:33░+0000
+p1235  ├───expanded: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+p1235  ╰─────result: myhost.test.ex░ESMTP░Exim░x.yz░Tue,░2░Mar░1999░09:44:33░+0000
 p1235 Process p1235 is ready for new message
+p1235 test.ex in helo_lookup_domains? no (end of list)
+p1235 try option acl_smtp_helo
+p1235 try option acl_smtp_mail
+p1235 try option acl_smtp_rcpt
 p1235 compiled caseless RE '^nomatch_list' not found in local cache
 p1235 compiled RE '^nomatch_list' saved in local cache
 p1235 sending RE '^nomatch_list' to daemon
+p1235 try option notifier_socket
 p1235  ╭considering: $spool_directory/exim_daemon_notify
+p1235  ├──────value: TESTSUITE/spool
 p1235  ├considering: /exim_daemon_notify
 p1235  ├───────text: /exim_daemon_notify
-p1235  ├──expanding: $spool_directory/exim_daemon_notify
+p1235  ├───expanded: $spool_directory/exim_daemon_notify
 p1235  ╰─────result: TESTSUITE/spool/exim_daemon_notify
-p1235  ╭considering: ${if match {a_random_string} {static_RE}}
-p1235   ╭considering: a_random_string} {static_RE}}
-p1235   ├───────text: a_random_string
-p1235   ├considering: } {static_RE}}
-p1235   ├──expanding: a_random_string
-p1235   ╰─────result: a_random_string
-p1235   ╭considering: static_RE}}
-p1235   ├───────text: static_RE
-p1235   ├considering: }}
-p1235   ├──expanding: static_RE
-p1235   ╰─────result: static_RE
-p1235  compiled RE 'static_RE' not found in local cache
-p1235  compiling RE 'static_RE'
-p1235  compiled RE 'static_RE' saved in local cache
-p1235  sending RE 'static_RE' to daemon
-p1235   ╭considering: $spool_directory/exim_daemon_notify
-p1235   ├considering: /exim_daemon_notify
-p1235   ├───────text: /exim_daemon_notify
-p1235   ├──expanding: $spool_directory/exim_daemon_notify
-p1235   ╰─────result: TESTSUITE/spool/exim_daemon_notify
-p1235  ├──condition: match {a_random_string} {static_RE}
+p1235 test.ex in "^nomatch_list"? no (end of list)
+p1235  ╭considering: ${if░match░{a_random_string}░{static_RE}}
+p1235   cond: match
+p1235    ╭considering: a_random_string}░{static_RE}}
+p1235    ├───────text: a_random_string
+p1235    ├considering: }░{static_RE}}
+p1235    ├───expanded: a_random_string
+p1235    ╰─────result: a_random_string
+p1235    ╭considering: static_RE}}
+p1235    ├───────text: static_RE
+p1235    ├considering: }}
+p1235    ├───expanded: static_RE
+p1235    ╰─────result: static_RE
+p1235   compiled RE 'static_RE' not found in local cache
+p1235   compiling RE 'static_RE'
+p1235   compiled RE 'static_RE' saved in local cache
+p1235   sending RE 'static_RE' to daemon
+p1235 try option notifier_socket
+p1235    ╭considering: $spool_directory/exim_daemon_notify
+p1235    ├──────value: TESTSUITE/spool
+p1235    ├considering: /exim_daemon_notify
+p1235    ├───────text: /exim_daemon_notify
+p1235    ├───expanded: $spool_directory/exim_daemon_notify
+p1235    ╰─────result: TESTSUITE/spool/exim_daemon_notify
+p1235  ├──condition: match░{a_random_string}░{static_RE}
 p1235  ├─────result: false
-p1235  ├──expanding: ${if match {a_random_string} {static_RE}}
+p1235  ├───expanded: ${if░match░{a_random_string}░{static_RE}}
 p1235  ╰─────result: 
-p1235  ╭considering: ${if match {a_random_string} {tricky_static_RE\$}}
-p1235   ╭considering: a_random_string} {tricky_static_RE\$}}
-p1235   ├───────text: a_random_string
-p1235   ├considering: } {tricky_static_RE\$}}
-p1235   ├──expanding: a_random_string
-p1235   ╰─────result: a_random_string
-p1235   ╭considering: tricky_static_RE\$}}
-p1235   ├───────text: tricky_static_RE
-p1235   ├considering: \$}}
-p1235   ├backslashed: '\$'
-p1235   ├considering: }}
-p1235   ├──expanding: tricky_static_RE\$
-p1235   ╰─────result: tricky_static_RE$
-p1235  compiled RE 'tricky_static_RE$' not found in local cache
-p1235  compiling RE 'tricky_static_RE$'
-p1235  compiled RE 'tricky_static_RE$' saved in local cache
-p1235  sending RE 'tricky_static_RE$' to daemon
-p1235   ╭considering: $spool_directory/exim_daemon_notify
-p1235   ├considering: /exim_daemon_notify
-p1235   ├───────text: /exim_daemon_notify
-p1235   ├──expanding: $spool_directory/exim_daemon_notify
-p1235   ╰─────result: TESTSUITE/spool/exim_daemon_notify
-p1235  ├──condition: match {a_random_string} {tricky_static_RE\$}
+p1235  ╭considering: ${if░match░{a_random_string}░{tricky_static_RE\$}}
+p1235   cond: match
+p1235    ╭considering: a_random_string}░{tricky_static_RE\$}}
+p1235    ├───────text: a_random_string
+p1235    ├considering: }░{tricky_static_RE\$}}
+p1235    ├───expanded: a_random_string
+p1235    ╰─────result: a_random_string
+p1235    ╭considering: tricky_static_RE\$}}
+p1235    ├───────text: tricky_static_RE
+p1235    ├considering: \$}}
+p1235    ├backslashed: '\$'
+p1235    ├considering: }}
+p1235    ├───expanded: tricky_static_RE\$
+p1235    ╰─────result: tricky_static_RE$
+p1235   compiled RE 'tricky_static_RE$' not found in local cache
+p1235   compiling RE 'tricky_static_RE$'
+p1235   compiled RE 'tricky_static_RE$' saved in local cache
+p1235   sending RE 'tricky_static_RE$' to daemon
+p1235 try option notifier_socket
+p1235    ╭considering: $spool_directory/exim_daemon_notify
+p1235    ├──────value: TESTSUITE/spool
+p1235    ├considering: /exim_daemon_notify
+p1235    ├───────text: /exim_daemon_notify
+p1235    ├───expanded: $spool_directory/exim_daemon_notify
+p1235    ╰─────result: TESTSUITE/spool/exim_daemon_notify
+p1235  ├──condition: match░{a_random_string}░{tricky_static_RE\$}
 p1235  ├─────result: false
-p1235  ├──expanding: ${if match {a_random_string} {tricky_static_RE\$}}
+p1235  ├───expanded: ${if░match░{a_random_string}░{tricky_static_RE\$}}
 p1235  ╰─────result: 
-p1235  ╭considering: ${if match {a_random_string} {pid=${pid} uncacheable_RE}}
-p1235   ╭considering: a_random_string} {pid=${pid} uncacheable_RE}}
-p1235   ├───────text: a_random_string
-p1235   ├considering: } {pid=${pid} uncacheable_RE}}
-p1235   ├──expanding: a_random_string
-p1235   ╰─────result: a_random_string
-p1235   ╭considering: pid=${pid} uncacheable_RE}}
-p1235   ├───────text: pid=
-p1235   ├considering: ${pid} uncacheable_RE}}
-p1235   ├considering:  uncacheable_RE}}
-p1235   ├───────text:  uncacheable_RE
-p1235   ├considering: }}
-p1235   ├──expanding: pid=${pid} uncacheable_RE
-p1235   ╰─────result: pid=p1235 uncacheable_RE
-p1235  compiling RE 'pid=p1235 uncacheable_RE'
-p1235  ├──condition: match {a_random_string} {pid=${pid} uncacheable_RE}
+p1235  ╭considering: ${if░match░{a_random_string}░{pid=${pid}░uncacheable_RE}}
+p1235   cond: match
+p1235    ╭considering: a_random_string}░{pid=${pid}░uncacheable_RE}}
+p1235    ├───────text: a_random_string
+p1235    ├considering: }░{pid=${pid}░uncacheable_RE}}
+p1235    ├───expanded: a_random_string
+p1235    ╰─────result: a_random_string
+p1235    ╭considering: pid=${pid}░uncacheable_RE}}
+p1235    ├───────text: pid=
+p1235    ├considering: ${pid}░uncacheable_RE}}
+p1235    ├considering: ░uncacheable_RE}}
+p1235    ├───────text: ░uncacheable_RE
+p1235    ├considering: }}
+p1235    ├───expanded: pid=${pid}░uncacheable_RE
+p1235    ╰─────result: pid=p1235░uncacheable_RE
+p1235   compiling RE 'pid=p1235 uncacheable_RE'
+p1235  ├──condition: match░{a_random_string}░{pid=${pid}░uncacheable_RE}
 p1235  ├─────result: false
-p1235  ├──expanding: ${if match {a_random_string} {pid=${pid} uncacheable_RE}}
+p1235  ├───expanded: ${if░match░{a_random_string}░{pid=${pid}░uncacheable_RE}}
 p1235  ╰─────result: 
+p1235 try option acl_smtp_predata
 p1235 search_tidyup called
 p1235 search_tidyup called
 p1235  ╭considering: ${tod_full}
-p1235  ├──expanding: ${tod_full}
-p1235  ╰─────result: Tue, 2 Mar 1999 09:44:33 +0000
-p1235  ╭considering: Received: ${if def:sender_rcvhost {from $sender_rcvhost
-p1235  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text: Received: 
-p1235  ├considering: ${if def:sender_rcvhost {from $sender_rcvhost
-p1235  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
+p1235  ├───expanded: ${tod_full}
+p1235  ╰─────result: Tue,░2░Mar░1999░09:44:33░+0000
+p1235 try option received_header_text
+p1235  ╭considering: Received:░${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1235  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: Received:░
+p1235  ├considering: ${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1235  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
 p1235  ├──condition: def:sender_rcvhost
 p1235  ├─────result: true
-p1235   ╭considering: from $sender_rcvhost
-p1235   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: from 
-p1235   ├considering: $sender_rcvhost
-p1235   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├considering: 
-p1235   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: 
-p1235   	
-p1235   ├considering: }{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding: from $sender_rcvhost
-p1235   	
-p1235   ╰─────result: from [127.0.0.1] (helo=test.ex)
-p1235   	
+p1235   ╭considering: from░$sender_rcvhost↩
+p1235   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: from░
+p1235   ├considering: $sender_rcvhost↩
+p1235   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├──────value: [127.0.0.1]░(helo=test.ex)
 p1235              ╰──(tainted)
-p1235   ╭───scanning: ${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
+p1235   ├considering: ↩
+p1235   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: ↩
+p1235   ␉
+p1235   ├considering: }{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: from░$sender_rcvhost↩
+p1235   ␉
+p1235   ╰─────result: from░[127.0.0.1]░(helo=test.ex)↩
+p1235   ␉
+p1235              ╰──(tainted)
+p1235   ╭───scanning: ${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235    cond: def
 p1235   ├──condition: def:sender_ident
 p1235   ├─────result: false
-p1235    ╭───scanning: from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├───────text: from 
-p1235    ├───scanning: ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ╎╭───scanning: $sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    ╎	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    ╎	}}(Exim $version_number)
-p1235    ╎	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    ╎	}}id $message_exim_id${if def:received_for {
-p1235    ╎	for $received_for}}
-p1235    ╎├───scanning: } }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    ╎	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    ╎	}}(Exim $version_number)
-p1235    ╎	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    ╎	}}id $message_exim_id${if def:received_for {
-p1235    ╎	for $received_for}}
-p1235    ╎├──expanding: $sender_ident
-p1235    ╎├─────result: 
+p1235    ╭───scanning: from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├───────text: from░
+p1235    ├───scanning: ${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ╎╭───scanning: $sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ╎␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ╎␉}}(Exim░$version_number)↩
+p1235    ╎␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ╎␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ╎␉for░$received_for}}
+p1235    ╎├──────value: 
+p1235    ╎├───scanning: }░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ╎␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ╎␉}}(Exim░$version_number)↩
+p1235    ╎␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ╎␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ╎␉for░$received_for}}
+p1235    ╎├───expanded: $sender_ident
+p1235    ╎├─────result:  ◀skipped▶
 p1235    ╎╰───skipping: result is not used
-p1235    ├───scanning:  }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├───────text:  
-p1235    ├───scanning: }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├──expanding: from ${quote_local_part:$sender_ident} 
-p1235    ├─────result: from  
+p1235    ├───scanning: ░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├───────text: ░
+p1235    ├───scanning: }}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├───expanded: from░${quote_local_part:$sender_ident}░
+p1235    ├─────result:  ◀skipped▶
 p1235    ╰───skipping: result is not used
 p1235   ├───item-res: 
-p1235   ├───scanning: ${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
+p1235   ├───scanning: ${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235    cond: def
 p1235   ├──condition: def:sender_helo_name
 p1235   ├─────result: false
-p1235    ╭───scanning: (helo=$sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
+p1235    ╭───scanning: (helo=$sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
 p1235    ├───────text: (helo=
-p1235    ├───scanning: $sender_helo_name)
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├───scanning: )
-p1235    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├───────text: )
-p1235    	
-p1235    ├───scanning: }}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235    	}}(Exim $version_number)
-p1235    	${if def:sender_address {(envelope-from <$sender_address>)
-p1235    	}}id $message_exim_id${if def:received_for {
-p1235    	for $received_for}}
-p1235    ├──expanding: (helo=$sender_helo_name)
-p1235    	
-p1235    ├─────result: (helo=)
-p1235    	
+p1235    ├───scanning: $sender_helo_name)↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├──────value: 
+p1235    ├───scanning: )↩
+p1235    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├───────text: )↩
+p1235    ␉
+p1235    ├───scanning: }}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235    ␉}}(Exim░$version_number)↩
+p1235    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235    ␉for░$received_for}}
+p1235    ├───expanded: (helo=$sender_helo_name)↩
+p1235    ␉
+p1235    ├─────result:  ◀skipped▶
 p1235    ╰───skipping: result is not used
 p1235   ├───item-res: 
-p1235   ├───scanning: }}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding: ${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235   	}}
-p1235   ├─────result: 
+p1235   ├───scanning: }}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: ${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235   ␉}}
+p1235   ├─────result:  ◀skipped▶
 p1235   ╰───skipping: result is not used
-p1235  ├───item-res: from [127.0.0.1] (helo=test.ex)
-p1235  	
+p1235  ├───item-res: from░[127.0.0.1]░(helo=test.ex)↩
+p1235  ␉
 p1235             ╰──(tainted)
-p1235  ├considering: by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text: by 
-p1235  ├considering: $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├considering:  ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text:  
-p1235  ├considering: ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
+p1235  ├considering: by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: by░
+p1235  ├considering: $primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├──────value: myhost.test.ex
+p1235  ├considering: ░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: ░
+p1235  ├considering: ${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
 p1235  ├──condition: def:received_protocol
 p1235  ├─────result: true
-p1235   ╭considering: with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: with 
-p1235   ├considering: $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├considering:  }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text:  
-p1235   ├considering: }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding: with $received_protocol 
-p1235   ╰─────result: with smtp 
-p1235  ├───item-res: with smtp 
+p1235   ╭considering: with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: with░
+p1235   ├considering: $received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├──────value: smtp
+p1235   ├considering: ░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: ░
+p1235   ├considering: }}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: with░$received_protocol░
+p1235   ╰─────result: with░smtp░
+p1235  ├───item-res: with░smtp░
 p1235             ╰──(tainted)
-p1235  ├considering: ${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding:  ($tls_in_ver)
-p1235   ├─────result:  ()
+p1235  ├considering: ${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: ░($tls_in_ver)
+p1235   ├─────result:  ◀skipped▶
 p1235   ╰───skipping: result is not used
 p1235  ├───item-res: 
-p1235             ╰──(tainted)
-p1235  ├considering: ${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
+p1235  ├considering: ${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
 p1235  ├──condition: def:tls_in_cipher_std
 p1235  ├─────result: false
-p1235   ╭───scanning:  tls $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text:  tls 
-p1235   ├───scanning: $tls_in_cipher_std
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───scanning: 
-p1235   	}}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: 
-p1235   	
-p1235   ├───scanning: }}(Exim $version_number)
-p1235   	${if def:sender_address {(envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding:  tls $tls_in_cipher_std
-p1235   	
-p1235   ├─────result:  tls 
-p1235   	
+p1235   ╭───scanning: ░tls░$tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: ░tls░
+p1235   ├───scanning: $tls_in_cipher_std↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├──────value: 
+p1235   ├───scanning: ↩
+p1235   ␉}}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: ↩
+p1235   ␉
+p1235   ├───scanning: }}(Exim░$version_number)↩
+p1235   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: ░tls░$tls_in_cipher_std↩
+p1235   ␉
+p1235   ├─────result:  ◀skipped▶
 p1235   ╰───skipping: result is not used
 p1235  ├───item-res: 
-p1235             ╰──(tainted)
-p1235  ├considering: (Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text: (Exim 
-p1235  ├considering: $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├considering: )
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text: )
-p1235  	
-p1235  ├considering: ${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
+p1235  ├considering: (Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: (Exim░
+p1235  ├considering: $version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├──────value: x.yz
+p1235  ├considering: )↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: )↩
+p1235  ␉
+p1235  ├considering: ${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
 p1235  ├──condition: def:sender_address
 p1235  ├─────result: true
-p1235   ╭considering: (envelope-from <$sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: (envelope-from <
-p1235   ├considering: $sender_address>)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├considering: >)
-p1235   	}}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├───────text: >)
-p1235   	
-p1235   ├considering: }}id $message_exim_id${if def:received_for {
-p1235   	for $received_for}}
-p1235   ├──expanding: (envelope-from <$sender_address>)
-p1235   	
-p1235   ╰─────result: (envelope-from <CALLER@test.ex>)
-p1235   	
+p1235   ╭considering: (envelope-from░<$sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: (envelope-from░<
+p1235   ├considering: $sender_address>)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├──────value: CALLER@test.ex
 p1235              ╰──(tainted)
-p1235  ├───item-res: (envelope-from <CALLER@test.ex>)
-p1235  	
+p1235   ├considering: >)↩
+p1235   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: >)↩
+p1235   ␉
+p1235   ├considering: }}id░$message_exim_id${if░def:received_for░{↩
+p1235   ␉for░$received_for}}
+p1235   ├───expanded: (envelope-from░<$sender_address>)↩
+p1235   ␉
+p1235   ╰─────result: (envelope-from░<CALLER@test.ex>)↩
+p1235   ␉
+p1235              ╰──(tainted)
+p1235  ├───item-res: (envelope-from░<CALLER@test.ex>)↩
+p1235  ␉
 p1235             ╰──(tainted)
-p1235  ├considering: id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├───────text: id 
-p1235  ├considering: $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ├considering: ${if def:received_for {
-p1235  	for $received_for}}
+p1235  ├considering: id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├───────text: id░
+p1235  ├considering: $message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ├──────value: 10HmaX-000000005vi-0000
+p1235  ├considering: ${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235   cond: def
 p1235  ├──condition: def:received_for
 p1235  ├─────result: true
-p1235   ╭considering: 
-p1235   	for $received_for}}
-p1235   ├───────text: 
-p1235   	for 
+p1235   ╭considering: ↩
+p1235   ␉for░$received_for}}
+p1235   ├───────text: ↩
+p1235   ␉for░
 p1235   ├considering: $received_for}}
-p1235   ├considering: }}
-p1235   ├──expanding: 
-p1235   	for $received_for
-p1235   ╰─────result: 
-p1235   	for dest_1@test.ex
+p1235   ├──────value: dest_1@test.ex
 p1235              ╰──(tainted)
-p1235  ├───item-res: 
-p1235  	for dest_1@test.ex
+p1235   ├considering: }}
+p1235   ├───expanded: ↩
+p1235   ␉for░$received_for
+p1235   ╰─────result: ↩
+p1235   ␉for░dest_1@test.ex
+p1235              ╰──(tainted)
+p1235  ├───item-res: ↩
+p1235  ␉for░dest_1@test.ex
 p1235             ╰──(tainted)
-p1235  ├──expanding: Received: ${if def:sender_rcvhost {from $sender_rcvhost
-p1235  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1235  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1235  	}}(Exim $version_number)
-p1235  	${if def:sender_address {(envelope-from <$sender_address>)
-p1235  	}}id $message_exim_id${if def:received_for {
-p1235  	for $received_for}}
-p1235  ╰─────result: Received: from [127.0.0.1] (helo=test.ex)
-p1235  	by myhost.test.ex with smtp (Exim x.yz)
-p1235  	(envelope-from <CALLER@test.ex>)
-p1235  	id 10HmaX-0005vi-00
-p1235  	for dest_1@test.ex
+p1235  ├───expanded: Received:░${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1235  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1235  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1235  ␉}}(Exim░$version_number)↩
+p1235  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1235  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1235  ␉for░$received_for}}
+p1235  ╰─────result: Received:░from░[127.0.0.1]░(helo=test.ex)↩
+p1235  ␉by░myhost.test.ex░with░smtp░(Exim░x.yz)↩
+p1235  ␉(envelope-from░<CALLER@test.ex>)↩
+p1235  ␉id░10HmaX-000000005vi-0000↩
+p1235  ␉for░dest_1@test.ex
 p1235             ╰──(tainted)
+p1235 try option acl_smtp_data
 p1235  ╭considering: ${tod_full}
-p1235  ├──expanding: ${tod_full}
-p1235  ╰─────result: Tue, 2 Mar 1999 09:44:33 +0000
+p1235  ├───expanded: ${tod_full}
+p1235  ╰─────result: Tue,░2░Mar░1999░09:44:33░+0000
 LOG: MAIN
-  <= CALLER@test.ex H=(test.ex) [127.0.0.1] P=smtp S=sss
+  <= CALLER@test.ex H=(test.ex) [127.0.0.1] Ci=p1235 P=smtp S=sss
 search_tidyup called
 Process p1235 is ready for new message
+try option acl_smtp_quit
 LOG: smtp_connection MAIN
-  SMTP connection from (test.ex) [127.0.0.1] closed by QUIT
+  SMTP connection Ci=p1235 from (test.ex) [127.0.0.1] D=qqs closed by QUIT
 p1234 1 SMTP accept process running
-p1234 Listening...
-p1234 daemon_notification from addr ''
+p1234 daemon_notification (from unknown addr)
 p1234 compiled caseless RE '^nomatch_list' not found in local cache
 p1234 compiling caseless RE '^nomatch_list'
 p1234 compiled RE '^nomatch_list' saved in local cache
-p1234 Listening...
-p1234 daemon_notification from addr ''
+p1234 daemon_notification (from unknown addr)
 p1234 compiled RE 'static_RE' not found in local cache
 p1234 compiling RE 'static_RE'
 p1234 compiled RE 'static_RE' saved in local cache
-p1234 Listening...
-p1234 daemon_notification from addr ''
+p1234 daemon_notification (from unknown addr)
 p1234 compiled RE 'tricky_static_RE$' not found in local cache
 p1234 compiling RE 'tricky_static_RE$'
 p1234 compiled RE 'tricky_static_RE$' saved in local cache
-p1234 Listening...
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (daemon-accept) terminating with rc=0 >>>>>>>>>>>>>>>>
 p1234 child p1235 ended: status=0x0
 p1234   normal exit, 0
 p1234 0 SMTP accept processes now running
-p1234 Listening...
 p1234 Connection request from 127.0.0.1 port sssss
+p1234 try option smtp_accept_max_per_host
 p1234 search_tidyup called
+p1236 try option smtp_active_hostname
 p1236 Process p1236 is handling incoming connection from [127.0.0.1]
-p1236  ╭considering: $smtp_active_hostname ESMTP Exim $version_number $tod_full
-p1236  ├considering:  ESMTP Exim $version_number $tod_full
-p1236  ├───────text:  ESMTP Exim 
-p1236  ├considering: $version_number $tod_full
-p1236  ├considering:  $tod_full
-p1236  ├───────text:  
+p1236 try option message_size_limit
+p1236 try option acl_smtp_connect
+p1236 try option smtp_banner
+p1236  ╭considering: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+p1236  ├──────value: myhost.test.ex
+p1236  ├considering: ░ESMTP░Exim░$version_number░$tod_full
+p1236  ├───────text: ░ESMTP░Exim░
+p1236  ├considering: $version_number░$tod_full
+p1236  ├──────value: x.yz
+p1236  ├considering: ░$tod_full
+p1236  ├───────text: ░
 p1236  ├considering: $tod_full
-p1236  ├──expanding: $smtp_active_hostname ESMTP Exim $version_number $tod_full
-p1236  ╰─────result: myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+p1236  ├──────value: Tue,░2░Mar░1999░09:44:33░+0000
+p1236  ├───expanded: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+p1236  ╰─────result: myhost.test.ex░ESMTP░Exim░x.yz░Tue,░2░Mar░1999░09:44:33░+0000
 p1236 Process p1236 is ready for new message
+p1236 test.ex in helo_lookup_domains? no (end of list)
+p1236 try option acl_smtp_helo
+p1236 try option acl_smtp_mail
+p1236 try option acl_smtp_rcpt
 p1236 compiled caseless RE '^nomatch_list' found in local cache
-p1236  ╭considering: ${if match {a_random_string} {static_RE}}
-p1236   ╭considering: a_random_string} {static_RE}}
-p1236   ├───────text: a_random_string
-p1236   ├considering: } {static_RE}}
-p1236   ├──expanding: a_random_string
-p1236   ╰─────result: a_random_string
-p1236   ╭considering: static_RE}}
-p1236   ├───────text: static_RE
-p1236   ├considering: }}
-p1236   ├──expanding: static_RE
-p1236   ╰─────result: static_RE
-p1236  compiled RE 'static_RE' found in local cache
-p1236  ├──condition: match {a_random_string} {static_RE}
+p1236 test.ex in "^nomatch_list"? no (end of list)
+p1236  ╭considering: ${if░match░{a_random_string}░{static_RE}}
+p1236   cond: match
+p1236    ╭considering: a_random_string}░{static_RE}}
+p1236    ├───────text: a_random_string
+p1236    ├considering: }░{static_RE}}
+p1236    ├───expanded: a_random_string
+p1236    ╰─────result: a_random_string
+p1236    ╭considering: static_RE}}
+p1236    ├───────text: static_RE
+p1236    ├considering: }}
+p1236    ├───expanded: static_RE
+p1236    ╰─────result: static_RE
+p1236   compiled RE 'static_RE' found in local cache
+p1236  ├──condition: match░{a_random_string}░{static_RE}
 p1236  ├─────result: false
-p1236  ├──expanding: ${if match {a_random_string} {static_RE}}
+p1236  ├───expanded: ${if░match░{a_random_string}░{static_RE}}
 p1236  ╰─────result: 
-p1236  ╭considering: ${if match {a_random_string} {tricky_static_RE\$}}
-p1236   ╭considering: a_random_string} {tricky_static_RE\$}}
-p1236   ├───────text: a_random_string
-p1236   ├considering: } {tricky_static_RE\$}}
-p1236   ├──expanding: a_random_string
-p1236   ╰─────result: a_random_string
-p1236   ╭considering: tricky_static_RE\$}}
-p1236   ├───────text: tricky_static_RE
-p1236   ├considering: \$}}
-p1236   ├backslashed: '\$'
-p1236   ├considering: }}
-p1236   ├──expanding: tricky_static_RE\$
-p1236   ╰─────result: tricky_static_RE$
-p1236  compiled RE 'tricky_static_RE$' found in local cache
-p1236  ├──condition: match {a_random_string} {tricky_static_RE\$}
+p1236  ╭considering: ${if░match░{a_random_string}░{tricky_static_RE\$}}
+p1236   cond: match
+p1236    ╭considering: a_random_string}░{tricky_static_RE\$}}
+p1236    ├───────text: a_random_string
+p1236    ├considering: }░{tricky_static_RE\$}}
+p1236    ├───expanded: a_random_string
+p1236    ╰─────result: a_random_string
+p1236    ╭considering: tricky_static_RE\$}}
+p1236    ├───────text: tricky_static_RE
+p1236    ├considering: \$}}
+p1236    ├backslashed: '\$'
+p1236    ├considering: }}
+p1236    ├───expanded: tricky_static_RE\$
+p1236    ╰─────result: tricky_static_RE$
+p1236   compiled RE 'tricky_static_RE$' found in local cache
+p1236  ├──condition: match░{a_random_string}░{tricky_static_RE\$}
 p1236  ├─────result: false
-p1236  ├──expanding: ${if match {a_random_string} {tricky_static_RE\$}}
+p1236  ├───expanded: ${if░match░{a_random_string}░{tricky_static_RE\$}}
 p1236  ╰─────result: 
-p1236  ╭considering: ${if match {a_random_string} {pid=${pid} uncacheable_RE}}
-p1236   ╭considering: a_random_string} {pid=${pid} uncacheable_RE}}
-p1236   ├───────text: a_random_string
-p1236   ├considering: } {pid=${pid} uncacheable_RE}}
-p1236   ├──expanding: a_random_string
-p1236   ╰─────result: a_random_string
-p1236   ╭considering: pid=${pid} uncacheable_RE}}
-p1236   ├───────text: pid=
-p1236   ├considering: ${pid} uncacheable_RE}}
-p1236   ├considering:  uncacheable_RE}}
-p1236   ├───────text:  uncacheable_RE
-p1236   ├considering: }}
-p1236   ├──expanding: pid=${pid} uncacheable_RE
-p1236   ╰─────result: pid=p1236 uncacheable_RE
-p1236  compiling RE 'pid=p1236 uncacheable_RE'
-p1236  ├──condition: match {a_random_string} {pid=${pid} uncacheable_RE}
+p1236  ╭considering: ${if░match░{a_random_string}░{pid=${pid}░uncacheable_RE}}
+p1236   cond: match
+p1236    ╭considering: a_random_string}░{pid=${pid}░uncacheable_RE}}
+p1236    ├───────text: a_random_string
+p1236    ├considering: }░{pid=${pid}░uncacheable_RE}}
+p1236    ├───expanded: a_random_string
+p1236    ╰─────result: a_random_string
+p1236    ╭considering: pid=${pid}░uncacheable_RE}}
+p1236    ├───────text: pid=
+p1236    ├considering: ${pid}░uncacheable_RE}}
+p1236    ├considering: ░uncacheable_RE}}
+p1236    ├───────text: ░uncacheable_RE
+p1236    ├considering: }}
+p1236    ├───expanded: pid=${pid}░uncacheable_RE
+p1236    ╰─────result: pid=p1236░uncacheable_RE
+p1236   compiling RE 'pid=p1236 uncacheable_RE'
+p1236  ├──condition: match░{a_random_string}░{pid=${pid}░uncacheable_RE}
 p1236  ├─────result: false
-p1236  ├──expanding: ${if match {a_random_string} {pid=${pid} uncacheable_RE}}
+p1236  ├───expanded: ${if░match░{a_random_string}░{pid=${pid}░uncacheable_RE}}
 p1236  ╰─────result: 
+p1236 try option acl_smtp_predata
 p1236 search_tidyup called
 p1236 search_tidyup called
 p1236  ╭considering: ${tod_full}
-p1236  ├──expanding: ${tod_full}
-p1236  ╰─────result: Tue, 2 Mar 1999 09:44:33 +0000
-p1236  ╭considering: Received: ${if def:sender_rcvhost {from $sender_rcvhost
-p1236  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text: Received: 
-p1236  ├considering: ${if def:sender_rcvhost {from $sender_rcvhost
-p1236  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
+p1236  ├───expanded: ${tod_full}
+p1236  ╰─────result: Tue,░2░Mar░1999░09:44:33░+0000
+p1236 try option received_header_text
+p1236  ╭considering: Received:░${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1236  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: Received:░
+p1236  ├considering: ${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1236  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
 p1236  ├──condition: def:sender_rcvhost
 p1236  ├─────result: true
-p1236   ╭considering: from $sender_rcvhost
-p1236   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: from 
-p1236   ├considering: $sender_rcvhost
-p1236   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├considering: 
-p1236   	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: 
-p1236   	
-p1236   ├considering: }{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding: from $sender_rcvhost
-p1236   	
-p1236   ╰─────result: from [127.0.0.1] (helo=test.ex)
-p1236   	
+p1236   ╭considering: from░$sender_rcvhost↩
+p1236   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: from░
+p1236   ├considering: $sender_rcvhost↩
+p1236   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├──────value: [127.0.0.1]░(helo=test.ex)
 p1236              ╰──(tainted)
-p1236   ╭───scanning: ${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
+p1236   ├considering: ↩
+p1236   ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: ↩
+p1236   ␉
+p1236   ├considering: }{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: from░$sender_rcvhost↩
+p1236   ␉
+p1236   ╰─────result: from░[127.0.0.1]░(helo=test.ex)↩
+p1236   ␉
+p1236              ╰──(tainted)
+p1236   ╭───scanning: ${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236    cond: def
 p1236   ├──condition: def:sender_ident
 p1236   ├─────result: false
-p1236    ╭───scanning: from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├───────text: from 
-p1236    ├───scanning: ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ╎╭───scanning: $sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    ╎	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    ╎	}}(Exim $version_number)
-p1236    ╎	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    ╎	}}id $message_exim_id${if def:received_for {
-p1236    ╎	for $received_for}}
-p1236    ╎├───scanning: } }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    ╎	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    ╎	}}(Exim $version_number)
-p1236    ╎	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    ╎	}}id $message_exim_id${if def:received_for {
-p1236    ╎	for $received_for}}
-p1236    ╎├──expanding: $sender_ident
-p1236    ╎├─────result: 
+p1236    ╭───scanning: from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├───────text: from░
+p1236    ├───scanning: ${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ╎╭───scanning: $sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ╎␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ╎␉}}(Exim░$version_number)↩
+p1236    ╎␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ╎␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ╎␉for░$received_for}}
+p1236    ╎├──────value: 
+p1236    ╎├───scanning: }░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ╎␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ╎␉}}(Exim░$version_number)↩
+p1236    ╎␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ╎␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ╎␉for░$received_for}}
+p1236    ╎├───expanded: $sender_ident
+p1236    ╎├─────result:  ◀skipped▶
 p1236    ╎╰───skipping: result is not used
-p1236    ├───scanning:  }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├───────text:  
-p1236    ├───scanning: }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├──expanding: from ${quote_local_part:$sender_ident} 
-p1236    ├─────result: from  
+p1236    ├───scanning: ░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├───────text: ░
+p1236    ├───scanning: }}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├───expanded: from░${quote_local_part:$sender_ident}░
+p1236    ├─────result:  ◀skipped▶
 p1236    ╰───skipping: result is not used
 p1236   ├───item-res: 
-p1236   ├───scanning: ${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
+p1236   ├───scanning: ${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236    cond: def
 p1236   ├──condition: def:sender_helo_name
 p1236   ├─────result: false
-p1236    ╭───scanning: (helo=$sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
+p1236    ╭───scanning: (helo=$sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
 p1236    ├───────text: (helo=
-p1236    ├───scanning: $sender_helo_name)
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├───scanning: )
-p1236    	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├───────text: )
-p1236    	
-p1236    ├───scanning: }}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236    	}}(Exim $version_number)
-p1236    	${if def:sender_address {(envelope-from <$sender_address>)
-p1236    	}}id $message_exim_id${if def:received_for {
-p1236    	for $received_for}}
-p1236    ├──expanding: (helo=$sender_helo_name)
-p1236    	
-p1236    ├─────result: (helo=)
-p1236    	
+p1236    ├───scanning: $sender_helo_name)↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├──────value: 
+p1236    ├───scanning: )↩
+p1236    ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├───────text: )↩
+p1236    ␉
+p1236    ├───scanning: }}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236    ␉}}(Exim░$version_number)↩
+p1236    ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236    ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236    ␉for░$received_for}}
+p1236    ├───expanded: (helo=$sender_helo_name)↩
+p1236    ␉
+p1236    ├─────result:  ◀skipped▶
 p1236    ╰───skipping: result is not used
 p1236   ├───item-res: 
-p1236   ├───scanning: }}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding: ${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236   	}}
-p1236   ├─────result: 
+p1236   ├───scanning: }}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: ${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236   ␉}}
+p1236   ├─────result:  ◀skipped▶
 p1236   ╰───skipping: result is not used
-p1236  ├───item-res: from [127.0.0.1] (helo=test.ex)
-p1236  	
+p1236  ├───item-res: from░[127.0.0.1]░(helo=test.ex)↩
+p1236  ␉
 p1236             ╰──(tainted)
-p1236  ├considering: by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text: by 
-p1236  ├considering: $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├considering:  ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text:  
-p1236  ├considering: ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
+p1236  ├considering: by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: by░
+p1236  ├considering: $primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├──────value: myhost.test.ex
+p1236  ├considering: ░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: ░
+p1236  ├considering: ${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
 p1236  ├──condition: def:received_protocol
 p1236  ├─────result: true
-p1236   ╭considering: with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: with 
-p1236   ├considering: $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├considering:  }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text:  
-p1236   ├considering: }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding: with $received_protocol 
-p1236   ╰─────result: with smtp 
-p1236  ├───item-res: with smtp 
+p1236   ╭considering: with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: with░
+p1236   ├considering: $received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├──────value: smtp
+p1236   ├considering: ░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: ░
+p1236   ├considering: }}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: with░$received_protocol░
+p1236   ╰─────result: with░smtp░
+p1236  ├───item-res: with░smtp░
 p1236             ╰──(tainted)
-p1236  ├considering: ${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding:  ($tls_in_ver)
-p1236   ├─────result:  ()
+p1236  ├considering: ${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: ░($tls_in_ver)
+p1236   ├─────result:  ◀skipped▶
 p1236   ╰───skipping: result is not used
 p1236  ├───item-res: 
-p1236             ╰──(tainted)
-p1236  ├considering: ${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
+p1236  ├considering: ${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
 p1236  ├──condition: def:tls_in_cipher_std
 p1236  ├─────result: false
-p1236   ╭───scanning:  tls $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text:  tls 
-p1236   ├───scanning: $tls_in_cipher_std
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───scanning: 
-p1236   	}}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: 
-p1236   	
-p1236   ├───scanning: }}(Exim $version_number)
-p1236   	${if def:sender_address {(envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding:  tls $tls_in_cipher_std
-p1236   	
-p1236   ├─────result:  tls 
-p1236   	
+p1236   ╭───scanning: ░tls░$tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: ░tls░
+p1236   ├───scanning: $tls_in_cipher_std↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├──────value: 
+p1236   ├───scanning: ↩
+p1236   ␉}}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: ↩
+p1236   ␉
+p1236   ├───scanning: }}(Exim░$version_number)↩
+p1236   ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: ░tls░$tls_in_cipher_std↩
+p1236   ␉
+p1236   ├─────result:  ◀skipped▶
 p1236   ╰───skipping: result is not used
 p1236  ├───item-res: 
-p1236             ╰──(tainted)
-p1236  ├considering: (Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text: (Exim 
-p1236  ├considering: $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├considering: )
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text: )
-p1236  	
-p1236  ├considering: ${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
+p1236  ├considering: (Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: (Exim░
+p1236  ├considering: $version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├──────value: x.yz
+p1236  ├considering: )↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: )↩
+p1236  ␉
+p1236  ├considering: ${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
 p1236  ├──condition: def:sender_address
 p1236  ├─────result: true
-p1236   ╭considering: (envelope-from <$sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: (envelope-from <
-p1236   ├considering: $sender_address>)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├considering: >)
-p1236   	}}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├───────text: >)
-p1236   	
-p1236   ├considering: }}id $message_exim_id${if def:received_for {
-p1236   	for $received_for}}
-p1236   ├──expanding: (envelope-from <$sender_address>)
-p1236   	
-p1236   ╰─────result: (envelope-from <CALLER@test.ex>)
-p1236   	
+p1236   ╭considering: (envelope-from░<$sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: (envelope-from░<
+p1236   ├considering: $sender_address>)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├──────value: CALLER@test.ex
 p1236              ╰──(tainted)
-p1236  ├───item-res: (envelope-from <CALLER@test.ex>)
-p1236  	
+p1236   ├considering: >)↩
+p1236   ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: >)↩
+p1236   ␉
+p1236   ├considering: }}id░$message_exim_id${if░def:received_for░{↩
+p1236   ␉for░$received_for}}
+p1236   ├───expanded: (envelope-from░<$sender_address>)↩
+p1236   ␉
+p1236   ╰─────result: (envelope-from░<CALLER@test.ex>)↩
+p1236   ␉
+p1236              ╰──(tainted)
+p1236  ├───item-res: (envelope-from░<CALLER@test.ex>)↩
+p1236  ␉
 p1236             ╰──(tainted)
-p1236  ├considering: id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├───────text: id 
-p1236  ├considering: $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ├considering: ${if def:received_for {
-p1236  	for $received_for}}
+p1236  ├considering: id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├───────text: id░
+p1236  ├considering: $message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ├──────value: 10HmaY-000000005vi-0000
+p1236  ├considering: ${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236   cond: def
 p1236  ├──condition: def:received_for
 p1236  ├─────result: true
-p1236   ╭considering: 
-p1236   	for $received_for}}
-p1236   ├───────text: 
-p1236   	for 
+p1236   ╭considering: ↩
+p1236   ␉for░$received_for}}
+p1236   ├───────text: ↩
+p1236   ␉for░
 p1236   ├considering: $received_for}}
-p1236   ├considering: }}
-p1236   ├──expanding: 
-p1236   	for $received_for
-p1236   ╰─────result: 
-p1236   	for dest_2@test.ex
+p1236   ├──────value: dest_2@test.ex
 p1236              ╰──(tainted)
-p1236  ├───item-res: 
-p1236  	for dest_2@test.ex
+p1236   ├considering: }}
+p1236   ├───expanded: ↩
+p1236   ␉for░$received_for
+p1236   ╰─────result: ↩
+p1236   ␉for░dest_2@test.ex
+p1236              ╰──(tainted)
+p1236  ├───item-res: ↩
+p1236  ␉for░dest_2@test.ex
 p1236             ╰──(tainted)
-p1236  ├──expanding: Received: ${if def:sender_rcvhost {from $sender_rcvhost
-p1236  	}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)
-p1236  	}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol }}${if def:tls_in_ver        { ($tls_in_ver)}}${if def:tls_in_cipher_std { tls $tls_in_cipher_std
-p1236  	}}(Exim $version_number)
-p1236  	${if def:sender_address {(envelope-from <$sender_address>)
-p1236  	}}id $message_exim_id${if def:received_for {
-p1236  	for $received_for}}
-p1236  ╰─────result: Received: from [127.0.0.1] (helo=test.ex)
-p1236  	by myhost.test.ex with smtp (Exim x.yz)
-p1236  	(envelope-from <CALLER@test.ex>)
-p1236  	id 10HmaY-0005vi-00
-p1236  	for dest_2@test.ex
+p1236  ├───expanded: Received:░${if░def:sender_rcvhost░{from░$sender_rcvhost↩
+p1236  ␉}{${if░def:sender_ident░{from░${quote_local_part:$sender_ident}░}}${if░def:sender_helo_name░{(helo=$sender_helo_name)↩
+p1236  ␉}}}}by░$primary_hostname░${if░def:received_protocol░{with░$received_protocol░}}${if░def:tls_in_ver░░░░░░░░{░($tls_in_ver)}}${if░def:tls_in_cipher_std░{░tls░$tls_in_cipher_std↩
+p1236  ␉}}(Exim░$version_number)↩
+p1236  ␉${if░def:sender_address░{(envelope-from░<$sender_address>)↩
+p1236  ␉}}id░$message_exim_id${if░def:received_for░{↩
+p1236  ␉for░$received_for}}
+p1236  ╰─────result: Received:░from░[127.0.0.1]░(helo=test.ex)↩
+p1236  ␉by░myhost.test.ex░with░smtp░(Exim░x.yz)↩
+p1236  ␉(envelope-from░<CALLER@test.ex>)↩
+p1236  ␉id░10HmaY-000000005vi-0000↩
+p1236  ␉for░dest_2@test.ex
 p1236             ╰──(tainted)
+p1236 try option acl_smtp_data
 p1236  ╭considering: ${tod_full}
-p1236  ├──expanding: ${tod_full}
-p1236  ╰─────result: Tue, 2 Mar 1999 09:44:33 +0000
+p1236  ├───expanded: ${tod_full}
+p1236  ╰─────result: Tue,░2░Mar░1999░09:44:33░+0000
 LOG: MAIN
-  <= CALLER@test.ex H=(test.ex) [127.0.0.1] P=smtp S=sss
+  <= CALLER@test.ex H=(test.ex) [127.0.0.1] Ci=p1236 P=smtp S=sss
 search_tidyup called
 Process p1236 is ready for new message
+try option acl_smtp_quit
 LOG: smtp_connection MAIN
-  SMTP connection from (test.ex) [127.0.0.1] closed by QUIT
+  SMTP connection Ci=p1236 from (test.ex) [127.0.0.1] D=qqs closed by QUIT
 p1234 1 SMTP accept process running
-p1234 Listening...
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (daemon-accept) terminating with rc=0 >>>>>>>>>>>>>>>>
 p1234 child p1236 ended: status=0x0
 p1234   normal exit, 0
 p1234 0 SMTP accept processes now running
-p1234 Listening...
 p1234 SIGTERM/SIGINT seen
 p1234 search_tidyup called
 p1234 >>>>>>>>>>>>>>>> Exim pid=p1234 (daemon) terminating with rc=0 >>>>>>>>>>>>>>>>

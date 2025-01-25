@@ -1,13 +1,15 @@
 #! /bin/sh
-LC_ALL=C
-export LC_ALL
-
 # Shell script to build Makefile in a build directory. It must be called
 # from inside the directory. It does its own checking of when to rebuild; it
 # just got too horrendous to get it right in "make", because of the optionally
 # existing configuration files.
 #
-# Copyright (c) The Exim Maintainers 1995 - 2021
+# Copyright (c) The Exim Maintainers 1995 - 2024
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+
+LC_ALL=C
+export LC_ALL
 
 
 # First off, get the OS type, and check that there is a make file for it.
@@ -58,6 +60,16 @@ if [ "X$build" != "X" ] ; then
   fi
 else
   mfb=
+fi
+
+
+# Linux now whines about egrep, saying "use grep -E".
+# Solarix doesn't support -E on grep.  Thanks so much for
+# going non-back-compatible, Linux.
+if [ "$ostype" != "SunOS5" ] ; then
+  egrep="grep -E"
+else
+  egrep="egrep"
 fi
 
 
@@ -132,7 +144,7 @@ then
   sed "s/^/PKG_CONFIG_PATH='/" < ./$mftepcp2 | sed "s/\$/'/" > ./$mftepcp
   . ./$mftepcp
   export PKG_CONFIG_PATH
-  egrep -v "^[$st]*PKG_CONFIG_PATH[$st]*=" ./$mft > ./$mftt
+  $egrep -v "^[$st]*PKG_CONFIG_PATH[$st]*=" ./$mft > ./$mftt
   rm -f ./$mft
   (
     echo "# Collapsed PKG_CONFIG_PATH in build-prep:"
@@ -147,10 +159,10 @@ rm -f ./$mftepcp ./$mftepcp2
 
 # handle pkg-config
 # beware portability of extended regexps with sed.
-egrep "^[$st]*(AUTH|LOOKUP)_[A-Z0-9_]*[$st]*=[$st]*" $mft | \
+$egrep "^[$st]*(AUTH|LOOKUP|SUPPORT)_[A-Z0-9_]*[$st]*=[$st]*" $mft | \
   sed "s/[$st]*=/='/" | \
   sed "s/\$/'/" > $mftt
-egrep "^[$st]*((USE_(OPENSSL|GNUTLS)_PC)|SUPPORT_TLS|USE_GNUTLS|PCRE2?_CONFIG|AVOID_GNUTLS_PKCS11)[$st]*=[$st]*" $mft | \
+$egrep "^[$st]*((USE_(OPENSSL|GNUTLS)_PC)|SUPPORT_TLS|USE_GNUTLS|PCRE2?_CONFIG|AVOID_GNUTLS_PKCS11)[$st]*=[$st]*" $mft | \
   sed "s/[$st]*=/='/" | \
   sed "s/\$/'/" >> $mftt
 if test -s $mftt
@@ -224,6 +236,9 @@ then
           elif [ "$var" != "${var#AUTH_}" ]; then
             echo "CFLAGS += $cflags"
             echo "AUTH_LIBS += $libs"
+	  elif [ "$var" != "${var#SUPPORT_}" ]; then
+	    echo "CFLAGS += $cflags"
+	    echo "LIBS += $libs"
           else
             echo >&2 "Don't know how to handle pkg-config for $var"
           fi
@@ -235,17 +250,6 @@ then
           yes|YES|y|Y)
 	     echo >&2 "pcre is no longer supported; migrate to pcre2"
 	     exit 1
-
-#            cflags=`pcre-config --cflags`
-#            if [ $? -ne 0 ]; then
-#              echo >&2 "*** Missing pcre-config for regular expression support"
-#              exit 1
-#            fi
-#            libs=`pcre-config --libs`
-#            if [ ".$cflags" != "." ]; then
-#              echo "INCLUDE += $cflags"
-#            fi
-#            echo "PCRE_LIBS=$libs"
             ;;
         esac
         ;;
@@ -283,11 +287,39 @@ then
 fi
 rm -f $mftt
 
+
+# look for RADIUS in $mft; add a SUPPORT_
+if $egrep -q "^RADIUS_CONFIG_FILE" $mft; then
+  echo "# radius fixup"
+  $egrep -q "^SUPPORT_RADIUS" $mft || echo "SUPPORT_RADIUS=yes" >> $mft
+fi
+# also PERL
+if $egrep -q "^EXIM_PERL" $mft; then
+  echo "# perl fixup"
+  $egrep -q "^SUPPORT_PERL" $mft || echo "SUPPORT_PERL=yes" >> $mft
+fi
+
+
 # make the lookups Makefile with the definitions
 # the auxiliary script generates $look_mf_post from $look_mf_pre
 
 cp ../src/lookups/Makefile $look_mf_pre
 ../scripts/lookups-Makefile
+
+# make the Makefiles for routers, transports, auths and miscmods
+#
+while read class classdef names
+do
+  cp ../src/$class/Makefile $class/Makefile.predynamic
+  CLASS=$class CLASSDEF=$classdef DRNAMES="$names" EGREP="$egrep" ../scripts/drivers-Makefile
+  mv $class/Makefile.postdynamic $class/Makefile
+  rm $class/Makefile.predynamic
+done <<-END
+ routers    ROUTER	ACCEPT DNSLOOKUP IPLITERAL IPLOOKUP MANUALROUTE QUERYPROGRAM REDIRECT
+ transports TRANSPORT	APPENDFILE AUTOREPLY LMTP PIPE QUEUEFILE SMTP
+ auths	    AUTH	CRAM_MD5 CYRUS_SASL DOVECOT EXTERNAL GSASL HEIMDAL_GSSAPI PLAINTEXT SPA TLS
+ miscmods   SUPPORT	ARC _DKIM DMARC _EXIM_FILTER PAM PERL RADIUS _SIEVE_FILTER SPF
+END
 
 # See if there is a definition of EXIM_PERL in what we have built so far.
 # If so, run Perl to find the default values for PERL_CC, PERL_CCOPTS,
@@ -315,10 +347,27 @@ if [ "${EXIM_PERL}" != "" ] ; then
     exit 1;
   fi
 
+  perl_cc="`$PERL_COMMAND -MConfig -e 'print $Config{cc}'`"
+  perl_ccopts="`$PERL_COMMAND -MExtUtils::Embed -e ccopts`"
+  perl_libs="`$PERL_COMMAND -MExtUtils::Embed -e ldopts`"
+
+  # For the dynamic-module build, pull out all the -D & -I into another var,
+  # and -L (maybe & -l?) to another, both for feed to miscmods
+  # ending up as SUPPORT_PERL_INCLUDE & SUPPORT_PERL_LIB respectively
+
+  perl_cflags=`PERL_CCOPTS="$perl_ccopts" $PERL_COMMAND \
+		-e 'my @list = split(" ", $ENV{PERL_CCOPTS});' \
+		-e 'foreach (@list) {print "$_ " if (/^-[DI]/)}'`
+  perl_lflags=`PERL_LIBS="$perl_libs" $PERL_COMMAND \
+		-e 'my @list = split(" ", $ENV{PERL_LIBS});' \
+		-e 'foreach (@list) {print "$_ " if (/^-L/)}'`
+
   mv $mft $mftt
-  echo "PERL_CC=`$PERL_COMMAND -MConfig -e 'print $Config{cc}'`" >>$mft
-  echo "PERL_CCOPTS=`$PERL_COMMAND -MExtUtils::Embed -e ccopts`" >>$mft
-  echo "PERL_LIBS=`$PERL_COMMAND -MExtUtils::Embed -e ldopts`" >>$mft
+  echo "PERL_CC=${perl_cc}" >>$mft
+  echo "PERL_CCOPTS=${perl_ccopts}" >>$mft
+  echo "PERL_LIBS=${perl_libs}" >>$mft
+  echo "PERL_CFLAGS=${perl_cflags}" >>$mft
+  echo "PERL_LFLAGS=${perl_lflags}" >>$mft
   echo "" >>$mft
   cat $mftt >> $mft
   rm -f $mftt

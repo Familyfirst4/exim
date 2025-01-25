@@ -4,6 +4,7 @@
 
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file, which provides support for Microsoft's Secure Password
 Authentication, was contributed by Marc Prud'hommeaux. */
@@ -31,7 +32,7 @@ extern auth_spa_options_block auth_spa_option_defaults;
 
 /* The entry points for the mechanism */
 
-extern void auth_spa_init(auth_instance *);
+extern void auth_spa_init(driver_instance *);
 extern int auth_spa_server(auth_instance *, uschar *);
 extern int auth_spa_client(auth_instance *, void *, int, uschar *, int);
 

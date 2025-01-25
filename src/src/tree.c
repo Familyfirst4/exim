@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for maintaining binary balanced trees and some associated
 functions as well. */
@@ -47,7 +48,7 @@ if (!tree_insertnode(&tree_nonrecipients, node)) store_reset(rpoint);
 
 Argument:
   s       string to add
-  addr    the address is is a duplicate of
+  addr    the address it is a duplicate of
 
 Returns:  nothing
 */
@@ -64,6 +65,7 @@ if (!tree_insertnode(&tree_duplicates, node)) store_reset(rpoint);
 
 
 
+#ifndef COMPILE_UTILITY
 /*************************************************
 *    Add entry to unusable addresses tree        *
 *************************************************/
@@ -75,12 +77,11 @@ Returns:     nothing
 */
 
 void
-tree_add_unusable(const host_item *h)
+tree_add_unusable(const host_item * h)
 {
 rmark rpoint = store_mark();
-tree_node *node;
-uschar s[256];
-sprintf(CS s, "T:%.200s:%s", h->name, h->address);
+tree_node * node;
+const uschar * s = retry_host_key_build(h, TRUE, NULL);
 node = store_get(sizeof(tree_node) + Ustrlen(s),
 	    is_tainted(h->name) || is_tainted(h->address) ? GET_TAINTED : GET_UNTAINTED);
 Ustrcpy(node->name, s);
@@ -88,7 +89,7 @@ node->data.val = h->why;
 if (h->status == hstatus_unusable_expired) node->data.val += 256;
 if (!tree_insertnode(&tree_unusable, node)) store_reset(rpoint);
 }
-
+#endif
 
 
 /*************************************************
@@ -190,7 +191,7 @@ node->balance = 0;
 
 /* Deal with an empty tree */
 
-if (p == NULL)
+if (!p)
   {
   *treebase = node;
   return TRUE;
@@ -213,9 +214,9 @@ for (;;)
   /* Deal with climbing down the tree, exiting from the loop
   when we reach a leaf. */
 
-  q = (c > 0)? &(p->right) : &(p->left);
+  q = c > 0 ? &p->right : &p->left;
   p = *q;
-  if (p == NULL) break;
+  if (!p) break;
 
   /* Save the address of the pointer to the last node en route
   which has a non-zero balance factor. */

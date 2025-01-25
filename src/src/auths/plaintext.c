@@ -2,11 +2,14 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
+
+#ifdef AUTH_PLAINTEXT	/* Remainder of file */
 #include "plaintext.h"
 
 
@@ -39,7 +42,7 @@ auth_plaintext_options_block auth_plaintext_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_plaintext_init(auth_instance *ablock) {}
+void auth_plaintext_init(driver_instance *ablock) {}
 int auth_plaintext_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_plaintext_client(auth_instance *ablock, void * sx, int timeout,
     uschar *buffer, int buffsize) {return 0;}
@@ -57,13 +60,17 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-auth_plaintext_init(auth_instance *ablock)
+auth_plaintext_init(driver_instance * a)
 {
-auth_plaintext_options_block *ob =
-  (auth_plaintext_options_block *)(ablock->options_block);
-if (ablock->public_name == NULL) ablock->public_name = ablock->name;
-if (ablock->server_condition != NULL) ablock->server = TRUE;
-if (ob->client_send != NULL) ablock->client = TRUE;
+auth_instance * ablock = (auth_instance *)a;
+const auth_plaintext_options_block * ob = a->options_block;
+
+if (!ablock->public_name)
+  ablock->public_name = ablock->drinst.name;
+if (ablock->server_condition)
+  ablock->server = TRUE;
+if (ob->client_send)
+  ablock->client = TRUE;
 }
 
 
@@ -77,8 +84,7 @@ if (ob->client_send != NULL) ablock->client = TRUE;
 int
 auth_plaintext_server(auth_instance * ablock, uschar * data)
 {
-auth_plaintext_options_block * ob =
-  (auth_plaintext_options_block *)(ablock->options_block);
+auth_plaintext_options_block * ob = ablock->drinst.options_block;
 const uschar * prompts = ob->server_prompts;
 uschar * s;
 int number = 1;
@@ -88,7 +94,7 @@ int sep = 0;
 /* Expand a non-empty list of prompt strings */
 
 if (prompts)
-  if (!(prompts = expand_cstring(prompts)))
+  if (!(prompts = expand_string(prompts)))
     {
     auth_defer_msg = expand_string_message;
     return DEFER;
@@ -140,8 +146,7 @@ auth_plaintext_client(
   uschar *buffer,                        /* buffer for reading response */
   int buffsize)                          /* size of buffer */
 {
-auth_plaintext_options_block *ob =
-  (auth_plaintext_options_block *)(ablock->options_block);
+auth_plaintext_options_block * ob = ablock->drinst.options_block;
 const uschar * text = ob->client_send;
 const uschar * s;
 int sep = 0;
@@ -175,5 +180,29 @@ while ((s = string_nextinlist(&text, &sep, NULL, 0)))
 return FAIL;
 }
 
-#endif   /*!MACRO_PREDEF*/
+
+# ifdef DYNLOOKUP
+#  define plaintext_auth_info _auth_info
+# endif
+
+auth_info plaintext_auth_info = {
+.drinfo = {
+  .driver_name =	US"plaintext",                   /* lookup name */
+  .options =		auth_plaintext_options,
+  .options_count =	&auth_plaintext_options_count,
+  .options_block =	&auth_plaintext_option_defaults,
+  .options_len =	sizeof(auth_plaintext_options_block),
+  .init =		auth_plaintext_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_plaintext_server,
+.clientcode =		auth_plaintext_client,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*AUTH_PLAINTEST*/
 /* End of plaintext.c */

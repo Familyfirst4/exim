@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: smtp_connection MAIN
@@ -21,10 +22,11 @@ domain = domain2
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: recip@domain2
-  transport: t1
+  envelope to:	recip@domain2
+  transport:	t1
+other@domain2 in "lsearch;TESTSUITE/aux-fixed/0483.list"? no (end of list)
 LOG: MAIN REJECT
   U=CALLER F=<sender@domain1> rejected RCPT <other@domain2>
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

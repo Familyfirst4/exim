@@ -2,10 +2,13 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#ifndef STRUCTS_H
+#define STRUCTS_H
 
 /* Definitions of various structures. In addition, those that are visible for
 the compilation of local_scan() are defined in local_scan.h. These are
@@ -61,7 +64,7 @@ typedef struct ugid_block {
   BOOL    initgroups;
 } ugid_block;
 
-typedef enum {	CHUNKING_NOT_OFFERED = -1,
+typedef enum {	CHUNKING_NOT_OFFERED = 0,
 		CHUNKING_OFFERED,
 		CHUNKING_ACTIVE,
 		CHUNKING_LAST} chunking_state_t;
@@ -78,6 +81,11 @@ host addresses is done using this structure. */
 
 typedef enum {DS_UNK=-1, DS_NO, DS_YES} dnssec_status_t;
 
+#ifdef EXPERIMENTAL_SRV_SMTPS
+typedef enum {SRV_TLS_UNK, SRV_STARTTLS_CAN, SRV_STARTTLS_MUST,
+	      SRV_TLS_ON_CONNECT} srv_tls_t;
+#endif
+
 typedef struct host_item {
   struct host_item *next;
   const uschar *name;		/* Host name */
@@ -85,13 +93,16 @@ typedef struct host_item {
   const uschar *certname;	/* Name used for certificate checks */
 #endif
   const uschar *address;	/* IP address in text form */
-  int     port;			/* port value in host order (if SRV lookup) */
-  int     mx;			/* MX value if found via MX records */
-  int     sort_key;		/* MX*1000 plus random "fraction" */
-  int     status;		/* Usable, unusable, or unknown */
-  int     why;			/* Why host is unusable */
-  int     last_try;		/* Time of last try if known */
-  dnssec_status_t dnssec;
+  int		port;		/* port value in host order (if SRV lookup) */
+  int		mx;		/* MX value if found via MX records */
+  uschar	status;		/* Usable, unusable, or unknown */
+  uschar	why;		/* Why host is unusable */
+  dnssec_status_t dnssec:2;
+#ifdef EXPERIMENTAL_SRV_SMTPS
+  srv_tls_t	  tls_needs:2;
+#endif
+  int		sort_key;		/* MX*1000 plus random "fraction" */
+  time_t	last_try;		/* Time of last try if known */
 } host_item;
 
 /* Chain of rewrite rules, read from the rewrite config, or parsed from the
@@ -129,9 +140,9 @@ three, the layout of the start of the blocks is kept the same, and represented
 by the generic structures driver_info and driver_instance. */
 
 typedef struct driver_instance {
-  struct driver_instance *next;
+  void   *next;
   uschar *name;                   /* Instance name */
-  struct driver_info *info;       /* Points to info for this driver */
+  void   *info;			  /* Points to info for this driver */
   void   *options_block;          /* Pointer to private options */
 
   uschar *driver_name;            /* All start with this generic option */
@@ -140,6 +151,7 @@ typedef struct driver_instance {
 } driver_instance;
 
 typedef struct driver_info {
+  struct driver_info * next;
   uschar *driver_name;            /* Name of driver */
 
   optionlist *options;            /* Table of private options names */
@@ -147,8 +159,19 @@ typedef struct driver_info {
   void   *options_block;          /* Points to default private block */
   int     options_len;            /* Length of same in bytes */
   void  (*init)(                  /* Initialization entry point */
-    struct driver_instance *);
+	  struct driver_instance *);
+  uint	  dyn_magic;		  /* Magic num if dynamic, else zero */
 } driver_info;
+
+/* Values for dyn_magic.  Encode types and api version. */
+#define ROUTER_MAGIC	0x52544d31	/* RTM1 */
+#define TRANSPORT_MAGIC	0x54504d31	/* TPM1 */
+#define AUTH_MAGIC	0x65554d31	/* AUM1 */
+
+typedef struct {
+  uint		magic;
+  uschar *	class;
+} driver_magics;
 
 
 /* Structure for holding information about the configured transports. Some
@@ -158,13 +181,7 @@ transports. They need to be generally accessible, however, as they are used by
 the main transport code. */
 
 typedef struct transport_instance {
-  struct transport_instance *next;
-  uschar *name;                   /* Instance name */
-  struct transport_info *info;    /* Info for this driver */
-  void *options_block;            /* Pointer to private options */
-  uschar *driver_name;            /* Must be first */
-  const uschar *srcfile;
-  int	  srcline;
+  driver_instance drinst;
 
   int   (*setup)(                 /* Setup entry point */
     struct transport_instance *,
@@ -182,7 +199,7 @@ typedef struct transport_instance {
   uschar *expand_multi_domain;    /* )                                  */
   BOOL    multi_domain;           /* )                                  */
   BOOL    overrides_hosts;        /* ) Used only for remote transports  */
-  int     max_addresses;          /* )                                  */
+  uschar *max_addresses;          /* )                                  */
   int     connection_max_messages;/* )                                  */
                                   /**************************************/
   BOOL    deliver_as_creator;     /* Used only by pipe at present */
@@ -226,18 +243,12 @@ typedef struct transport_instance {
 } transport_instance;
 
 
-/* Structure for holding information about a type of transport. The first six
-fields must match driver_info above. */
+/* Structure for holding information about a type of transport.  The first
+element must be a struct driver_info, to match auths and routers. */
 
 typedef struct transport_info {
-  uschar *driver_name;            /* Driver name */
-  optionlist *options;            /* Table of private options names */
-  int    *options_count;          /* -> Number of entries in table */
-  void   *options_block;          /* Points to default private block */
-  int     options_len;            /* Length of same in bytes */
-  void (*init)(                   /* Initialization function */
-    struct transport_instance *);
-/****/
+  driver_info drinfo;
+
   BOOL (*code)(                   /* Main entry point */
     transport_instance *,
     struct address_item *);
@@ -285,13 +296,7 @@ typedef struct {
 /* Structure for holding information about the configured routers. */
 
 typedef struct router_instance {
-  struct router_instance *next;
-  uschar *name;
-  struct router_info *info;
-  void   *options_block;          /* Pointer to private options */
-  uschar *driver_name;            /* Must be first */
-  const uschar *srcfile;
-  int	  srcline;
+  driver_instance drinst;
 
   uschar *address_data;           /* Arbitrary data */
 #ifdef EXPERIMENTAL_BRIGHTMAIL
@@ -368,18 +373,12 @@ typedef struct router_instance {
 } router_instance;
 
 
-/* Structure for holding information about a type of router. The first six
-fields must match driver_info above. */
+/* Structure for holding information about a type of router.  The first element
+must be a struct driver_info, to match auths and transports. */
 
 typedef struct router_info {
-  uschar *driver_name;
-  optionlist *options;            /* Table of private options names */
-  int    *options_count;          /* -> Number of entries in table */
-  void   *options_block;          /* Points to default private block */
-  int     options_len;            /* Length of same in bytes */
-  void (*init)(                   /* Initialization function */
-    struct router_instance *);
-/****/
+  driver_info drinfo;
+
   int (*code)(                    /* Main entry point */
     router_instance *,
     struct address_item *,
@@ -404,13 +403,7 @@ typedef struct router_info {
 mechanisms */
 
 typedef struct auth_instance {
-  struct auth_instance *next;
-  uschar *name;                   /* Exim instance name */
-  struct auth_info *info;         /* Pointer to driver info block */
-  void   *options_block;          /* Pointer to private options */
-  uschar *driver_name;            /* Must be first */
-  const uschar *srcfile;
-  int	  srcline;
+  driver_instance drinst;
 
   uschar *advertise_condition;    /* Are we going to advertise this?*/
   uschar *client_condition;       /* Should the client try this? */
@@ -427,17 +420,11 @@ typedef struct auth_instance {
 
 
 /* Structure for holding information about an authentication mechanism. The
-first six fields must match driver_info above. */
+first element must be a struct driver_info, to match routers and transports. */
 
 typedef struct auth_info {
-  uschar *driver_name;            /* e.g. "condition" */
-  optionlist *options;            /* Table of private options names */
-  int    *options_count;          /* -> Number of entries in table */
-  void   *options_block;          /* Points to default private block */
-  int     options_len;            /* Length of same in bytes */
-  void (*init)(                   /* initialization function */
-    struct auth_instance *);
-/****/
+  driver_info drinfo;
+
   int (*servercode)(              /* server function */
     auth_instance *,              /* the instance data */
     uschar *);                    /* rest of AUTH command */
@@ -468,8 +455,8 @@ typedef struct ip_address_item {
 /* Structure for chaining together arbitrary strings. */
 
 typedef struct string_item {
-  struct string_item *next;
-  uschar *text;
+  struct string_item *	next;
+  uschar *		text;
 } string_item;
 
 /* Information about a soft delivery failure, for use when calculating
@@ -479,7 +466,7 @@ can be tried. */
 
 typedef struct retry_item {
   struct retry_item *next;        /* for chaining */
-  uschar *key;                    /* string identifying host/address/message */
+  const uschar *key;              /* string identifying host/address/message */
   int     basic_errno;            /* error code for this destination */
   int     more_errno;             /* additional error information */
   uschar *message;                /* local error message */
@@ -525,7 +512,7 @@ typedef struct address_item_propagated {
   uschar *address_data;           /* arbitrary data to keep with the address */
   uschar *domain_data;            /* from "domains" lookup */
   uschar *localpart_data;         /* from "local_parts" lookup */
-  uschar *errors_address;         /* where to send errors (NULL => sender) */
+  const uschar *errors_address;         /* where to send errors (NULL => sender) */
   header_line *extra_headers;     /* additional headers */
   uschar *remove_headers;         /* list of those to remove */
   void   *variables;		  /* router-vasriables */
@@ -560,17 +547,18 @@ typedef struct address_item {
   reply_item *reply;              /* data for autoreply */
   retry_item *retries;            /* chain of retry information */
 
-  uschar *address;                /* address being delivered or routed */
+  const uschar *address;                /* address being delivered or routed */
   uschar *unique;                 /* used for disambiguating */
-  uschar *cc_local_part;          /* caseful local part */
-  uschar *lc_local_part;          /* lowercased local part */
-  uschar *local_part;             /* points to cc or lc version */
-  uschar *prefix;                 /* stripped prefix of local part */
-  uschar *prefix_v;		  /*  variable part of above */
-  uschar *suffix;                 /* stripped suffix of local part */
-  uschar *suffix_v;		  /*  variable part of above */
+  const uschar *cc_local_part;    /* caseful local part */
+  const uschar *lc_local_part;    /* lowercased local part */
+  const uschar *local_part;       /* points to cc or lc version */
+  const uschar *prefix;           /* stripped prefix of local part */
+  const uschar *prefix_v;	  /*  variable part of above */
+  const uschar *suffix;           /* stripped suffix of local part */
+  const uschar *suffix_v;	  /*  variable part of above */
   const uschar *domain;           /* working domain (lower cased) */
 
+  const uschar *return_path;	  /* mailfrom, for logging */
   uschar *address_retry_key;      /* retry key including full address */
   uschar *domain_retry_key;       /* retry key for domain only */
 
@@ -579,11 +567,16 @@ typedef struct address_item {
   uschar *message;                /* error message */
   uschar *user_message;           /* error message that can be sent over SMTP
                                      or quoted in bounce message */
-  uschar *onetime_parent;         /* saved original parent for onetime */
+  const uschar *onetime_parent;         /* saved original parent for onetime */
   uschar **pipe_expandn;          /* numeric expansions for pipe from filter */
   uschar *return_filename;        /* name of return file */
   uschar *self_hostname;          /* after self=pass */
   uschar *shadow_message;         /* info about shadow transporting */
+
+  uid_t   uid;                    /* uid for transporting */
+  gid_t   gid;                    /* gid for transporting */
+
+  gstring *protocol_sequence;	  /* smtp session start sequence */
 
 #ifndef DISABLE_TLS
   const uschar *tlsver;           /* version used for transport */
@@ -607,9 +600,9 @@ typedef struct address_item {
   int     dsn_flags;              /* DSN flags */
   int     dsn_aware;              /* DSN aware flag */
 
-  uid_t   uid;                    /* uid for transporting */
-  gid_t   gid;                    /* gid for transporting */
-
+#ifndef DISABLE_DKIM
+  const uschar * dkim_used;	  /* DKIM info, or NULL */
+#endif
   				  /* flags */
   struct {
     BOOL af_allow_file:1;		/* allow file in generated address */
@@ -762,7 +755,7 @@ to close. */
 
 typedef struct search_cache {
   void   *handle;                 /* lookup handle, or NULL if closed */
-  int search_type;                /* search type */
+  const lookup_info * li;	  /* info struct for search type */
   tree_node *up;                  /* LRU up pointer */
   tree_node *down;                /* LRU down pointer */
   tree_node *item_cache;          /* tree of cached results */
@@ -837,7 +830,7 @@ typedef struct {
   BOOL			have_lbserver:1;	/* host_lbserver is valid */
 
 #ifdef SUPPORT_DANE
-  BOOL dane:1;			/* connection must do dane */
+  BOOL dane:1;				/* TLSA says connection must do dane */
   dns_answer		tlsa_dnsa;	/* strictly, this should use tainted mem */
 #endif
 } smtp_connect_args;
@@ -888,6 +881,16 @@ typedef struct redirect_block {
   BOOL    check_owner;            /* TRUE, FALSE, or TRUE_UNSET */
   BOOL    check_group;            /* TRUE, FALSE, or TRUE_UNSET */
 } redirect_block;
+
+/* Sieve control data */
+
+typedef struct sieve_block {
+  const uschar * inbox;
+  const uschar * enotify_mailto_owner;
+  const uschar * subaddress;
+  const uschar * useraddress;
+  const uschar * vacation_dir;
+} sieve_block;
 
 /* Structure for passing arguments to check_host() */
 
@@ -957,4 +960,96 @@ struct ob_dkim {
 #endif
 };
 
+
+/* per-queue-runner info */
+typedef struct qrunner {
+  struct qrunner * next;	/* list sorted by next tick */
+
+  uschar *	name;		/* NULL for the default queue */
+  unsigned	interval;	/* tick rate, seconds. Zero for a one-time run */
+  time_t	next_tick;	/* next run should, or should have, start(ed) */
+  unsigned	run_max;	/* concurrent queue runner limit */
+  unsigned	run_count;	/* current runners */
+
+  BOOL queue_run_force :1;
+  BOOL deliver_force_thaw :1;
+  BOOL queue_run_first_delivery :1;
+  BOOL queue_run_local :1;
+  BOOL queue_2stage :1;
+} qrunner;
+
+
+/* Types of variable table entry */
+
+enum vtypes {
+  vtype_int,            /* value is address of int */
+  vtype_filter_int,     /* ditto, but recognized only when filtering */
+  vtype_ino,            /* value is address of ino_t (not always an int) */
+  vtype_uid,            /* value is address of uid_t (not always an int) */
+  vtype_gid,            /* value is address of gid_t (not always an int) */
+  vtype_bool,           /* value is address of bool */
+  vtype_stringptr,      /* value is address of pointer to string */
+  vtype_msgbody,        /* as stringptr, but read when first required */
+  vtype_msgbody_end,    /* ditto, the end of the message */
+  vtype_msgheaders,     /* the message's headers, processed */
+  vtype_msgheaders_raw, /* the message's headers, unprocessed */
+  vtype_localpart,      /* extract local part from string */
+  vtype_domain,         /* extract domain from string */
+  vtype_string_func,	/* value is string returned by given function */
+  vtype_todbsdin,       /* value not used; generate BSD inbox tod */
+  vtype_tode,           /* value not used; generate tod in epoch format */
+  vtype_todel,          /* value not used; generate tod in epoch/usec format */
+  vtype_todf,           /* value not used; generate full tod */
+  vtype_todl,           /* value not used; generate log tod */
+  vtype_todlf,          /* value not used; generate log file datestamp tod */
+  vtype_todzone,        /* value not used; generate time zone only */
+  vtype_todzulu,        /* value not used; generate zulu tod */
+  vtype_reply,          /* value not used; get reply from headers */
+  vtype_pid,            /* value not used; result is pid */
+  vtype_host_lookup,    /* value not used; get host name */
+  vtype_load_avg,       /* value not used; result is int from os_getloadavg */
+  vtype_pspace,         /* partition space; value is T/F for spool/log */
+  vtype_pinodes,        /* partition inodes; value is T/F for spool/log */
+  vtype_cert,		/* SSL certificate */
+#ifndef DISABLE_DKIM
+  vtype_dkim,           /* Lookup of value in DKIM signature */
+#endif
+  vtype_module,		/* variable lives in a module; value is module name */
+};
+
+/* Type for main variable table */
+
+typedef struct {
+  const char *name;
+  enum vtypes type;
+  void       *value;
+} var_entry;
+
+
+
+/* dynamic-load module info */
+
+typedef struct misc_module_info {
+  struct misc_module_info * next;
+
+  const uschar * name;
+  unsigned	dyn_magic;
+  BOOL		(*init)(void *);	/* arg is the misc_module_info ptr */
+  gstring *	(*lib_vers_report)(gstring *);	/* underlying library */
+  int		(*conn_init)(const uschar *, const uschar *);
+  void		(*smtp_reset)(void);
+  int		(*msg_init)(void);
+  gstring *	(*authres)(gstring *);
+
+  void *	options;
+  unsigned	options_count;
+  void *	functions;
+  unsigned	functions_count;
+  void *	variables;
+  unsigned	variables_count;
+} misc_module_info;
+
+#define MISC_MODULE_MAGIC	0x4d4d4d31	/* MMM1 */
+
+#endif	/* whole file */
 /* End of structs.h */

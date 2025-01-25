@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2010 - 2022 */
+/* Copyright (c) The Exim Maintainers 2010 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "exim.h"
 
@@ -35,7 +36,7 @@ Returns:    panic on failure if panic is set; otherwise return FALSE;
 */
 
 BOOL
-directory_make(const uschar *parent, const uschar *name,
+directory_make(const uschar * parent, const uschar * name,
                int mode, BOOL panic)
 {
 BOOL use_chown = parent == spool_directory && geteuid() == root_uid;
@@ -87,7 +88,7 @@ while (c && *p)
 return TRUE;
 
 bad:
-  if (panic) log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  if (panic) log_write_die(0, LOG_MAIN,
     "Failed to %s directory \"%s\": %s\n", p, path, exim_errstr(errno));
   return FALSE;
 }

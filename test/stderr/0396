@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -20,9 +21,13 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<x@y>
-processing "accept" (TESTSUITE/test-config 12)
+processing inline ACL "accept"
 check domains = +fail
-expansion of "${if eq {x}{y}{}fail}" forced failure: assume not in this list
+y in "+fail"?
+ list element: +fail
+  start sublist fail
+   expansion of "${if eq {x}{y}{}fail}" forced failure: assume not in this list
+  end sublist fail
 y in "+fail"? no (end of list)
 accept: condition test failed in inline ACL
 end of inline ACL: implicit DENY
@@ -33,6 +38,6 @@ created log directory TESTSUITE/spool/log
 SMTP<< quit
 SMTP>> 221 the.local.host.name closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

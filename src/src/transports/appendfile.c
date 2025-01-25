@@ -2,12 +2,15 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim maintainers 2020 - 2022 */
+/* Copyright (c) The Exim maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
+
+#ifdef TRANSPORT_APPENDFILE	/* Remainder of file */
 #include "appendfile.h"
 
 #ifdef SUPPORT_MAILDIR
@@ -104,7 +107,7 @@ int appendfile_transport_options_count =
 
 /* Dummy values */
 appendfile_transport_options_block appendfile_transport_option_defaults = {0};
-void appendfile_transport_init(transport_instance *tblock) {}
+void appendfile_transport_init(driver_instance *tblock) {}
 BOOL appendfile_transport_entry(transport_instance *tblock, address_item *addr) {return FALSE;}
 
 #else	/*!MACRO_PREDEF*/
@@ -152,7 +155,6 @@ static const char *mailbox_formats[] = {
   (!ob->quota_warn_threshold_is_percent || ob->quota_value > 0))
 
 
-
 /*************************************************
 *              Setup entry point                 *
 *************************************************/
@@ -178,18 +180,24 @@ static int
 appendfile_transport_setup(transport_instance *tblock, address_item *addrlist,
   transport_feedback *dummy, uid_t uid, gid_t gid, uschar **errmsg)
 {
-appendfile_transport_options_block *ob =
-  (appendfile_transport_options_block *)(tblock->options_block);
-uschar *q = ob->quota;
+appendfile_transport_options_block * ob = tblock->drinst.options_block;
+const uschar * trname = tblock->drinst.name;
+uschar * q;
 double default_value = 0.0;
 
 if (ob->expand_maildir_use_size_file)
-	ob->maildir_use_size_file = expand_check_condition(ob->expand_maildir_use_size_file,
-		US"`maildir_use_size_file` in transport", tblock->name);
+  {
+  GET_OPTION("maildir_use_size_file");
+  ob->maildir_use_size_file =
+    expand_check_condition(ob->expand_maildir_use_size_file,
+		US"`maildir_use_size_file` in transport", trname);
+  }
 
 /* Loop for quota, quota_filecount, quota_warn_threshold, mailbox_size,
 mailbox_filecount */
 
+GET_OPTION("quota");
+q = ob->quota;
 for (int i = 0; i < 5; i++)
   {
   double d = default_value;
@@ -203,7 +211,7 @@ for (int i = 0; i < 5; i++)
     if (!(s =  expand_string(q)))
       {
       *errmsg = string_sprintf("Expansion of \"%s\" in %s transport failed: "
-        "%s", q, tblock->name, expand_string_message);
+        "%s", q, trname, expand_string_message);
       return f.search_find_defer ? DEFER : FAIL;
       }
 
@@ -223,7 +231,7 @@ for (int i = 0; i < 5; i++)
       else if ((int)d < 0 || (int)d > 100)
         {
         *errmsg = string_sprintf("Invalid quota_warn_threshold percentage (%d)"
-          " for %s transport", (int)d, tblock->name);
+          " for %s transport", (int)d, trname);
         return FAIL;
         }
       ob->quota_warn_threshold_is_percent = TRUE;
@@ -244,7 +252,7 @@ for (int i = 0; i < 5; i++)
     if (*rest)
       {
       *errmsg = string_sprintf("Malformed value \"%s\" (expansion of \"%s\") "
-        "in %s transport", s, q, tblock->name);
+        "in %s transport", s, q, trname);
       return FAIL;
       }
     }
@@ -258,6 +266,7 @@ for (int i = 0; i < 5; i++)
 	which = US"quota";
       ob->quota_value = (off_t)d;
       ob->quota_no_check = no_check;
+      GET_OPTION("quota_filecount");
       q = ob->quota_filecount;
       break;
 
@@ -266,6 +275,7 @@ for (int i = 0; i < 5; i++)
 	which = US"quota_filecount";
       ob->quota_filecount_value = (int)d;
       ob->quota_filecount_no_check = no_check;
+      GET_OPTION("quota_warn_threshold");
       q = ob->quota_warn_threshold;
       break;
 
@@ -273,6 +283,7 @@ for (int i = 0; i < 5; i++)
       if (d >= 2.0*1024.0*1024.0*1024.0 && sizeof(off_t) <= 4)
 	  which = US"quota_warn_threshold";
       ob->quota_warn_threshold_value = (off_t)d;
+      GET_OPTION("mailbox_size");
       q = ob->mailbox_size_string;
       default_value = -1.0;
       break;
@@ -281,6 +292,7 @@ for (int i = 0; i < 5; i++)
       if (d >= 2.0*1024.0*1024.0*1024.0 && sizeof(off_t) <= 4)
 	which = US"mailbox_size";;
       ob->mailbox_size_value = (off_t)d;
+      GET_OPTION("mailbox_filecount");
       q = ob->mailbox_filecount_string;
       break;
 
@@ -294,7 +306,7 @@ for (int i = 0; i < 5; i++)
   if (which)
     {
     *errmsg = string_sprintf("%s value %.10g is too large (overflow) in "
-      "%s transport", which, d, tblock->name);
+      "%s transport", which, d, trname);
     return FAIL;
     }
   }
@@ -313,10 +325,11 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-appendfile_transport_init(transport_instance *tblock)
+appendfile_transport_init(driver_instance * t)
 {
-appendfile_transport_options_block *ob =
-  (appendfile_transport_options_block *)(tblock->options_block);
+transport_instance * tblock = (transport_instance *)t;
+appendfile_transport_options_block * ob = tblock->drinst.options_block;
+const uschar * trname = tblock->drinst.name;
 uschar * s;
 
 /* Set up the setup entry point, to be called in the privileged state */
@@ -330,8 +343,8 @@ if (ob->lock_retries == 0) ob->lock_retries = 1;
 /* Only one of a file name or directory name must be given. */
 
 if (ob->filename && ob->dirname)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-  "only one of \"file\" or \"directory\" can be specified", tblock->name);
+  log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+  "only one of \"file\" or \"directory\" can be specified", trname);
 
 /* If a file name was specified, neither quota_filecount nor quota_directory
 must be given. */
@@ -339,11 +352,11 @@ must be given. */
 if (ob->filename)
   {
   if (ob->quota_filecount)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-      "quota_filecount must not be set without \"directory\"", tblock->name);
+    log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+      "quota_filecount must not be set without \"directory\"", trname);
   if (ob->quota_directory)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-      "quota_directory must not be set without \"directory\"", tblock->name);
+    log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+      "quota_directory must not be set without \"directory\"", trname);
   }
 
 /* The default locking depends on whether MBX is set or not. Change the
@@ -357,9 +370,9 @@ requested, the default for fcntl is FALSE. */
 if (ob->use_flock)
   {
   #ifdef NO_FLOCK
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
     "flock() support was not available in the operating system when this "
-    "binary was built", tblock->name);
+    "binary was built", trname);
   #endif  /* NO_FLOCK */
   if (!ob->set_use_fcntl) ob->use_fcntl = FALSE;
   }
@@ -382,8 +395,8 @@ if (ob->mbx_format)
 #endif  /* SUPPORT_MBX */
 
 if (!ob->use_fcntl && !ob->use_flock && !ob->use_lockfile && !ob->use_mbx_lock)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-    "no locking configured", tblock->name);
+  log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+    "no locking configured", trname);
 
 /* Unset timeouts for non-used locking types */
 
@@ -397,21 +410,21 @@ be set. */
 if (ob->dirname)
   {
   if (ob->maildir_format && ob->mailstore_format)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-      "only one of maildir and mailstore may be specified", tblock->name);
-  if (ob->quota_filecount != NULL && ob->quota == NULL)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-      "quota must be set if quota_filecount is set", tblock->name);
-  if (ob->quota_directory != NULL && ob->quota == NULL)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s transport:\n  "
-      "quota must be set if quota_directory is set", tblock->name);
+    log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+      "only one of maildir and mailstore may be specified", trname);
+  if (ob->quota_filecount != NULL && !ob->quota)
+    log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+      "quota must be set if quota_filecount is set", trname);
+  if (ob->quota_directory != NULL && !ob->quota)
+    log_write_die(0, LOG_CONFIG_FOR, "%s transport:\n  "
+      "quota must be set if quota_directory is set", trname);
   }
 
 /* If a fixed uid field is set, then a gid field must also be set. */
 
 if (tblock->uid_set && !tblock->gid_set && !tblock->expand_gid)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
-    "user set without group for the %s transport", tblock->name);
+  log_write_die(0, LOG_CONFIG,
+    "user set without group for the %s transport", trname);
 
 /* If "create_file" is set, check that a valid option is given, and set the
 integer variable. */
@@ -423,9 +436,9 @@ if ((s = ob->create_file_string ) && *s)
   else if (*s == '/' || Ustrcmp(s, "belowhome") == 0)	val = create_belowhome;
   else if (Ustrcmp(s, "inhome") == 0)			val = create_inhome;
   else
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "invalid value given for \"create_file\" for the %s transport: '%s'",
-      tblock->name, s);
+      trname, s);
   ob->create_file = val;
   }
 
@@ -501,7 +514,7 @@ Returns:     nothing
 */
 
 static void
-notify_comsat(uschar *user, off_t offset)
+notify_comsat(const uschar * user, off_t offset)
 {
 struct servent *sp;
 host_item host;
@@ -582,12 +595,12 @@ Returns:       pointer to the required transport, or NULL
 transport_instance *
 check_file_format(int cfd, transport_instance *tblock, address_item *addr)
 {
-const uschar *format =
-  ((appendfile_transport_options_block *)(tblock->options_block))->file_format;
+appendfile_transport_options_block * ob = tblock->drinst.options_block;
+const uschar * format = ob->file_format;
 uschar data[256];
 int len = read(cfd, data, sizeof(data));
 int sep = 0;
-uschar *s;
+const uschar * s;
 
 DEBUG(D_transport) debug_printf("checking file format\n");
 
@@ -606,11 +619,11 @@ while ((s = string_nextinlist(&format, &sep, big_buffer, big_buffer_size)))
 
   if (match && tp)
     {
-    for (transport_instance * tt = transports; tt; tt = tt->next)
-      if (Ustrcmp(tp, tt->name) == 0)
+    for (transport_instance * tt = transports; tt; tt = tt->drinst.next)
+      if (Ustrcmp(tp, tt->drinst.name) == 0)
         {
         DEBUG(D_transport)
-          debug_printf("file format -> %s transport\n", tt->name);
+          debug_printf("file format -> %s transport\n", tt->drinst.name);
         return tt;
         }
     addr->basic_errno = ERRNO_BADTRANSPORT;
@@ -660,13 +673,14 @@ Returns:        the sum of the sizes of the stattable files
 off_t
 check_dir_size(const uschar * dirname, int * countptr, const pcre2_code * re)
 {
-DIR *dir;
+DIR * dir;
 off_t sum = 0;
-int count = *countptr;
+int count = *countptr, lcount = REGEX_LOOPCOUNT_STORE_RESET;
+rmark reset_point = store_mark();
 
 if (!(dir = exim_opendir(dirname))) return 0;
 
-for (struct dirent *ent; ent = readdir(dir); )
+for (struct dirent * ent; ent = readdir(dir); )
   {
   uschar * path, * name = US ent->d_name;
   struct stat statbuf;
@@ -674,6 +688,11 @@ for (struct dirent *ent; ent = readdir(dir); )
   if (Ustrcmp(name, ".") == 0 || Ustrcmp(name, "..") == 0) continue;
 
   count++;
+  if (--lcount == 0)
+    {
+    store_reset(reset_point); reset_point = store_mark();
+    lcount = REGEX_LOOPCOUNT_STORE_RESET;
+    }
 
   /* If there's a regex, try to find the size using it */
 
@@ -682,7 +701,7 @@ for (struct dirent *ent; ent = readdir(dir); )
     pcre2_match_data * md = pcre2_match_data_create(2, pcre_gen_ctx);
     int rc = pcre2_match(re, (PCRE2_SPTR)name, PCRE2_ZERO_TERMINATED,
 			  0, 0, md, pcre_gen_mtc_ctx);
-    PCRE2_SIZE * ovec = pcre2_get_ovector_pointer(md);
+    const PCRE2_SIZE * ovec = pcre2_get_ovector_pointer(md);
     if (  rc >= 0
        && (rc = pcre2_get_ovector_count(md)) >= 2)
       {
@@ -725,6 +744,7 @@ DEBUG(D_transport)
   debug_printf("check_dir_size: dir=%s sum=" OFF_T_FMT " count=%d\n", dirname,
     sum, count);
 
+store_reset(reset_point);
 *countptr = count;
 return sum;
 }
@@ -932,8 +952,8 @@ if (deliver_dir  &&  create_file != create_anywhere)
   #ifndef NO_REALPATH
   if (yield && create_file == create_belowhome)
     {
-    uschar *next;
-    uschar *rp = NULL;
+    uschar * next;
+    uschar * rp = NULL;
     for (uschar * slash = Ustrrchr(file, '/');  /* There is known to be one */
          !rp && slash > file;			/* Stop if reached beginning */
          slash = next)
@@ -957,7 +977,7 @@ if (deliver_dir  &&  create_file != create_anywhere)
       const uschar * rph = deliver_dir;
       int rlen = Ustrlen(big_buffer);
 
-      if ((rp = US realpath(CS deliver_dir, CS hdbuffer)))
+      if (realpath(CS deliver_dir, CS hdbuffer))
         {
         rph = hdbuffer;
         len = Ustrlen(rph);
@@ -1135,37 +1155,27 @@ appendfile_transport_entry(
   transport_instance *tblock,      /* data for this instantiation */
   address_item *addr)              /* address we are working on */
 {
-appendfile_transport_options_block *ob =
-  (appendfile_transport_options_block *)(tblock->options_block);
+appendfile_transport_options_block * ob = tblock->drinst.options_block;
+const uschar * trname = tblock->drinst.name;
 struct stat statbuf;
 const uschar * deliver_dir;
-uschar *fdname = NULL;
-uschar *filename = NULL;
-uschar *hitchname = NULL;
-uschar *dataname = NULL;
-uschar *lockname = NULL;
-uschar *newname = NULL;
-uschar *nametag = NULL;
-uschar *cr = US"";
-uschar *filecount_msg = US"";
-uschar *path;
+uschar * fdname = NULL, * filename = NULL;
+uschar * hitchname = NULL, * dataname = NULL;
+uschar * lockname = NULL, * newname = NULL;
+uschar * nametag = NULL, * cr = US"";
+uschar * filecount_msg = US"";
+uschar * path;
 struct utimbuf times;
 struct timeval msg_tv;
-BOOL disable_quota = FALSE;
-BOOL isdirectory = FALSE;
-BOOL isfifo = FALSE;
+BOOL disable_quota = FALSE, isdirectory = FALSE, isfifo = FALSE;
 BOOL wait_for_tick = FALSE;
 uid_t uid = geteuid();     /* See note above */
 gid_t gid = getegid();
 int mbformat;
-int mode = (addr->mode > 0) ? addr->mode : ob->mode;
-off_t saved_size = -1;
-off_t mailbox_size = ob->mailbox_size_value;
+int mode = addr->mode > 0 ? addr->mode : ob->mode;
+off_t saved_size = -1, mailbox_size = ob->mailbox_size_value;
 int mailbox_filecount = ob->mailbox_filecount_value;
-int hd = -1;
-int fd = -1;
-int yield = FAIL;
-int i;
+int hd = -1, fd = -1, yield = FAIL, i;
 
 #ifdef SUPPORT_MBX
 int save_fd = 0;
@@ -1214,13 +1224,14 @@ if (!fdname)
   {
   if (!(fdname = ob->filename))
     {
+    GET_OPTION("directory");
     fdname = ob->dirname;
     isdirectory = TRUE;
     }
   if (!fdname)
     {
     addr->message = string_sprintf("Mandatory file or directory option "
-      "missing from %s transport", tblock->name);
+      "missing from %s transport", trname);
     goto ret_panic;
     }
   }
@@ -1231,14 +1242,14 @@ if ((ob->maildir_format || ob->mailstore_format) && !isdirectory)
   {
   addr->message = string_sprintf("mail%s_format requires \"directory\" "
     "to be specified for the %s transport",
-    ob->maildir_format ? "dir" : "store", tblock->name);
+    ob->maildir_format ? "dir" : "store", trname);
   goto ret_panic;
   }
 
 if (!(path = expand_string(fdname)))
   {
   addr->message = string_sprintf("Expansion of \"%s\" (file or directory "
-    "name for %s transport) failed: %s", fdname, tblock->name,
+    "name for %s transport) failed: %s", fdname, trname,
     expand_string_message);
   goto ret_panic;
   }
@@ -1313,7 +1324,7 @@ if (f.dont_deliver)
   {
   DEBUG(D_transport)
     debug_printf("*** delivery by %s transport bypassed by -N option\n",
-      tblock->name);
+      trname);
   addr->transport_return = OK;
   return FALSE;
   }
@@ -1348,7 +1359,7 @@ if (!isdirectory)
      && ob->create_file == create_belowhome)
     if (is_tainted(path))
       {
-      DEBUG(D_transport) debug_printf("de-tainting path '%s'\n", path);
+      DEBUG(D_transport) debug_printf("below-home: de-tainting path '%s'\n", path);
       path = string_copy_taint(path, GET_UNTAINTED);
       }
 
@@ -1370,7 +1381,7 @@ if (!isdirectory)
       addr->message =
         string_sprintf("failed to create directories for %s: %s", path,
           exim_errstr(errno));
-      DEBUG(D_transport) debug_printf("%s transport: %s\n", tblock->name, path);
+      DEBUG(D_transport) debug_printf("%s transport: %s\n", trname, path);
       return FALSE;
       }
     }
@@ -1398,11 +1409,12 @@ if (!isdirectory)
         {
         if (tt)
           {
+	  transport_info * ti = tt->drinst.info;
           set_process_info("delivering %s to %s using %s", message_id,
-            addr->local_part, tt->name);
+            addr->local_part, tt->drinst.name);
           debug_print_string(tt->debug_string);
           addr->transport = tt;
-          (tt->info->code)(tt, addr);
+          (ti->code)(tt, addr);
           }
         return FALSE;
         }
@@ -2187,7 +2199,7 @@ else
   if (is_tainted(path))
     if (ob->create_file == create_belowhome)
       {
-      DEBUG(D_transport) debug_printf("de-tainting path '%s'\n", path);
+      DEBUG(D_transport) debug_printf("below-home: de-tainting path '%s'\n", path);
       path = string_copy_taint(path, GET_UNTAINTED);
       }
     else
@@ -2227,13 +2239,14 @@ else
 
     /* Use an explicitly configured directory if set */
 
+    GET_OPTION("quota_directory");
     if (ob->quota_directory)
       {
       if (!(check_path = expand_string(ob->quota_directory)))
         {
         addr->message = string_sprintf("Expansion of \"%s\" (quota_directory "
          "name for %s transport) failed: %s", ob->quota_directory,
-          tblock->name, expand_string_message);
+          trname, expand_string_message);
         goto ret_panic;
         }
 
@@ -2258,8 +2271,8 @@ else
       struct stat statbuf;
       if (Ustat(string_sprintf("%s/maildirfolder", path), &statbuf) >= 0)
         {
-        uschar *new_check_path = string_copy(check_path);
-        uschar *slash = Ustrrchr(new_check_path, '/');
+        uschar * new_check_path = string_copy(check_path);
+        uschar * slash = Ustrrchr(new_check_path, '/');
         if (slash)
           {
           if (!slash[1])
@@ -2424,6 +2437,7 @@ else
     DEBUG(D_transport)
       debug_printf("delivering in maildir format in %s\n", path);
 
+    GET_OPTION("maildir_tag");
     nametag = ob->maildir_tag;
 
     /* Check that nametag expands successfully; a hard failure causes a panic
@@ -2433,7 +2447,7 @@ else
     if (nametag && !expand_string(nametag) && !f.expand_string_forcedfail)
       {
       addr->message = string_sprintf("Expansion of \"%s\" (maildir_tag "
-        "for %s transport) failed: %s", nametag, tblock->name,
+        "for %s transport) failed: %s", nametag, trname,
         expand_string_message);
       goto ret_panic;
       }
@@ -2511,9 +2525,9 @@ else
 
   else
     {
-    FILE *env_file;
+    FILE * env_file;
     mailstore_basename = string_sprintf("%s/%s-%s", path, message_id,
-      string_base62((long int)getpid()));
+      string_base62_64((long int)getpid()));
 
     DEBUG(D_transport)
       debug_printf("delivering in mailstore format in %s\n", path);
@@ -2552,7 +2566,7 @@ else
       {
       addr->basic_errno = errno;
       addr->message = string_sprintf("fdopen of %s ("
-        "for %s transport) failed", filename, tblock->name);
+        "for %s transport) failed", filename, trname);
       (void)close(fd);
       Uunlink(filename);
       goto ret_panic;
@@ -2560,16 +2574,17 @@ else
 
     /* Write the envelope file, then close it. */
 
+    GET_OPTION("mailstore_prefix");
     if (ob->mailstore_prefix)
       {
-      uschar *s = expand_string(ob->mailstore_prefix);
+      const uschar * s = expand_string(ob->mailstore_prefix);
       if (!s)
         {
         if (!f.expand_string_forcedfail)
           {
           addr->message = string_sprintf("Expansion of \"%s\" (mailstore "
             "prefix for %s transport) failed: %s", ob->mailstore_prefix,
-            tblock->name, expand_string_message);
+            trname, expand_string_message);
           (void)fclose(env_file);
           Uunlink(filename);
           goto ret_panic;
@@ -2588,16 +2603,17 @@ else
     for (address_item * taddr = addr; taddr; taddr = taddr->next)
       fprintf(env_file, "%s@%s\n", taddr->local_part, taddr->domain);
 
+    GET_OPTION("mailstore_suffix");
     if (ob->mailstore_suffix)
       {
-      uschar *s = expand_string(ob->mailstore_suffix);
+      const uschar * s = expand_string(ob->mailstore_suffix);
       if (!s)
         {
         if (!f.expand_string_forcedfail)
           {
           addr->message = string_sprintf("Expansion of \"%s\" (mailstore "
             "suffix for %s transport) failed: %s", ob->mailstore_suffix,
-            tblock->name, expand_string_message);
+            trname, expand_string_message);
           (void)fclose(env_file);
           Uunlink(filename);
           goto ret_panic;
@@ -2750,18 +2766,21 @@ transport_newlines = 0;
 
 /* Write any configured prefix text first */
 
-if (yield == OK && ob->message_prefix && *ob->message_prefix)
+if (yield == OK)
   {
-  uschar *prefix = expand_string(ob->message_prefix);
-  if (!prefix)
-    {
-    errno = ERRNO_EXPANDFAIL;
-    addr->transport_return = PANIC;
-    addr->message = string_sprintf("Expansion of \"%s\" (prefix for %s "
-      "transport) failed", ob->message_prefix, tblock->name);
-    yield = DEFER;
-    }
-  else if (!transport_write_string(fd, "%s", prefix)) yield = DEFER;
+  uschar * prefix = ob->message_prefix;
+  GET_OPTION("message_prefix");
+  if (prefix && *prefix)
+    if (!(prefix = expand_string(prefix)))
+      {
+      errno = ERRNO_EXPANDFAIL;
+      addr->transport_return = PANIC;
+      addr->message = string_sprintf("Expansion of \"%s\" (prefix for %s "
+	"transport) failed", ob->message_prefix, trname);
+      yield = DEFER;
+      }
+    else if (!transport_write_string(fd, "%s", prefix))
+      yield = DEFER;
   }
 
 /* If the use_bsmtp option is on, we need to write SMTP prefix information. The
@@ -2813,18 +2832,21 @@ if (yield == OK)
 
 /* Now a configured suffix. */
 
-if (yield == OK && ob->message_suffix && *ob->message_suffix)
+if (yield == OK)
   {
-  uschar *suffix = expand_string(ob->message_suffix);
-  if (!suffix)
-    {
-    errno = ERRNO_EXPANDFAIL;
-    addr->transport_return = PANIC;
-    addr->message = string_sprintf("Expansion of \"%s\" (suffix for %s "
-      "transport) failed", ob->message_suffix, tblock->name);
-    yield = DEFER;
-    }
-  else if (!transport_write_string(fd, "%s", suffix)) yield = DEFER;
+  uschar * suffix = ob->message_suffix;
+  GET_OPTION("message_suffix");
+  if (suffix && *suffix)
+    if (!(suffix = expand_string(suffix)))
+      {
+      errno = ERRNO_EXPANDFAIL;
+      addr->transport_return = PANIC;
+      addr->message = string_sprintf("Expansion of \"%s\" (suffix for %s "
+	"transport) failed", ob->message_suffix, trname);
+      yield = DEFER;
+      }
+    else if (!transport_write_string(fd, "%s", suffix))
+      yield = DEFER;
   }
 
 /* If batch smtp, write the terminating dot. */
@@ -3114,8 +3136,8 @@ else
 
       if (!newname)
         {
-        uschar *renameleaf;
-        uschar *old_renameleaf = US"";
+        uschar * renameleaf;
+        const uschar * old_renameleaf = US"";
 
         for (int i = 0; ; sleep(1), i++)
           {
@@ -3128,7 +3150,7 @@ else
             addr->transport_return = PANIC;
             addr->message = string_sprintf("Expansion of \"%s\" "
               "(directory_file for %s transport) failed: %s",
-              ob->dirfilename, tblock->name, expand_string_message);
+              ob->dirfilename, trname, expand_string_message);
             goto RETURN;
             }
 
@@ -3291,11 +3313,37 @@ return FALSE;
 
 tainted_ret_panic:
   addr->message = string_sprintf("Tainted '%s' (file or directory "
-      "name for %s transport) not permitted", path, tblock->name);
+      "name for %s transport) not permitted", path, trname);
 ret_panic:
   addr->transport_return = PANIC;
   return FALSE;
 }
 
+
+
+
+# ifdef DYNLOOKUP
+#  define appendfile_transport_info _transport_info
+# endif
+
+transport_info appendfile_transport_info = {
+.drinfo = {
+  .driver_name =	US"appendfile",
+  .options =		appendfile_transport_options,
+  .options_count =	&appendfile_transport_options_count,
+  .options_block =	&appendfile_transport_option_defaults,	/* private options defaults */
+  .options_len =	sizeof(appendfile_transport_options_block),
+  .init =		appendfile_transport_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		TRANSPORT_MAGIC,
+# endif
+  },
+.code =		appendfile_transport_entry,
+.tidyup =	NULL,
+.closedown =	NULL,
+.local =	TRUE
+};
+
 #endif	/*!MACRO_PREDEF*/
+#endif	/*TRANSPORT_APPENDFILE*/
 /* End of transport/appendfile.c */

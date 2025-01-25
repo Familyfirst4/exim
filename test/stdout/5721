@@ -1,18 +1,36 @@
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 Attempting to start TLS
 Succeeded in starting TLS
 ??? 220
-<<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+<<< 220 my banner
 >>> quit
 ??? 221
 <<< 221 myhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 Attempting to start TLS
 Succeeded in starting TLS
 ??? 220
-<<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+<<< 220 my banner
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D2 ... connected
+Attempting to start TLS
+Failed to start TLS
+???*
+Expected EOF read
+End of script
+Connecting to 127.0.0.1 port PORT_D3 ... connected
+Attempting to start TLS
+Failed to start TLS
+???*
+Expected EOF read
+End of script
+Connecting to 127.0.0.1 port PORT_D4 ... connected
+Attempting to start TLS
+Failed to start TLS
+???*
+Expected EOF read
+End of script
+Connecting to 127.0.0.1 port PORT_D ... connected
 +++ 1
 End of script

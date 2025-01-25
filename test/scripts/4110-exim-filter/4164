@@ -1,0 +1,10 @@
+# forbid_exim_filter
+exim -odi exim-filter@test.ex
+****
+exim -DFORBID=forbid_sieve_filter -odi exim-filter@test.ex
+****
+exim -DFORBID=forbid_exim_filter -odi exim-filter@test.ex
+****
+exim -DALLOW= -odi exim-filter@test.ex
+****
+no_msglog_check

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2022 */
+/* Copyright (c) The Exim Maintainers 2022 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /*************************************************
@@ -42,6 +43,10 @@ normally called independently. */
 #include <pwd.h>
 #include <grp.h>
 
+typedef int BOOL;
+#define TRUE 1
+#define FALSE 0
+
 typedef struct {
   const char *name;
   int *flag;
@@ -52,7 +57,7 @@ typedef struct {
   char *data;
 } save_item;
 
-static const char *db_opts[] = { "", "USE_DB", "USE_GDBM", "USE_TDB", "USE_NDBM" };
+static const char *db_opts[] = { "", "USE_DB", "USE_GDBM", "USE_TDB", "USE_NDBM", "USE_SQLITE" };
 
 static int have_ipv6 = 0;
 static int have_iconv = 0;
@@ -102,27 +107,9 @@ if (!OK)
 int
 main(int argc, char **argv)
 {
-off_t test_off_t = 0;
-time_t test_time_t = 0;
-ino_t test_ino_t;
-#if ! (__STDC_VERSION__ >= 199901L)
-size_t test_size_t = 0;
-ssize_t test_ssize_t = 0;
-unsigned long test_ulong_t = 0L;
-unsigned int test_uint_t = 0;
-#endif
-long test_long_t = 0;
-long long test_longlong_t = 0;
-int test_int_t = 0;
-FILE *base;
-FILE *new;
-int last_initial = 'A';
-int linecount = 0;
-int have_auth = 0;
-int in_local_makefile = 0;
-int use_which_db = 0;
-int use_which_db_in_local_makefile = 0;
-int support_crypteq = 0;
+FILE * base, * new;
+int last_initial = 'A', linecount = 0, have_auth = 0, in_local_makefile = 0;
+int use_which_db = 0, use_which_db_in_local_makefile = 0, support_crypteq = 0;
 char buffer[1024];
 
 if (argc != 1)
@@ -156,14 +143,14 @@ printing long long variables, and there will be support for the long long type.
 This assumption is known to be OK for the common operating systems. */
 
 fprintf(new, "#ifndef OFF_T_FMT\n");
-if (sizeof(test_off_t) > sizeof(test_long_t))
+if (sizeof(off_t) > sizeof(long))
   fprintf(new, "# define OFF_T_FMT  \"%%lld\"\n");
 else
   fprintf(new, "# define OFF_T_FMT  \"%%ld\"\n");
 fprintf(new, "#endif\n\n");
 
 fprintf(new, "#ifndef LONGLONG_T\n");
-if (sizeof(test_longlong_t) > sizeof(test_long_t))
+if (sizeof(long long) > sizeof(long))
   fprintf(new, "# define LONGLONG_T long long int\n");
 else
   fprintf(new, "# define LONGLONG_T long int\n");
@@ -175,7 +162,7 @@ length is 4 or less, we can leave LONGLONG_T to whatever was defined above for
 off_t. */
 
 fprintf(new, "#ifndef TIME_T_FMT\n");
-if (sizeof(test_time_t) > sizeof(test_long_t))
+if (sizeof(time_t) > sizeof(long))
   {
   fprintf(new, "# define TIME_T_FMT  \"%%lld\"\n");
   fprintf(new, "# undef  LONGLONG_T\n");
@@ -186,7 +173,7 @@ else
 fprintf(new, "#endif\n\n");
 
 fprintf(new, "#ifndef INO_T_FMT\n");
-if (sizeof(test_ino_t) > sizeof(test_long_t))
+if (sizeof(ino_t) > sizeof(long))
   fprintf(new, "# define INO_T_FMT  \"%%llu\"\n");
 else
   fprintf(new, "# define INO_T_FMT  \"%%lu\"\n");
@@ -205,16 +192,16 @@ it then. */
 fprintf(new, "#define SIZE_T_FMT  \"%%zu\"\n");
 fprintf(new, "#define SSIZE_T_FMT  \"%%zd\"\n");
 #else
-if (sizeof(test_size_t) > sizeof (test_ulong_t))
+if (sizeof(size_t) > sizeof (unsigned long))
   fprintf(new, "#define SIZE_T_FMT  \"%%llu\"\n");
-else if (sizeof(test_size_t) > sizeof (test_uint_t))
+else if (sizeof(size_t) > sizeof (unsigned int))
   fprintf(new, "#define SIZE_T_FMT  \"%%lu\"\n");
 else
   fprintf(new, "#define SIZE_T_FMT  \"%%u\"\n");
 
-if (sizeof(test_ssize_t) > sizeof(test_long_t))
+if (sizeof(ssize_t) > sizeof(long))
   fprintf(new, "#define SSIZE_T_FMT  \"%%lld\"\n");
-else if (sizeof(test_ssize_t) > sizeof(test_int_t))
+else if (sizeof(ssize_t) > sizeof(int))
   fprintf(new, "#define SSIZE_T_FMT  \"%%ld\"\n");
 else
   fprintf(new, "#define SSIZE_T_FMT  \"%%d\"\n");
@@ -265,7 +252,7 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
         {
         if (use_which_db_in_local_makefile)
           {
-          printf("*** Only one of USE_DB, USE_GDBM, or USE_TDB should be "
+          printf("*** Only one of USE_DB, USE_GDBM, USE_SQLITE or USE_TDB should be "
             "defined in Local/Makefile\n");
           exit(1);
           }
@@ -407,18 +394,16 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
     {
     uid_t uid = 0;
     gid_t gid = 0;
-    int gid_set = 0;
-    int uid_not_set = 0;
-    char *username = NULL;
-    char *groupname = NULL;
-    char *s;
-    char *user = getenv("EXIM_USER");
-    char *group = getenv("EXIM_GROUP");
+    BOOL gid_set = FALSE;
+    BOOL uid_not_set = FALSE;
+    char * username = NULL, * groupname = NULL, * s;
+    char * user = getenv("EXIM_USER");
+    char * group = getenv("EXIM_GROUP");
 
-    if (user == NULL) user = getenv("EXIM_UID");
-    if (group == NULL) group = getenv("EXIM_GID");
+    if (!user) user = getenv("EXIM_UID");
+    if (!group) group = getenv("EXIM_GID");
 
-    if (user == NULL)
+    if (!user)
       {
       printf("\n*** EXIM_USER has not been defined in any of the Makefiles in "
         "the\n    \"Local\" directory. Please review your build-time "
@@ -435,8 +420,7 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
       return 1;
       }
 
-    for (s = user; *s != 0; s++)
-      {
+    for (s = user; *s; s++)
       if (iscntrl((unsigned char)(*s)))
         {
         printf("\n*** EXIM_USER contains the control character 0x%02X in one "
@@ -444,14 +428,11 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
           "build-time\n    configuration.\n\n", *s);
         return 1;
         }
-      }
 
     /* Numeric uid given */
 
     if (user[strspn(user, "0123456789")] == 0)
-      {
       uid = (uid_t)atoi(user);
-      }
 
     /* User name given. Normally, we look up the uid right away. However,
     people building binary distributions sometimes want to retain the name till
@@ -462,14 +443,14 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
       user += 4;
       while (isspace(*user)) user++;
       username = user;
-      gid_set = 1;
-      uid_not_set = 1;
+      gid_set = TRUE;
+      uid_not_set = TRUE;
       }
 
     else
       {
-      struct passwd *pw = getpwnam(user);
-      if (pw == NULL)
+      const struct passwd * pw = getpwnam(user);
+      if (!pw)
         {
         printf("\n*** User \"%s\" (specified in one of the Makefiles) does not "
           "exist.\n    Please review your build-time configuration.\n\n",
@@ -479,15 +460,15 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
 
       uid = pw->pw_uid;
       gid = pw->pw_gid;
-      gid_set = 1;
+      gid_set = TRUE;
       }
 
     /* Use explicit group if set. */
 
-    if (group != NULL)
+    if (group)
       {
       while (isspace((unsigned char)(*group))) group++;
-      if (*group == 0)
+      if (!*group)
         {
         printf("\n*** EXIM_GROUP is defined as an empty string in one of "
           "the files in the\n    \"Local\" directory. ");
@@ -503,8 +484,7 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
         return 1;
         }
 
-      for (s = group; *s != 0; s++)
-        {
+      for (s = group; *s; s++)
         if (iscntrl((unsigned char)(*s)))
           {
           printf("\n*** EXIM_GROUP contains the control character 0x%02X in one "
@@ -512,7 +492,6 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
             "build-time\n    configuration.\n\n", *s);
           return 1;
           }
-        }
 
       /* Group name given. This may be by reference or to be looked up now,
       as for user. */
@@ -524,20 +503,16 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
         groupname = group;
         }
 
-      else if (username != NULL)
-        {
+      else if (username)
         groupname = group;
-        }
 
       else if (group[strspn(group, "0123456789")] == 0)
-        {
         gid = (gid_t)atoi(group);
-        }
 
       else
         {
-        struct group *gr = getgrnam(group);
-        if (gr == NULL)
+        const struct group * gr = getgrnam(group);
+        if (!gr)
           {
           printf("\n*** Group \"%s\" (specified in one of the Makefiles) does "
             "not exist.\n   Please review your build-time configuration.\n\n",
@@ -573,9 +548,9 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
     /* Output user and group names or uid/gid. When names are set, uid/gid
     are set to zero but will be replaced at runtime. */
 
-    if (username != NULL)
+    if (username)
       fprintf(new, "#define EXIM_USERNAME         \"%s\"\n", username);
-    if (groupname != NULL)
+    if (groupname)
       fprintf(new, "#define EXIM_GROUPNAME        \"%s\"\n", groupname);
 
     fprintf(new, "#define EXIM_UID              %d\n", (int)uid);
@@ -594,20 +569,19 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
     int isgroup = name[10] == 'G';
     uid_t uid = 0;
     gid_t gid = 0;
-    const char *s;
-    const char *username = NULL;
-    const char *user = getenv(name);
+    const char * s;
+    const char * username = NULL;
+    const char * user = getenv(name);
 
-    if (user == NULL) user = "";
+    if (!user) user = "";
     while (isspace((unsigned char)(*user))) user++;
-    if (*user == 0)
+    if (!*user)
       {
       fprintf(new, "/* %s not set */\n", name);
       continue;
       }
 
-    for (s = user; *s != 0; s++)
-      {
+    for (s = user; *s; s++)
       if (iscntrl((unsigned char)(*s)))
         {
         printf("\n*** %s contains the control character 0x%02X in "
@@ -615,17 +589,14 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
           "your build-time\n    configuration.\n\n", name, *s);
         return 1;
         }
-      }
 
     /* Numeric uid given */
 
     if (user[strspn(user, "0123456789")] == 0)
-      {
       if (isgroup)
         gid = (gid_t)atoi(user);
       else
         uid = (uid_t)atoi(user);
-      }
 
     /* Name given. Normally, we look up the uid or gid right away. However,
     people building binary distributions sometimes want to retain the name till
@@ -637,10 +608,11 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
       while (isspace(*user)) user++;
       username = user;
       }
-else if (isgroup)
+
+    else if (isgroup)
       {
-      struct group *gr = getgrnam(user);
-      if (gr == NULL)
+      const struct group * gr = getgrnam(user);
+      if (!gr)
         {
         printf("\n*** Group \"%s\" (specified in one of the Makefiles) does not "
           "exist.\n    Please review your build-time configuration.\n\n",
@@ -652,8 +624,8 @@ else if (isgroup)
 
     else
       {
-      struct passwd *pw = getpwnam(user);
-      if (pw == NULL)
+      const struct passwd * pw = getpwnam(user);
+      if (!pw)
         {
         printf("\n*** User \"%s\" (specified in one of the Makefiles) does not "
           "exist.\n    Please review your build-time configuration.\n\n",
@@ -666,13 +638,9 @@ else if (isgroup)
     /* Output user and group names or uid/gid. When names are set, uid/gid
     are set to zero but will be replaced at runtime. */
 
-    if (username != NULL)
-      {
-      if (isgroup)
-        fprintf(new, "#define CONFIGURE_GROUPNAME         \"%s\"\n", username);
-      else
-        fprintf(new, "#define CONFIGURE_OWNERNAME         \"%s\"\n", username);
-      }
+    if (username)
+      fprintf(new, "#define %s         \"%s\"\n",
+	    isgroup ? "CONFIGURE_GROUPNAME" : "CONFIGURE_OWNERNAME", username);
 
     if (isgroup)
       fprintf(new, "#define CONFIGURE_GROUP              %d\n", (int)gid);
@@ -686,15 +654,13 @@ else if (isgroup)
 
   if (strcmp(name, "FIXED_NEVER_USERS") == 0)
     {
-    char *list = getenv("FIXED_NEVER_USERS");
-    if (list == NULL)
-      {
+    char * list = getenv("FIXED_NEVER_USERS");
+    if (!list)
       fprintf(new, "#define FIXED_NEVER_USERS     0\n");
-      }
     else
       {
       int count = 1;
-      int i, j;
+      int j = 0;
       uid_t *vector;
       char *p = list;
       while (*p != 0) if (*p++ == ':') count++;
@@ -702,7 +668,7 @@ else if (isgroup)
       vector = malloc((count+1) * sizeof(uid_t));
       vector[0] = (uid_t)count;
 
-      for (i = 1, j = 0; i <= count; list++, i++)
+      for (int i = 1; i <= count; list++, i++)
         {
         char name[64];
 
@@ -712,20 +678,17 @@ else if (isgroup)
         name[list-p] = 0;
 
         if (name[0] == 0)
-          {
           continue;
-          }
         else if (name[strspn(name, "0123456789")] == 0)
-          {
           vector[j++] = (uid_t)atoi(name);
-          }
         else
           {
-          struct passwd *pw = getpwnam(name);
-          if (pw == NULL)
+          const struct passwd * pw = getpwnam(name);
+          if (!pw)
             {
-            printf("\n*** User \"%s\" (specified for FIXED_NEVER_USERS in one of the Makefiles) does not "
-              "exist.\n    Please review your build-time configuration.\n\n",
+            printf("\n*** User \"%s\" (specified for FIXED_NEVER_USERS"
+	      " in one of the Makefiles) does not exist.\n"
+	      "   Please review your build-time configuration.\n\n",
               name);
             return 1;
             }
@@ -733,31 +696,19 @@ else if (isgroup)
           }
         }
       fprintf(new, "#define FIXED_NEVER_USERS     %d", j);
-      for (i = 0; i < j; i++) fprintf(new, ", %d", (unsigned int)vector[i]);
+      for (int i = 0; i < j; i++)
+	fprintf(new, ", %u", (unsigned int)vector[i]);
       fprintf(new, "\n");
       free(vector);
       }
     continue;
     }
 
-  /* WITH_CONTENT_SCAN is another special case: it must be set if it or
-  EXPERIMENTAL_DCC is set. */
-
-  if (strcmp(name, "WITH_CONTENT_SCAN") == 0)
-    {
-    char *wcs = getenv("WITH_CONTENT_SCAN");
-    char *dcc = getenv("EXPERIMENTAL_DCC");
-    fprintf(new, wcs || dcc
-      ? "#define WITH_CONTENT_SCAN     yes\n"
-      : "/* WITH_CONTENT_SCAN not set */\n");
-    continue;
-    }
-
   /* DISABLE_DKIM is special; must be forced if DISABLE_TLS */
   if (strcmp(name, "DISABLE_DKIM") == 0)
     {
-    char *d_dkim = getenv("DISABLE_DKIM");
-    char *notls = getenv("DISABLE_TLS");
+    const char * d_dkim = getenv("DISABLE_DKIM");
+    const char * notls = getenv("DISABLE_TLS");
 
     if (d_dkim)
       fprintf(new, "#define DISABLE_DKIM          yes\n");
@@ -771,7 +722,7 @@ else if (isgroup)
   /* Otherwise, check whether a value exists in the environment. Remember if
   it is an AUTH setting or SUPPORT_CRYPTEQ. */
 
-  if ((value = getenv(name)) != NULL)
+  if ((value = getenv(name)))
     {
     int len;
     len = 21 - (int)strlen(name);
@@ -936,10 +887,10 @@ else if (isgroup)
 
       if (strcmp(name, "TIMEZONE_DEFAULT") == 0)
         {
-        char *tz = getenv("TZ");
+        const char * tz = getenv("TZ");
         fprintf(new, "#define TIMEZONE_DEFAULT      ");
-        if (tz == NULL) fprintf(new, "NULL\n"); else
-          fprintf(new, "\"%s\"\n", tz);
+        if (!tz) fprintf(new, "NULL\n");
+	else fprintf(new, "\"%s\"\n", tz);
         }
 
       else fprintf(new, "/* %s not set */\n", name);

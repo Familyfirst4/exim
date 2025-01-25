@@ -2,6 +2,7 @@ THE EXIM MAIL TRANSFER AGENT VERSION 4
 --------------------------------------
 
 Copyright (c) 1995 - 2018 University of Cambridge.
+SPDX-License-Identifier: GPL-2.0-or-later
 See the file NOTICE for conditions of use and distribution.
 
 There is a book about Exim by Philip Hazel called "The Exim SMTP Mail Server",
@@ -9,7 +10,7 @@ published by UIT Cambridge in May 2003. This is the official guide for Exim 4.
 The current edition covers release 4.10 and a few later extensions.
 
 The O'Reilly book about Exim ("Exim The Mail Transfer Agent" by Philip Hazel)
-covers Exim 3, which is now deprecated. Exim 4 has a large number of changes
+covers Exim 3, which is now obsolete. Exim 4 has a large number of changes
 from Exim 3, though the basic structure and philosophy remains the same. The
 older book may be helpful for the background, but a lot of the detail has
 changed, so it is likely to be confusing to newcomers.

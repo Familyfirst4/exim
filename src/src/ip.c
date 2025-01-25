@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for doing things with sockets. With the advent of IPv6 this has
 got messier, so that it's worth pulling out the code into separate functions
@@ -76,7 +77,7 @@ ip_addrinfo(const uschar *address, struct sockaddr_in6 *saddr)
 #ifdef IPV6_USE_INET_PTON
 
   if (inet_pton(AF_INET6, CCS address, &saddr->sin6_addr) != 1)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "unable to parse \"%s\" as an "
+    log_write_die(0, LOG_MAIN, "unable to parse \"%s\" as an "
       "IP address", address);
   saddr->sin6_family = AF_INET6;
 
@@ -89,11 +90,11 @@ ip_addrinfo(const uschar *address, struct sockaddr_in6 *saddr)
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_NUMERICHOST;
   if ((rc = getaddrinfo(CCS address, NULL, &hints, &res)) != 0 || res == NULL)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "unable to parse \"%s\" as an "
+    log_write_die(0, LOG_MAIN, "unable to parse \"%s\" as an "
       "IP address: %s", address,
-      (rc == 0)? "NULL result returned" : gai_strerror(rc));
-  memcpy(saddr, res->ai_addr, res->ai_addrlen);
-  freeaddrinfo(res);
+      rc == 0 ? "NULL result returned" : gai_strerror(rc));
+  else
+    { memcpy(saddr, res->ai_addr, res->ai_addrlen); freeaddrinfo(res); }
 
 #endif
 }
@@ -160,7 +161,10 @@ ip_bind(int sock, int af, uschar *address, int port)
 {
 union sockaddr_46 sin;
 int s_len = ip_addr(&sin, af, address, port);
-return bind(sock, (struct sockaddr *)&sin, s_len);
+int rc = bind(sock, (struct sockaddr *)&sin, s_len);
+if (rc < 0)
+  log_write(0, LOG_MAIN, "bind of [%s]:%d failed", address, port);
+return rc;
 }
 
 
@@ -645,7 +649,7 @@ Arguments:
   timelimit   the timeout endpoint, seconds-since-epoch
 
 Returns:      > 0 => that much data read
-              <= 0 on error or EOF; errno set - zero for EOF
+              <= 0 on error or EOF; errno set - zero for EOF or zero buffer
 */
 
 int
@@ -653,6 +657,8 @@ ip_recv(client_conn_ctx * cctx, uschar * buffer, int buffsize, time_t timelimit)
 {
 int rc;
 
+if (buffsize == 0)
+  { errno = 0; return 0; }
 if (!fd_ready(cctx->sock, timelimit))
   return -1;
 

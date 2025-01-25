@@ -3,8 +3,9 @@
 *************************************************/
 
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2023 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "em_hdr.h"
@@ -174,6 +175,18 @@ va_start(ap, format);
 vfprintf(stderr, format, ap);
 fprintf(stderr, "\n");
 va_end(ap);
+}
+
+
+void
+log_write_die(unsigned int selector, int flags, const char *format, ...)
+{
+va_list ap;
+va_start(ap, format);
+vfprintf(stderr, format, ap);
+fprintf(stderr, "\n");
+va_end(ap);
+exit(EXIT_FAILURE);
 }
 
 

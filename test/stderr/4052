@@ -1,9 +1,11 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@the.local.host.name U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -14,11 +16,11 @@ smtp transport entered
   extchange@test.ex
 hostlist:
   '127.0.0.1' IP 127.0.0.1 port PORT_D
-checking status of 127.0.0.1
-no host retry record
-no message retry record
-127.0.0.1 [127.0.0.1]:1111 retry-status = usable
-delivering 10HmbP-0005vi-00 to 127.0.0.1 [127.0.0.1] (extchange@test.ex)
+checking retry status of 127.0.0.1
+ no host retry record
+ no message retry record
+127.0.0.1 [127.0.0.1]:10001 retry-status = usable
+delivering 10HmbP-000000005vi-0000 to 127.0.0.1 [127.0.0.1] (extchange@test.ex)
 Transport port=25 replaced by host-specific port=PORT_D
 EHLO response bits from cache: cleartext 0x0120/0x0000 crypted 0x0000/0x0000
 Using cached cleartext PIPECONNECT
@@ -29,8 +31,9 @@ not using DSN
   SMTP|> RCPT TO:<extchange@test.ex>
   SMTP>> DATA
 cmd buf flush ddd bytes
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ... sending dd nonTFO early-data
- connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...
+sending dd nonTFO early-data
+connected
 smtp_reap_early_pipe expect banner
   SMTP<< 220 banner
 smtp_reap_early_pipe expect ehlo
@@ -54,7 +57,7 @@ transport_check_waiting entered
 transport_check_waiting: FALSE
 will pipeline QUIT
 cannot use sendfile for body: spoolfile not wireformat
-  SMTP>> .
+  SMTP+> .
 writing data block fd=dddd size=sss timeout=300 (more expected)
   SMTP+> QUIT
 cmd buf flush ddd bytes (more expected)
@@ -63,8 +66,9 @@ cmd buf flush ddd bytes (more expected)
 ok=1 send_quit=0 send_rset=0 continue_more=0 yield=0 first_address is NULL
   SMTP<< 220 bye
   SMTP(close)>>
-cmdlog: 'EHLO|:MAIL|:RCPT|:DATA:220:250-:250:250:354:.:QUIT:250:220'
+cmdlog: 'EHLO|:MAIL|:RCPT|:DATA:220:250-:250:250:354:.+:QUIT+:250:220'
 Leaving smtp transport
+>>>>>>>>>>>>>>>> Exim pid=p1243 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => extchange@test.ex R=client T=smtp H=127.0.0.1 [127.0.0.1] L* C="250 message accepted"
 LOG: MAIN

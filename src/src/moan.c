@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for sending messages to sender or to mailmaster. */
 
@@ -29,8 +30,9 @@ Returns:    nothing
 void
 moan_write_from(FILE *f)
 {
-uschar * s = expand_string(dsn_from);
-if (!s)
+uschar * s;
+GET_OPTION("dsn_from");
+if (!(s = expand_string(dsn_from)))
   {
   log_write(0, LOG_MAIN|LOG_PANIC,
     "Failed to expand dsn_from (using default): %s", expand_string_message);
@@ -79,11 +81,17 @@ if (!h)
 /* We limit the total length of references.  Although there is no fixed
 limit, some systems do not like headers growing beyond recognition.
 Keep the first message ID for the thread root and the last few for
-the position inside the thread, up to a maximum of 12 altogether. */
+the position inside the thread, up to a maximum of 12 altogether.
+Also apply the max line length limit from RFC 2822 2.1.1
+
+XXX preferably we would get any limit from the outbound transport,
+passed in here for a limit value.
+*/
 
 if (h || message_id)
   {
-  fprintf(fp, "References:");
+  unsigned use = fprintf(fp, "References:");
+  if (message_id) use += Ustrlen(message_id) + 1;
   if (h)
     {
     const uschar * s;
@@ -94,14 +102,27 @@ if (h || message_id)
     s = Ustrchr(h->text, ':') + 1;
     f.parse_allow_group = FALSE;
     while (*s && (s = parse_message_id(s, &id, &error)))
-      if (reference_count == nelem(referenced_ids))
-        {
-        memmove(referenced_ids + 1, referenced_ids + 2,
-           sizeof(referenced_ids) - 2*sizeof(uschar *));
-        referenced_ids[reference_count - 1] = id;
-        }
+      {
+      unsigned this = Ustrlen(id);
+      if (  reference_count == nelem(referenced_ids)
+	 || use + this + reference_count > 998
+         )
+	{
+	if (reference_count > 1)
+	  {
+	  /* drop position 1 and shuffle down */
+	  use -= Ustrlen(referenced_ids + 1);
+	  memmove(referenced_ids + 1, referenced_ids + 2,
+	     sizeof(referenced_ids) - 2*sizeof(*referenced_ids));
+
+	  /* append new one */
+	  referenced_ids[reference_count - 1] = id;
+	  }
+	}
       else
 	referenced_ids[reference_count++] = id;
+      use += this;
+      }
 
     for (int i = 0; i < reference_count; ++i)
       fprintf(fp, " %s", referenced_ids[i]);
@@ -138,14 +159,10 @@ Returns:         TRUE if message successfully sent
 */
 
 BOOL
-moan_send_message(uschar *recipient, int ident, error_block *eblock,
-  header_line *headers, FILE *message_file, uschar *firstline)
+moan_send_message(const uschar * recipient, int ident, error_block * eblock,
+  header_line * headers, FILE * message_file, const uschar * firstline)
 {
-int written = 0;
-int fd;
-int status;
-int count = 0;
-int size_limit = bounce_return_size_limit;
+int written = 0, fd, status, count = 0, size_limit = bounce_return_size_limit;
 FILE * fp;
 int pid;
 
@@ -155,9 +172,9 @@ uschar * s, * s2;
 /* For DMARC if there is a specific sender set, expand the variable for the
 header From: and grab the address from that for the envelope FROM. */
 
+GET_OPTION("dmarc_forensic_sender");
 if (  ident == ERRMESS_DMARC_FORENSIC
-   && dmarc_forensic_sender
-   && (s = expand_string(dmarc_forensic_sender))
+   && (s = expand_string(US"$dmarc_forensic_sender"))	/* a hack... */
    && *s
    && (s2 = expand_string(string_sprintf("${address:%s}", s)))
    && *s2
@@ -348,7 +365,7 @@ if (bounce_return_message)
     if (size_limit > 0 && size_limit < message_size)
       {
       int x = size_limit;
-      uschar *k = US"";
+      const uschar * k = US"";
       if ((x & 1023) == 0)
         {
         k = US"K";
@@ -493,9 +510,12 @@ if (check_sender && message_file && f.trusted_caller &&
   {
   uschar *new_sender = NULL;
   if (regex_match_and_setup(regex_From, big_buffer, 0, -1))
+    {
+    GET_OPTION("uucp_from_sender");
     new_sender = expand_string(uucp_from_sender);
+    }
   if (new_sender) sender_address = new_sender;
-    else firstline = big_buffer;
+  else firstline = big_buffer;
   }
 
 /* If viable sender address, send a message */
@@ -541,7 +561,7 @@ switch(ident)
 
   case ERRMESS_TOOMANYRECIP:
   log_write(0, LOG_MAIN, "%s: too many recipients (max set to %d)", msg,
-    recipients_max);
+    recipients_max_expanded);
   break;
 
   case ERRMESS_LOCAL_SCAN:
@@ -581,13 +601,12 @@ Returns:        nothing
 */
 
 void
-moan_tell_someone(uschar *who, address_item *addr,
-  const uschar *subject, const char *format, ...)
+moan_tell_someone(const uschar * who, address_item * addr,
+  const uschar * subject, const char * format, ...)
 {
-FILE *f;
+FILE * f;
 va_list ap;
-int fd;
-int pid = child_open_exim(&fd, US"moan_tell_someone");
+int fd, pid = child_open_exim(&fd, US"moan_tell_someone");
 
 if (pid < 0)
   {
@@ -611,7 +630,7 @@ if (addr)
   fprintf(f, "\nThe following address(es) have yet to be delivered:\n");
   for (; addr; addr = addr->next)
     {
-    uschar * parent = addr->parent ? addr->parent->address : NULL;
+    const uschar * parent = addr->parent ? addr->parent->address : NULL;
     fprintf(f, "  %s", addr->address);
     if (parent) fprintf(f, " <%s>", parent);
     if (addr->basic_errno > 0) fprintf(f, ": %s", strerror(addr->basic_errno));
@@ -650,7 +669,7 @@ Returns:       does not return; exits from the program
 */
 
 void
-moan_smtp_batch(uschar *cmd_buffer, const char *format, ...)
+moan_smtp_batch(const uschar * cmd_buffer, const char * format, ...)
 {
 va_list ap;
 int yield = (receive_messagecount > 0)? 1 : 2;
@@ -714,35 +733,35 @@ Returns:    additional recipient list or NULL
 */
 
 uschar *
-moan_check_errorcopy(uschar *recipient)
+moan_check_errorcopy(const uschar * recipient)
 {
-uschar *item, *localpart, *domain;
-const uschar *listptr = errors_copy;
+uschar * item;
+const uschar * localpart, * domain;
+const uschar * listptr = errors_copy;
 uschar *yield = NULL;
 int sep = 0;
 int llen;
 
-if (errors_copy == NULL) return NULL;
+if (!errors_copy) return NULL;
 
 /* Set up pointer to the local part and domain, and compute the
 length of the local part. */
 
 localpart = recipient;
 domain = Ustrrchr(recipient, '@');
-if (domain == NULL) return NULL;  /* should not occur, but avoid crash */
+if (!domain) return NULL;	/* should not occur, but avoid crash */
 llen = domain++ - recipient;
 
 /* Scan through the configured items */
 
 while ((item = string_nextinlist(&listptr, &sep, NULL, 0)))
   {
-  const uschar *newaddress = item;
-  const uschar *pattern = string_dequote(&newaddress);
+  const uschar * newaddress = item;
+  const uschar * pattern = string_dequote(&newaddress);
 
   /* If no new address found, just skip this item. */
 
-  while (isspace(*newaddress)) newaddress++;
-  if (*newaddress == 0) continue;
+  if (!Uskip_whitespace(&newaddress)) continue;
 
   /* We now have an item to match as an address in item, and the additional
   address in newaddress. If the pattern matches, expand the new address string
@@ -799,11 +818,11 @@ moan_skipped_syntax_errors(uschar *rname, error_block *eblock,
   uschar *syntax_errors_to, BOOL some, uschar *custom)
 {
 int pid, fd;
-uschar *s, *t;
-FILE *f;
+const uschar * s;
+FILE * f;
 
 for (error_block * e = eblock; e; e = e->next)
-  if (e->text2 != NULL)
+  if (e->text2)
     log_write(0, LOG_MAIN, "%s router: skipped error: %s in \"%s\"",
       rname, e->text1, e->text2);
   else
@@ -819,8 +838,7 @@ if (!(s = expand_string(syntax_errors_to)))
   return FALSE;
   }
 
-/* If we can't create a process to send the message, just forget about
-it. */
+/* If we can't create a process to send the message, just forget about it. */
 
 pid = child_open_exim(&fd, US"moan_skipped_syntax_errors");
 
@@ -840,13 +858,13 @@ moan_write_references(f, NULL);
 
 if (custom)
   {
-  if (!(t = expand_string(custom)))
+  if (!(s = expand_string(custom)))
     {
     log_write(0, LOG_MAIN, "%s router failed to expand %s: %s", rname,
       custom, expand_string_message);
     return FALSE;
     }
-  fprintf(f, "%s\n\n", t);
+  fprintf(f, "%s\n\n", s);
   }
 
 fprintf(f, "The %s router encountered the following error(s):\n\n",

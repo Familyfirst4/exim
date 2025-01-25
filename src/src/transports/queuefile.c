@@ -2,10 +2,11 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 1995 - 2024 */
 /* Copyright (c) Andrew Colin Kissa <andrew@topdog.za.net> 2016 */
 /* Copyright (c) University of Cambridge 2016 */
-/* Copyright (c) The Exim Maintainers 1995 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 
@@ -40,7 +41,7 @@ int queuefile_transport_options_count =
 
 /* Dummy values */
 queuefile_transport_options_block queuefile_transport_option_defaults = {0};
-void queuefile_transport_init(transport_instance *tblock) {}
+void queuefile_transport_init(driver_instance *tblock) {}
 BOOL queuefile_transport_entry(transport_instance *tblock, address_item *addr) {return FALSE;}
 
 #else   /*!MACRO_PREDEF*/
@@ -57,14 +58,13 @@ queuefile_transport_options_block queuefile_transport_option_defaults = {
 *          Initialization entry point            *
 *************************************************/
 
-void queuefile_transport_init(transport_instance *tblock)
+void queuefile_transport_init(driver_instance * t)
 {
-queuefile_transport_options_block *ob =
-  (queuefile_transport_options_block *) tblock->options_block;
+queuefile_transport_options_block * ob = t->options_block;
 
 if (!ob->dirname)
-  log_write(0, LOG_PANIC_DIE | LOG_CONFIG,
-    "directory must be set for the %s transport", tblock->name);
+  log_write_die(0, LOG_CONFIG,
+    "directory must be set for the %s transport", t->name);
 }
 
 /* This function will copy from a file to another
@@ -115,6 +115,7 @@ static BOOL
 copy_spool_files(transport_instance * tb, address_item * addr,
   const uschar * dstpath, int sdfd, int ddfd, BOOL link_file, int srcfd)
 {
+const uschar * trname = tb->drinst.name;
 BOOL is_hdr_file = srcfd < 0;
 const uschar * suffix = srcfd < 0 ? US"H" : US"D";
 int dstfd;
@@ -127,7 +128,7 @@ dstpath = string_sprintf("%s/%s-%s", dstpath, message_id, suffix);
 if (link_file)
   {
   DEBUG(D_transport) debug_printf("%s transport, linking %s => %s\n",
-    tb->name, srcpath, dstpath);
+    trname, srcpath, dstpath);
 
   if (linkat(sdfd, CCS filename, ddfd, CCS filename, 0) >= 0)
     return TRUE;
@@ -138,7 +139,7 @@ if (link_file)
 else					/* use data copy */
   {
   DEBUG(D_transport) debug_printf("%s transport, copying %s => %s\n",
-    tb->name, srcpath, dstpath);
+    trname, srcpath, dstpath);
 
   if (  (s = dstpath,
 	 (dstfd = exim_openat4(ddfd, CCS filename, O_RDWR|O_CREAT|O_EXCL, SPOOL_MODE))
@@ -161,7 +162,7 @@ else					/* use data copy */
 
 addr->basic_errno = errno;
 addr->message = string_sprintf("%s transport %s file: %s failed with error: %s",
-  tb->name, op, s, strerror(errno));
+  trname, op, s, strerror(errno));
 addr->transport_return = DEFER;
 return FALSE;
 }
@@ -176,8 +177,8 @@ the first address is the status for all addresses in a batch. */
 BOOL
 queuefile_transport_entry(transport_instance * tblock, address_item * addr)
 {
-queuefile_transport_options_block * ob =
-  (queuefile_transport_options_block *) tblock->options_block;
+queuefile_transport_options_block * ob = tblock->drinst.options_block;
+const uschar * trname = tblock->drinst.name;
 BOOL can_link;
 uschar * sourcedir = spool_dname(US"input", message_subdir);
 uschar * s, * dstdir;
@@ -185,7 +186,7 @@ struct stat dstatbuf, sstatbuf;
 int ddfd = -1, sdfd = -1;
 
 DEBUG(D_transport)
-  debug_printf("%s transport entered\n", tblock->name);
+  debug_printf("%s transport entered\n", trname);
 
 #ifndef O_DIRECTORY
 # define O_DIRECTORY 0
@@ -194,10 +195,11 @@ DEBUG(D_transport)
 # define O_NOFOLLOW 0
 #endif
 
+GET_OPTION("directory");
 if (!(dstdir = expand_string(ob->dirname)))
   {
   addr->message = string_sprintf("%s transport: failed to expand dirname option",
-    tblock->name);
+    trname);
   addr->transport_return = DEFER;
   return FALSE;
   }
@@ -205,7 +207,7 @@ if (*dstdir != '/')
   {
   addr->transport_return = PANIC;
   addr->message = string_sprintf("%s transport directory: "
-    "%s is not absolute", tblock->name, dstdir);
+    "%s is not absolute", trname, dstdir);
   return FALSE;
   }
 
@@ -221,7 +223,7 @@ if (  (s = dstdir,
   addr->transport_return = PANIC;
   addr->basic_errno = errno;
   addr->message = string_sprintf("%s transport accessing directory: %s "
-    "failed with error: %s", tblock->name, s, strerror(errno));
+    "failed with error: %s", trname, s, strerror(errno));
   if (ddfd >= 0) (void) close(ddfd);
   return FALSE;
   }
@@ -233,7 +235,7 @@ if (  (s = dstdir,    fstat(ddfd, &dstatbuf) < 0)
   addr->transport_return = PANIC;
   addr->basic_errno = errno;
   addr->message = string_sprintf("%s transport fstat on directory fd: "
-    "%s failed with error: %s", tblock->name, s, strerror(errno));
+    "%s failed with error: %s", trname, s, strerror(errno));
   goto RETURN;
   }
 can_link = (dstatbuf.st_dev == sstatbuf.st_dev);
@@ -242,7 +244,7 @@ if (f.dont_deliver)
   {
   DEBUG(D_transport)
     debug_printf("*** delivery by %s transport bypassed by -N option\n",
-      tblock->name);
+      trname);
   addr->transport_return = OK;
   goto RETURN;
   }
@@ -250,26 +252,26 @@ if (f.dont_deliver)
 /* Link or copy the header and data spool files */
 
 DEBUG(D_transport)
-  debug_printf("%s transport, copying header file\n", tblock->name);
+  debug_printf("%s transport, copying header file\n", trname);
 
 if (!copy_spool_files(tblock, addr, dstdir, sdfd, ddfd, can_link, -1))
   goto RETURN;
 
 DEBUG(D_transport)
-  debug_printf("%s transport, copying data file\n", tblock->name);
+  debug_printf("%s transport, copying data file\n", trname);
 
 if (!copy_spool_files(tblock, addr, dstdir, sdfd, ddfd, can_link,
 	deliver_datafile))
   {
   DEBUG(D_transport)
     debug_printf("%s transport, copying data file failed, "
-      "unlinking the header file\n", tblock->name);
+      "unlinking the header file\n", trname);
   Uunlink(string_sprintf("%s/%s-H", dstdir, message_id));
   goto RETURN;
   }
 
 DEBUG(D_transport)
-  debug_printf("%s transport succeeded\n", tblock->name);
+  debug_printf("%s transport succeeded\n", trname);
 
 addr->transport_return = OK;
 
@@ -281,6 +283,31 @@ if (sdfd >= 0) (void) close(sdfd);
 put in the first address of a batch. */
 return FALSE;
 }
+
+
+
+
+# ifdef DYNLOOKUP
+#  define queuefile_transport_info _transport_info
+# endif
+
+transport_info queuefile_transport_info = {
+.drinfo = {
+  .driver_name =	US"queuefile",
+  .options =		queuefile_transport_options,
+  .options_count =	&queuefile_transport_options_count,
+  .options_block =	&queuefile_transport_option_defaults,
+  .options_len =	sizeof(queuefile_transport_options_block),
+  .init =		queuefile_transport_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		TRANSPORT_MAGIC,
+# endif
+  },
+.code =		queuefile_transport_entry,
+.tidyup =	NULL,
+.closedown =	NULL,
+.local =	TRUE
+};
 
 #endif /*!MACRO_PREDEF*/
 #endif /*EXPERIMENTAL_QUEUEFILE*/

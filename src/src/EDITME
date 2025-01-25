@@ -1,6 +1,8 @@
 ##################################################
 #          The Exim mail transport agent         #
 ##################################################
+# Copyright (c) The Exim Maintainers 2022 - 2024
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 # This is the template for Exim's main build-time configuration file. It
 # contains settings that are independent of any operating system. These are
@@ -45,11 +47,13 @@
 # compile the Exim monitor utility. Exim itself does not use X11.
 
 # Another area of variability between systems is the type and location of the
-# DBM library package. Exim has support for ndbm, gdbm, tdb, and Berkeley DB.
+# DBM library package. Exim has support for ndbm, gdbm, tdb, Berkeley DB and
+# sqlite3.
 # By default the code assumes ndbm; this often works with gdbm or DB, provided
 # they are correctly installed, via their compatibility interfaces. However,
 # Exim can also be configured to use the native calls for Berkeley DB (obsolete
 # versions 1.85, 2.x, 3.x, or the current 4.x version) and also for gdbm.
+# See definitions for DBMLIB below.
 
 # For some operating systems, a default DBM library (other than ndbm) is
 # selected by a setting in the OS-specific Makefile. Most modern OS now have
@@ -57,8 +61,8 @@
 # for you by the OS-specific configuration. If Exim compiles without any
 # problems, you probably do not have to worry about the DBM library. If you
 # do want or need to change it, you should first read the discussion in the
-# file doc/dbm.discuss.txt, which also contains instructions for testing Exim's
-# interface to the DBM library.
+# file doc/doc-txt/dbm.discuss.txt, which also contains instructions for testing
+# Exim's interface to the DBM library.
 
 # In Local/Makefiles blank lines and lines starting with # are ignored. It is
 # also permitted to use the # character to add a comment to a setting, for
@@ -309,6 +313,14 @@ SPOOL_DIRECTORY=/var/spool/exim
 # It has also to be configured in the run time configuration file. By
 # commenting out those you know you don't want to use, you can make the binary
 # a bit smaller. If you are unsure, leave all of these included for now.
+#
+# If set to "2" instead of "yes" then the corresponding driver will be
+# built as a module and must be installed into LOOKUP_MODULE_DIR (the name
+# is historic).
+# You need to add -export-dynamic -rdynamic to EXTRALIBS. You may also need to
+# add -ldl to EXTRALIBS so that dlopen() is available to Exim. You need to
+# define CFLAGS_DYNAIC and LOOKUP_MODULE_DIR below so the builds are done right,
+# and so the exim binary actually loads dynamic lookup modules.
 
 ROUTER_ACCEPT=yes
 ROUTER_DNSLOOKUP=yes
@@ -331,6 +343,15 @@ ROUTER_REDIRECT=yes
 # file. By commenting out those you know you don't want to use, you can make
 # the binary a bit smaller. If you are unsure, leave all of these included for
 # now.
+#
+# If set to "2" instead of "yes" then the corresponding driver will be
+# built as a module and must be installed into LOOKUP_MODULE_DIR (the name
+# is historic).
+# You need to add -export-dynamic -rdynamic to EXTRALIBS. You may also need to
+# add -ldl to EXTRALIBS so that dlopen() is available to Exim. You need to
+# define CFLAGS_DYNAIC and LOOKUP_MODULE_DIR below so the builds are done right,
+# and so the exim binary actually loads dynamic lookup modules.
+# The smtp transport cannot be built as a module.
 
 TRANSPORT_APPENDFILE=yes
 TRANSPORT_AUTOREPLY=yes
@@ -394,16 +415,19 @@ TRANSPORT_SMTP=yes
 # (where * is the name as given here in this list). That ensures that only
 # the dynamic library and not the exim binary will be linked against the
 # library.
-# NOTE: LDAP cannot be built as a module!
+#
+# PASSWD, DBM and DNSDB can be build as modules but there is little point since
+# the accesses are always needed by the Exim core.
 #
 # For Redis you need to have hiredis installed on your system
 # (https://github.com/redis/hiredis).
 # Depending on where it is installed you may have to edit the CFLAGS
-# (often += -I/usr/local/include) and LDFLAGS (-lhiredis) lines.
+# (often += -I/usr/local/include) and LOOKUP_LIBS (-lhiredis) lines.
 
 # If your system has pkg-config then the _INCLUDE/_LIBS setting can be
 # handled for you automatically by also defining the _PC variable to reference
-# the name of the pkg-config package, if such is available.
+# the name of the pkg-config package, if such is available. This should not
+# be done for module builds.
 
 LOOKUP_DBM=yes
 LOOKUP_LSEARCH=yes
@@ -436,11 +460,11 @@ LOOKUP_DNSDB=yes
 # LOOKUP_NWILDLSEARCH=yes
 
 
-# Some platforms may need this for LOOKUP_NIS:
-# LIBS += -lnsl
+# For IBASE you may need:
+#LIBS += -lfbclient
 
 #------------------------------------------------------------------------------
-# If you have set LOOKUP_LDAP=yes, you should set LDAP_LIB_TYPE to indicate
+# If you have set LOOKUP_LDAP, you should set LDAP_LIB_TYPE to indicate
 # which LDAP library you have. Unfortunately, though most of their functions
 # are the same, there are minor differences. Currently Exim knows about four
 # LDAP libraries: the one from the University of Michigan (also known as
@@ -455,6 +479,7 @@ LOOKUP_DNSDB=yes
 # If you don't set any of these, Exim assumes the original University of
 # Michigan (OpenLDAP 1) library.
 
+# For building as a modules, set LOOKUP_LDAP_INCLUDE and LOOKUP_LDAP_LIBS
 
 #------------------------------------------------------------------------------
 # The PCRE2 library is required for Exim.  There is no longer an embedded
@@ -490,10 +515,23 @@ SUPPORT_DANE=yes
 # is for Redis, -ljansson for JSON.
 #
 # You do not need to use this for any lookup information added via pkg-config.
+#
+# Libraries being built as modules should be added to respective
+# LOOKUP_*_INCLUDE and LOOKUP_*_LIBS rather than the the ones for the
+# core exim build.  This gets them linked with the module instead
+#
+# LSEARCH, DSEARCH & CDB have no external library needs.
+# DNSDB needs the resolver library which the core uses anyway.
 
 # LOOKUP_INCLUDE=-I /usr/local/ldap/include -I /usr/local/mysql/include -I /usr/local/pgsql/include
 # LOOKUP_INCLUDE +=-I /usr/local/include
 # LOOKUP_LIBS=-L/usr/local/lib -lldap -llber -lmysqlclient -lpq -lgds -lsqlite3 -llmdb
+
+# LOOKUP_LIBS=-L/usr/local/lib -lldap -llber
+# Some platforms may need this for LOOKUP_NIS:
+#LOOKUP_LIBS += -lnsl
+#LOOKUP_LIBS += -ljansson
+#LOOKUP_LIBS += -lhiredis
 
 #------------------------------------------------------------------------------
 # If you included LOOKUP_LMDB above you will need the library. Depending
@@ -501,6 +539,7 @@ SUPPORT_DANE=yes
 #
 # LOOKUP_INCLUDE += -I/usr/local/include
 # LOOKUP_LIBS += -llmdb
+# For dynamic-modules builds, use instead LOOKUP_LMDB_INCLUDE & LOOKUP_LMDB_LIBS
 
 
 #------------------------------------------------------------------------------
@@ -513,6 +552,28 @@ SUPPORT_DANE=yes
 
 # EXIM_MONITOR=eximon.bin
 
+
+#------------------------------------------------------------------------------
+# Compiling with support for Exim filters is the default. To disable this
+# uncomment the line below.
+
+# DISABLE_EXIM_FILTER=yes
+
+# Alternatively, to build the support as a dynamically-loaded module uncomment
+# this line.
+
+# SUPPORT_EXIM_FILTER=2
+
+#------------------------------------------------------------------------------
+# Compiling with support for Sieve filters is the default. To disable this
+# uncomment the line below.
+
+# DISABLE_SIEVE_FILTER=yes
+
+# Alternatively, to build the support as a dynamically-loaded module uncomment
+# this line.
+
+# SUPPORT_SIEVE_FILTER=2
 
 #------------------------------------------------------------------------------
 # Compiling Exim with content scanning support: If you want to compile Exim
@@ -549,6 +610,10 @@ DISABLE_MAL_MKS=yes
 # turned on by default.  See the spec for information on conditionally
 # disabling it.  To disable the inclusion of the entire feature, set
 # DISABLE_DKIM to "yes"
+#
+# It is possible to build the support as a dynamic-load module. In addition
+# to not defining DISABLE_DKIM, define SUPPORT_DKIM=2.  The usual rules on
+# defines for includes and libs apply.
 
 # DISABLE_DKIM=yes
 
@@ -588,6 +653,9 @@ DISABLE_MAL_MKS=yes
 # using only native facilities.
 # SUPPORT_SRS=yes
 
+# Uncomment the following to remove support for the ESMTP extension "WELLKNOWN"
+# DISABLE_WELLKNOWN=yes
+
 
 #------------------------------------------------------------------------------
 # Compiling Exim with experimental features. These are documented in
@@ -596,20 +664,30 @@ DISABLE_MAL_MKS=yes
 
 # Uncomment the following line to add support for talking to dccifd.  This
 # defaults the socket path to /usr/local/dcc/var/dccifd.
-# Doing so will also explicitly turn on the WITH_CONTENT_SCAN option.
+# This support also requires WITH_CONTENT_SCAN enabled.
 
 # EXPERIMENTAL_DCC=yes
 
 # Uncomment the following line to add DMARC checking capability, implemented
 # using libopendmarc libraries. You must have SPF and DKIM support enabled also.
-# Library version libopendmarc-1.4.1-1.fc33.x86_64  (on Fedora 33) is known broken;
-# 1.3.2-3 works.  I seems that the OpenDMARC project broke their API.
+#
+# If set to "2" instead of "yes" then the support will be
+# built as a module and must be installed into LOOKUP_MODULE_DIR (the name
+# is historic).  The same rules as for other module builds apply; use
+# SUPPORT_DMARC_{INCLUDE,LIBS}.
+#
 # SUPPORT_DMARC=yes
 # CFLAGS += -I/usr/local/include
 # LDFLAGS += -lopendmarc
+#
 # Uncomment the following if you need to change the default. You can
 # override it at runtime (main config option dmarc_tld_file)
 # DMARC_TLD_FILE=/etc/exim/opendmarc.tlds
+#
+# Library version libopendmarc-1.4.1-1.fc33.x86_64  (on Fedora 33) is known broken;
+# 1.3.2-3 works.  It seems that the OpenDMARC project broke their API.
+# Use this option if you need to build with an old library (1.3.x)
+# DMARC_API=100300
 
 # Uncomment the following line to add ARC (Authenticated Received Chain)
 # support.  You must have SPF and DKIM support enabled also.
@@ -629,6 +707,15 @@ DISABLE_MAL_MKS=yes
 
 # Uncomment the following line to add queuefile transport support
 # EXPERIMENTAL_QUEUEFILE=yes
+#
+# Uncomment the following line to add SRV smtps support
+# EXPERIMENTAL_SRV_SMTPS=yes
+#
+# Uncomment this to support using TLS Early Data for SMTP Banner
+# EXPERIMENTAL_TLS_EARLY_BANNER=yes
+#
+# Uncomment the following line to add XCLIENT support
+# EXPERIMENTAL_XCLIENT=yes
 
 ###############################################################################
 #                 THESE ARE THINGS YOU MIGHT WANT TO SPECIFY                  #
@@ -640,6 +727,33 @@ DISABLE_MAL_MKS=yes
 # paranoia are appropriate in different environments. Sysadmins also vary in
 # their views on appropriate levels of defence in these areas. If you do not
 # understand these issues, go with the defaults, which are used by many sites.
+
+
+#------------------------------------------------------------------------------
+# Which DBM library to use.  If you do not specify a specific here, you get
+# the platform default.  Uncomment the pair of lines as preferred.
+# Note: when changing an installation from one DB type to another all the
+# hints-DB files, in spool/db, should be removed.
+
+# gdbm in native mode
+# USE_GDBM = yes
+# DBMLIB = -lgdbm
+
+# gdbm in Berkeley-DB compatibility mode
+# USE_NDBM = yes
+# DBMLIB = -lgdbm -lgdbm_compat
+
+# tdb
+# USE_TDB = yes
+# DBMLIB = -ltdb
+
+# Berkeley DB
+# USE_DB = yes
+# DBMLIB = -ldb
+
+# sqlite
+# USE_SQLITE = yes
+# DBMLIB = -lsqlite3
 
 
 #------------------------------------------------------------------------------
@@ -753,6 +867,19 @@ FIXED_NEVER_USERS=root
 # you must uncomment at least one of the following, so that appropriate code is
 # included in the Exim binary. You will then need to set up the run time
 # configuration to make use of the mechanism(s) selected.
+#
+# If set to "2" instead of "yes" then the corresponding driver will be
+# built as a module and must be installed into LOOKUP_MODULE_DIR (the name
+# is historic).
+# You need to add -export-dynamic -rdynamic to EXTRALIBS. You may also need to
+# add -ldl to EXTRALIBS so that dlopen() is available to Exim. You need to
+# define CFLAGS_DYNAMIC and LOOKUP_MODULE_DIR below so the builds are done
+# right and so the exim binary actually loads dynamic lookup modules.
+#
+# Libraries being built as modules should be added to respective
+# LOOKUP_*_INCLUDE and LOOKUP_*_LIBS rather than the the ones for the
+# core exim build.  This gets them linked with the module instead.
+# The heimdal does build but we have no test coverage so it is not know to work.
 
 # AUTH_CRAM_MD5=yes
 # AUTH_CYRUS_SASL=yes
@@ -972,8 +1099,14 @@ ZCAT_COMMAND=/usr/bin/zcat
 # use Perl code in Exim's string manipulation language and you have Perl
 # (version 5.004 or later) installed, set EXIM_PERL to perl.o. Using embedded
 # Perl costs quite a lot of resources. Only do this if you really need it.
+#
 
 # EXIM_PERL=perl.o
+
+# For a dynamic module build add also SUPPORT_PERL=2 and SUPPORT_PAM_(INCLUED,LIBS)
+#SUPPORT_PERL=2
+#SUPPORT_PERL_INCLUDE=$(PERL_CFLAGS)
+#SUPPORT_PERL_LIBS=$(PERL_LFLAGS) -lperl
 
 
 #------------------------------------------------------------------------------
@@ -992,6 +1125,8 @@ ZCAT_COMMAND=/usr/bin/zcat
 # distributions (see http://ftp.kernel.org/pub/linux/libs/pam/). The Exim
 # support, which is intended for use in conjunction with the SMTP AUTH
 # facilities, is included only when requested by the following setting:
+#
+# For a dynamic module build add SUPPORT_PAM=2 and SUPPORT_PAM_LIBS=-lpam
 
 # SUPPORT_PAM=yes
 
@@ -1022,17 +1157,26 @@ ZCAT_COMMAND=/usr/bin/zcat
 # You need to have the IDN library installed.
 # If you want IDNA2008 mappings per RFCs 5890, 6530 and 6533, you additionally
 # need libidn2 and SUPPORT_I18N_2008.
+# If you're using pkg-config, enable the _PC lines, otherwise the LDFLAGS ones.
 
 # SUPPORT_I18N=yes
+# SUPPORT_I18N_PC=libidn
 # LDFLAGS += -lidn
+#
 # SUPPORT_I18N_2008=yes
-# LDFLAGS += -lidn -lidn2
+# SUPPORT_I18N_2008_PC=libidn2
+# LDFLAGS += -lidn2
 
 
 #------------------------------------------------------------------------------
 # Uncomment the following lines to add SPF support. You need to have libspf2
 # installed on your system (www.libspf2.org). Depending on where it is installed
 # you may have to edit the CFLAGS and LDFLAGS lines.
+#
+# If set to "2" instead of "yes" then the support will be
+# built as a module and must be installed into LOOKUP_MODULE_DIR (the name
+# is historic).  The same rules as for other module builds apply; use
+# SUPPORT_SPF_{INCLUDE,LIBS}.
 
 # SUPPORT_SPF=yes
 # CFLAGS  += -I/usr/local/include
@@ -1044,6 +1188,9 @@ ZCAT_COMMAND=/usr/bin/zcat
 # which is intended for use in conjunction with the SMTP AUTH facilities,
 # is included only when requested by setting the following parameter to the
 # location of your Radius configuration file:
+#
+# For a dynamic module build add SUPPORT_RADIUS=2 and (if needed)
+# SUPPORT_RADIUS_LIBS=-l<foo>
 
 # RADIUS_CONFIG_FILE=/etc/radiusclient/radiusclient.conf
 # RADIUS_CONFIG_FILE=/etc/radius.conf
@@ -1494,4 +1641,4 @@ EXIM_TMPDIR="/tmp"
 
 # DISABLE_CLIENT_CMD_LOG=yes
 
-# End of EDITME for Exim 4.
+# End of EDITME for Exim.

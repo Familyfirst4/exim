@@ -1,4 +1,4 @@
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -28,12 +28,12 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 88 byte chunk, total 88
 ??? 250
-<<< 250 OK id=10HmaX-0005vi-00
+<<< 250 OK id=10HmaX-000000005vi-0000
 >>> quit
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -70,7 +70,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 0 byte chunk, total 100
 ??? 250
-<<< 250 OK id=10HmaY-0005vi-00
+<<< 250 OK id=10HmaY-000000005vi-0000
 >>> mail from:someone@some.domain
 ??? 250
 <<< 250 OK
@@ -88,12 +88,12 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 78 byte chunk, total 88
 ??? 250
-<<< 250 OK id=10HmaZ-0005vi-00
+<<< 250 OK id=10HmaZ-000000005vi-0000
 >>> quit
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -130,7 +130,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 0 byte chunk, total 100
 ??? 250
-<<< 250 OK id=10HmbA-0005vi-00
+<<< 250 OK id=10HmbA-000000005vi-0000
 >>> RSET
 ??? 250
 <<< 250 Reset OK
@@ -151,12 +151,12 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 78 byte chunk, total 88
 ??? 250
-<<< 250 OK id=10HmbB-0005vi-00
+<<< 250 OK id=10HmbB-000000005vi-0000
 >>> quit
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -186,7 +186,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 421
 <<< 421 testhost.test.ex SMTP incoming data timeout - closing connection.
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -222,7 +222,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -293,7 +293,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> EHLO tester
@@ -317,12 +317,12 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 88 byte chunk, total 88
 ??? 250
-<<< 250 OK id=10HmbD-0005vi-00
+<<< 250 OK id=10HmbF-000000005vi-0000
 >>> quit
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> EHLO tester
@@ -359,7 +359,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> EHLO tester
@@ -419,7 +419,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> EHLO tester
@@ -454,12 +454,12 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250- 6 byte chunk, total 93
 <<< 250- 6 byte chunk, total 93
 ??? 250 OK
-<<< 250 OK id=10HmbE-0005vi-00
+<<< 250 OK id=10HmbG-000000005vi-0000
 >>> QUIT
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -492,7 +492,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo tester
@@ -523,8 +523,52 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 250-
 <<< 250- 98 byte chunk, total 100
 ??? 250
-<<< 250 OK id=10HmbF-0005vi-00
+<<< 250 OK id=10HmbH-000000005vi-0000
 >>> quit
+??? 221
+<<< 221 testhost.test.ex closing connection
+End of script
+Connecting to 127.0.0.1 port PORT_D ... connected
+??? 220
+<<< 220 testhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+>>> ehlo smuggler
+??? 250-
+<<< 250-testhost.test.ex Hello smuggler [127.0.0.1]
+??? 250-SIZE
+<<< 250-SIZE 52428800
+??? 250-8BITMIME
+<<< 250-8BITMIME
+??? 250-PIPELINING
+<<< 250-PIPELINING
+??? 250-CHUNKING
+<<< 250-CHUNKING
+??? 250 HELP
+<<< 250 HELP
+>>> MAIL FROM:<legit@some.domain>
+??? 250
+<<< 250 OK
+>>> RCPT TO:<CALLER@test.ex>
+??? 250
+<<< 250 Accepted
+>>> DATA
+??? 354
+<<< 354 Enter message, ending with "." on a line by itself
+>>> Subject: test of smuggled smtp
+>>> 
+>>> This is body for initial message
+>>> The next line is a bogus end-of-data attempt, followed by a try at a smuggled message:
+>>> .\n
+>>> mail from:<smuggler@y>
+>>> rcpt to:<CALLER@test.ex>
+>>> bdat 86 last
+>>> Subject: send me all your money!
+>>> 
+>>> All your base are belong to us.  Send Bitcoins.
+>>> QUIT
+>>> .
+??? 250
+<<< 250 OK id=10HmbI-000000005vi-0000
+>>> QUIT
 ??? 221
 <<< 221 testhost.test.ex closing connection
 End of script

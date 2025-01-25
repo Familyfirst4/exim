@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -23,11 +24,15 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<abc@local>
 using ACL "rcpt"
-processing "deny" (TESTSUITE/test-config 19)
+processing ACL rcpt "deny" (TESTSUITE/test-config 19)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
 check !verify = sender
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying qq@remote
@@ -38,17 +43,23 @@ routing qq@remote
 --------> r1 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "local"? no (end of list)
+remote in domains?
+ list element: local
+remote in domains? no (end of list)
 r1 router skipped: domains mismatch
 --------> r2 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "remote"? yes (matched "remote")
+remote in domains?
+ list element: remote
+ remote in domains? yes (matched "remote")
 calling r2 router
 r2 router called for qq@remote
   domain = remote
 route_item = * 127.0.0.1
-remote in "*"? yes (matched "*")
+remote in "*"?
+ list element: *
+ remote in "*"? yes (matched "*")
 original list of hosts = '127.0.0.1' options = ''
 expanded list of hosts = '127.0.0.1' options = ''
 set transport t2
@@ -66,17 +77,21 @@ domain = remote
   errors_to=NULL
   domain_data=remote local_part_data=NULL
 routed by r2 router
-  envelope to: qq@remote
-  transport: t2
+  envelope to:	qq@remote
+  transport:	t2
   host 127.0.0.1 [127.0.0.1]
 ----------- end verify ------------
 sender qq@remote verified ok
-deny: condition test failed in ACL "rcpt"
-processing "warn" (TESTSUITE/test-config 21)
+deny: condition test failed in ACL rcpt
+processing ACL rcpt "warn" (TESTSUITE/test-config 21)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
 check !verify = sender/callout
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying qq@remote
@@ -87,17 +102,23 @@ routing qq@remote
 --------> r1 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "local"? no (end of list)
+remote in domains?
+ list element: local
+remote in domains? no (end of list)
 r1 router skipped: domains mismatch
 --------> r2 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "remote"? yes (matched "remote")
+remote in domains?
+ list element: remote
+ remote in domains? yes (matched "remote")
 calling r2 router
 r2 router called for qq@remote
   domain = remote
 route_item = * 127.0.0.1
-remote in "*"? yes (matched "*")
+remote in "*"?
+ list element: *
+ remote in "*"? yes (matched "*")
 original list of hosts = '127.0.0.1' options = ''
 expanded list of hosts = '127.0.0.1' options = ''
 finding IP address for 127.0.0.1
@@ -114,31 +135,26 @@ domain = remote
   errors_to=NULL
   domain_data=remote local_part_data=NULL
 routed by r2 router
-  envelope to: qq@remote
-  transport: t2
+  envelope to:	qq@remote
+  transport:	t2
   host 127.0.0.1 [127.0.0.1]
 Attempting full verification using callout
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
  EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR
- dbfn_read: key=remote
- callout cache: found domain record for remote
- dbfn_read: key=qq@remote
- callout cache: no address record found for qq@remote
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_read: key=remote
+dbfn_read: size nnn return
+callout cache: found domain record for remote
+dbfn_read: key=qq@remote
+dbfn_read: null return
+callout cache: no address record found for qq@remote
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
 127.0.0.1 in hosts_avoid_esmtp? no (option unset)
   SMTP>> EHLO mail.test.ex
 cmd buf flush ddd bytes
   SMTP<< 250 OK
- compiled RE '.outlook.com$' not found in local cache
- compiling RE '.outlook.com$'
- compiled RE '.outlook.com$' saved in local cache
 not using PIPELINING
 not using DSN
 127.0.0.1 in hosts_require_auth? no (option unset)
@@ -154,46 +170,53 @@ cmd buf flush ddd bytes
   SMTP<< 250 OK
   SMTP(close)>>
 cmdlog: '220:EHLO:250:MAIL:250:RCPT:550:QUIT:250'
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR|O_CREAT
+ EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR|O_CREAT
- dbfn_write: key=remote
- wrote callout cache domain record for remote:
-   result=1 postmaster=0 random=0
- dbfn_write: key=qq@remote
- wrote negative callout cache address record for qq@remote
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_write: key=remote datalen nn
+wrote callout cache domain record for remote:
+  result=1 postmaster=0 random=0
+dbfn_write: key=qq@remote datalen nn
+wrote negative callout cache address record for qq@remote
 ----------- end verify ------------
 l_message: $acl_verify_message
-warn: condition test succeeded in ACL "rcpt"
+warn: condition test succeeded in ACL rcpt
 LOG: MAIN
   U=CALLER Warning: Sender verify failed: 127.0.0.1 [127.0.0.1] : SMTP error from remote mail server after RCPT TO:<qq@remote>: 550 Unknown
-processing "accept" (TESTSUITE/test-config 24)
+processing ACL rcpt "accept" (TESTSUITE/test-config 24)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
-accept: condition test succeeded in ACL "rcpt"
-end of ACL "rcpt": ACCEPT
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
+accept: condition test succeeded in ACL rcpt
+end of ACL rcpt: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< rcpt to:<xyz@local>
 using ACL "rcpt"
-processing "deny" (TESTSUITE/test-config 19)
+processing ACL rcpt "deny" (TESTSUITE/test-config 19)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
 check !verify = sender
 using cached sender verify result
-deny: condition test failed in ACL "rcpt"
-processing "warn" (TESTSUITE/test-config 21)
+deny: condition test failed in ACL rcpt
+processing ACL rcpt "warn" (TESTSUITE/test-config 21)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
 check !verify = sender/callout
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying qq@remote
@@ -204,17 +227,23 @@ routing qq@remote
 --------> r1 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "local"? no (end of list)
+remote in domains?
+ list element: local
+remote in domains? no (end of list)
 r1 router skipped: domains mismatch
 --------> r2 router <--------
 local_part=qq domain=remote
 checking domains
-remote in "remote"? yes (matched "remote")
+remote in domains?
+ list element: remote
+ remote in domains? yes (matched "remote")
 calling r2 router
 r2 router called for qq@remote
   domain = remote
 route_item = * 127.0.0.1
-remote in "*"? yes (matched "*")
+remote in "*"?
+ list element: *
+ remote in "*"? yes (matched "*")
 original list of hosts = '127.0.0.1' options = ''
 expanded list of hosts = '127.0.0.1' options = ''
 finding IP address for 127.0.0.1
@@ -231,38 +260,39 @@ domain = remote
   errors_to=NULL
   domain_data=remote local_part_data=NULL
 routed by r2 router
-  envelope to: qq@remote
-  transport: t2
+  envelope to:	qq@remote
+  transport:	t2
   host 127.0.0.1 [127.0.0.1]
 Attempting full verification using callout
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
  EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR
- dbfn_read: key=remote
- callout cache: found domain record for remote
- dbfn_read: key=qq@remote
- callout cache: found address record for qq@remote
- callout cache: address record is negative
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_read: key=remote
+dbfn_read: size nnn return
+callout cache: found domain record for remote
+dbfn_read: key=qq@remote
+dbfn_read: size nnn return
+callout cache: found address record for qq@remote
+callout cache: address record is negative
 ----------- end verify ------------
 l_message: $acl_verify_message
-warn: condition test succeeded in ACL "rcpt"
+warn: condition test succeeded in ACL rcpt
 LOG: MAIN
   U=CALLER Warning: Sender verify failed
-processing "accept" (TESTSUITE/test-config 24)
+processing ACL rcpt "accept" (TESTSUITE/test-config 24)
 check senders = qq@remote
-address match test: subject=qq@remote pattern=qq@remote
-remote in "remote"? yes (matched "remote")
-qq@remote in "qq@remote"? yes (matched "qq@remote")
-accept: condition test succeeded in ACL "rcpt"
-end of ACL "rcpt": ACCEPT
+qq@remote in "qq@remote"?
+ list element: qq@remote
+ address match test: subject=qq@remote pattern=qq@remote
+ remote in "remote"?
+  list element: remote
+  remote in "remote"? yes (matched "remote")
+ qq@remote in "qq@remote"? yes (matched "qq@remote")
+accept: condition test succeeded in ACL rcpt
+end of ACL rcpt: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< quit
 SMTP>> 221 mail.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

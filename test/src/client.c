@@ -86,7 +86,7 @@ latter needs a whole pile of tables. */
 # include <gnutls/gnutls.h>
 # include <gnutls/x509.h>
 # if GNUTLS_VERSION_NUMBER >= 0x030103
-#  define HAVE_OCSP
+#  define HAVE_GNUTLS_OCSP
 #  include <gnutls/ocsp.h>
 # endif
 # ifndef GNUTLS_NO_EXTENSIONS
@@ -137,6 +137,7 @@ static const int comp_priority[16] = { GNUTLS_COMP_NULL, 0 };
 #ifdef HAVE_TLS
 char * ocsp_stapling = NULL;
 char * pri_string = NULL;
+int tls_quiet = 0;
 #endif
 
 
@@ -211,18 +212,18 @@ len = SSL_get_tlsext_status_ocsp_resp(s, &p);
 /*BIO_printf(arg, "OCSP response: ");*/
 if (!p)
 	{
-	BIO_printf(arg, "no response received\n");
+	BIO_printf(arg, "no OCSP response received\n");
 	return 1;
 	}
 if(!(rsp = d2i_OCSP_RESPONSE(NULL, &p, len)))
 	{
-	BIO_printf(arg, "response parse error\n");
+	BIO_printf(arg, "OCSP response parse error\n");
 	BIO_dump_indent(arg, (char *)p, len, 4);
 	return 0;
 	}
 if(!(bs = OCSP_response_get1_basic(rsp)))
   {
-  BIO_printf(arg, "error parsing response\n");
+  BIO_printf(arg, "error parsing OCSP response\n");
   return 0;
   }
 
@@ -240,12 +241,12 @@ when OCSP_NOVERIFY is set.  The content from the wire
 
 if(OCSP_basic_verify(bs, sk, NULL, OCSP_NOVERIFY) <= 0)
   {
-  BIO_printf(arg, "Response Verify Failure\n");
+  BIO_printf(arg, "OCSP status response verify failure\n");
   ERR_print_errors(arg);
   ret = 0;
   }
 else
-  BIO_printf(arg, "Response verify OK\n");
+  BIO_printf(arg, "OCSP status response: good signature\n");
 
 cert_stack_free(sk);
 return ret;
@@ -711,7 +712,7 @@ nextinput:
 	if (*inptr != 0)
 	  goto nextinput;
 
-    #ifdef HAVE_TLS
+#ifdef HAVE_TLS
     if (srv->sent_starttls)
       {
       if (lineptr[0] == '2')
@@ -721,11 +722,11 @@ nextinput:
         printf("Attempting to start TLS\n");
         fflush(stdout);
 
-        #ifdef HAVE_OPENSSL
+# ifdef HAVE_OPENSSL
         srv->tls_active = tls_start(srv->sock, &srv->ssl, srv->ctx);
-        #endif
+# endif
 
-        #ifdef HAVE_GNUTLS
+# ifdef HAVE_GNUTLS
 	  {
 	  int rc;
 	  fd_set rfd;
@@ -739,7 +740,7 @@ nextinput:
 	  srv->tls_active = rc >= 0;
 	  alarm(0);
 
-	  if (!srv->tls_active) printf("%s\n", gnutls_strerror(rc));
+	  if (!srv->tls_active && !tls_quiet) printf("gnutls_handshake: %s\n", gnutls_strerror(rc));
 
 	  /* look for an error on the TLS conn */
 	  FD_ZERO(&rfd);
@@ -754,20 +755,27 @@ nextinput:
 	      DEBUG { printf("gnutls_record_recv: %s\n", gnutls_strerror(rc)); fflush(stdout); }
 	      if (rc == GNUTLS_E_INTERRUPTED || rc == GNUTLS_E_AGAIN)
 		goto retry2;
-	      printf("%s\n", gnutls_strerror(rc));
+	      if (!tls_quiet) printf("gnutls_record_recv: %s\n", gnutls_strerror(rc));
 	      srv->tls_active = FALSE;
 	      }
 	    DEBUG { printf("gnutls_record_recv: %d\n", rc); fflush(stdout); }
 	    }
 	  }
-        #endif
+# endif	/*HAVE_GNUTLS*/
 
-        if (!srv->tls_active)
-          {
-          printf("Failed to start TLS\n");
-          fflush(stdout);
-          }
-	#ifdef HAVE_GNUTLS
+        if (!tls_quiet)
+          if (!srv->tls_active)
+            {
+            printf("Failed to start TLS\n");
+            fflush(stdout);
+            }
+
+# ifdef HAVE_OPENSSL
+	  else if (ocsp_stapling)
+	    printf("Succeeded in starting TLS (with OCSP)\n");
+# endif
+
+# ifdef HAVE_GNUTLS
 	else if (ocsp_stapling)
 	  {
 	  if ((rc= gnutls_certificate_verify_peers2(tls_session, &verify)) < 0)
@@ -780,7 +788,7 @@ nextinput:
 	    printf("Bad certificate\n");
 	    fflush(stdout);
 	    }
-	  #ifdef HAVE_OCSP
+#  ifdef HAVE_GNUTLS_OCSP
 	  else if (gnutls_ocsp_status_request_is_checked(tls_session, 0) == 0)
 	    {
 	    printf("Failed to verify certificate status\n");
@@ -802,13 +810,20 @@ nextinput:
 	      }
 	    fflush(stdout);
 	    }
-	  #endif
+	    else
+	      {
+	      printf("OCSP status response: good signature\n");
+	      printf("Succeeded in starting TLS (with OCSP)\n");
+	      }
+# endif	/*HAVE_GNUTLS_OCSP*/
 	  }
-	#endif
+# endif	/*HAVE_GNUTLS*/
+
         else
           printf("Succeeded in starting TLS\n");
         }
-      else printf("Abandoning TLS start attempt\n");
+      else
+        printf("Abandoning TLS start attempt\n");
       }
     srv->sent_starttls = 0;
     #endif
@@ -952,6 +967,7 @@ Usage: client\n"
 #ifdef HAVE_TLS
 "\
           [-tls-on-connect]\n\
+	  [-tls-quiet]\n\
           [-ocsp]\n"
 # ifdef HAVE_GNUTLS
 "\
@@ -1007,12 +1023,17 @@ while (argc >= argi + 1 && argv[argi][0] == '-')
     puts(HELP_MESSAGE);
     exit(0);
     }
+#ifdef HAVE_TLS
   if (strcmp(argv[argi], "-tls-on-connect") == 0)
     {
     tls_on_connect = 1;
     argi++;
     }
-#ifdef HAVE_TLS
+  else if (strcmp(argv[argi], "-tls-quiet") == 0)
+    {
+    tls_quiet = 1;
+    argi++;
+    }
   else if (strcmp(argv[argi], "-ocsp") == 0)
     {
     if (argc < ++argi + 1)
@@ -1032,8 +1053,7 @@ while (argc >= argi + 1 && argv[argi][0] == '-')
       }
     pri_string = argv[argi++];
     }
-#endif
-
+# endif
 #endif
   else if (argv[argi][1] == 't' && isdigit(argv[argi][2]))
     {
@@ -1289,7 +1309,7 @@ if (certfile != NULL) printf("Certificate file = %s\n", certfile);
 if (keyfile != NULL) printf("Key file = %s\n", keyfile);
 tls_init(US certfile, US keyfile);
 tls_session = tls_session_init();
-#ifdef HAVE_OCSP
+#ifdef HAVE_GNUTLS_OCSP
 if (ocsp_stapling)
   gnutls_ocsp_status_request_enable_client(tls_session, NULL, 0, NULL);
 #endif
@@ -1333,15 +1353,16 @@ if (tls_on_connect)
   }
 #endif
 
-  if (!srv.tls_active)
-    printf("Failed to start TLS\n");
-#if defined(HAVE_GNUTLS) && defined(HAVE_OCSP)
-  else if (  ocsp_stapling
-	  && gnutls_ocsp_status_request_is_checked(tls_session, 0) == 0)
-    printf("Failed to verify certificate status\n");
+  if (!tls_quiet)
+    if (!srv.tls_active)
+      printf("Failed to start TLS\n");
+#if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_OCSP)
+    else if (  ocsp_stapling
+	    && gnutls_ocsp_status_request_is_checked(tls_session, 0) == 0)
+      printf("Failed to verify certificate status\n");
 #endif
-  else
-    printf("Succeeded in starting TLS\n");
+    else
+      printf("Succeeded in starting TLS%s\n", ocsp_stapling ? " (with OCSP)":"");
   }
 #endif
 

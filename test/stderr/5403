@@ -6,27 +6,34 @@
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
->>> myhost.test.ex in helo_lookup_domains? yes (matched "@")
+>>> myhost.test.ex in helo_lookup_domains?
+>>>  list element: @
+>>>  myhost.test.ex in helo_lookup_domains? yes (matched "@")
 >>> looking up host name for 1.2.3.4
 LOG: no host name found for IP address 1.2.3.4
+>>>  list element: *
+>>>  host in limits_advertise_hosts? yes (matched "*")
 >>> host in dsn_advertise_hosts? no (option unset)
->>> host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in pipelining_advertise_hosts?
+>>>  list element: *
+>>>  host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in chunking_advertise_hosts?
 >>> host in chunking_advertise_hosts? no (end of list)
 >>> using ACL "ar"
->>> processing "warn" (TESTSUITE/test-config 21)
+>>> processing ACL ar "warn" (TESTSUITE/test-config 21)
 >>> check control = cutthrough_delivery
 >>> check logwrite = rcpt for $local_part@$domain
 >>>                = rcpt for plain@domain.com
 LOG: rcpt for plain@domain.com
->>> warn: condition test succeeded in ACL "ar"
->>> processing "warn" (TESTSUITE/test-config 23)
+>>> warn: condition test succeeded in ACL ar
+>>> processing ACL ar "warn" (TESTSUITE/test-config 23)
 >>> check condition = ${if eq {verify}{$local_part}}
 >>>                 = 
->>> warn: condition test failed in ACL "ar"
->>> processing "accept" (TESTSUITE/test-config 25)
->>> accept: condition test succeeded in ACL "ar"
->>> end of ACL "ar": ACCEPT
-LOG: 10HmaX-0005vi-00 <= CALLER@myhost.test.ex H=(myhost.test.ex) [1.2.3.4] P=esmtp S=sss for plain@domain.com
+>>> warn: condition test failed in ACL ar
+>>> processing ACL ar "accept" (TESTSUITE/test-config 25)
+>>> accept: condition test succeeded in ACL ar
+>>> end of ACL ar: ACCEPT
+LOG: 10HmaX-000000005vi-0000 <= CALLER@myhost.test.ex H=(myhost.test.ex) [1.2.3.4] P=esmtp S=sss for plain@domain.com
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -35,31 +42,53 @@ LOG: 10HmaX-0005vi-00 <= CALLER@myhost.test.ex H=(myhost.test.ex) [1.2.3.4] P=es
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
->>> myhost.test.ex in helo_lookup_domains? yes (matched "@")
+>>> myhost.test.ex in helo_lookup_domains?
+>>>  list element: @
+>>>  myhost.test.ex in helo_lookup_domains? yes (matched "@")
 >>> looking up host name for 1.2.3.4
 LOG: no host name found for IP address 1.2.3.4
+>>>  list element: *
+>>>  host in limits_advertise_hosts? yes (matched "*")
 >>> host in dsn_advertise_hosts? no (option unset)
->>> host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in pipelining_advertise_hosts?
+>>>  list element: *
+>>>  host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in chunking_advertise_hosts?
 >>> host in chunking_advertise_hosts? no (end of list)
 >>> using ACL "ar"
->>> processing "warn" (TESTSUITE/test-config 21)
+>>> processing ACL ar "warn" (TESTSUITE/test-config 21)
 >>> check control = cutthrough_delivery
 >>> check logwrite = rcpt for $local_part@$domain
 >>>                = rcpt for verify@domain.com
 LOG: rcpt for verify@domain.com
->>> warn: condition test succeeded in ACL "ar"
->>> processing "warn" (TESTSUITE/test-config 23)
+>>> warn: condition test succeeded in ACL ar
+>>> processing ACL ar "warn" (TESTSUITE/test-config 23)
 >>> check condition = ${if eq {verify}{$local_part}}
 >>>                 = true
 >>> check verify = recipient/callout=use_sender
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing verify@domain.com
->>> domain.com in "localhost.test.ex : localhost4.test.ex : thishost.test.ex"? no (end of list)
->>> domain.com in "test.ex : *.test.ex"? no (end of list)
->>> domain.com in "! +local_domains"? yes (end of list)
+>>> domain.com in domains?
+>>>  list element: localhost.test.ex
+>>>  list element: localhost4.test.ex
+>>>  list element: thishost.test.ex
+>>> domain.com in domains? no (end of list)
+>>> domain.com in domains?
+>>>  list element: !░+local_domains
+>>>   start sublist local_domains
+>>>    domain.com in "test.ex : *.test.ex"?
+>>>    ╎list element: test.ex
+>>>    ╎list element: *.test.ex
+>>>    domain.com in "test.ex : *.test.ex"? no (end of list)
+>>>   end sublist local_domains
+>>> domain.com in domains? yes (end of list)
 >>> calling all router
+>>> domain.com in "special.com"?
+>>>  list element: special.com
 >>> domain.com in "special.com"? no (end of list)
->>> domain.com in "*"? yes (matched "*")
+>>> domain.com in "*"?
+>>>  list element: *
+>>>  domain.com in "*"? yes (matched "*")
 >>> local host found for non-MX address
 >>> fully qualified name = 127.0.0.1
 MUNGED: ::1 will be omitted in what follows
@@ -69,7 +98,8 @@ MUNGED: ::1 will be omitted in what follows
 >>> Attempting full verification using callout
 >>> callout cache: disabled by no_cache
 >>> interface=ip4.ip4.ip4.ip4 port=PORT_S
->>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S from ip4.ip4.ip4.ip4 ...  connected
+>>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S from ip4.ip4.ip4.ip4 ...
+>>> connected
 >>>   SMTP<< 220 server ready
 >>> 127.0.0.1 in hosts_avoid_esmtp? no (option unset)
 >>>   SMTP>> EHLO myhost.test.ex
@@ -84,13 +114,13 @@ MUNGED: ::1 will be omitted in what follows
 >>>   SMTP<< 250 OK
 >>> holding verify callout open for cutthrough delivery
 >>> ----------- end verify ------------
->>> warn: condition test succeeded in ACL "ar"
->>> processing "accept" (TESTSUITE/test-config 25)
->>> accept: condition test succeeded in ACL "ar"
->>> end of ACL "ar": ACCEPT
+>>> warn: condition test succeeded in ACL ar
+>>> processing ACL ar "accept" (TESTSUITE/test-config 25)
+>>> accept: condition test succeeded in ACL ar
+>>> end of ACL ar: ACCEPT
 >>>   SMTP>> QUIT
 >>>   SMTP<< 220 OK
 >>>   SMTP(close)>>
 >>> cmdlog: '220:EHLO:250:MAIL:250:RCPT:250:QUIT:220'
 >>> ----------- cutthrough shutdown (host-checking mode) ------------
-LOG: 10HmaY-0005vi-00 <= sender@myhost.test.ex H=(myhost.test.ex) [1.2.3.4] P=esmtp S=sss for verify@domain.com
+LOG: 10HmaY-000000005vi-0000 <= sender@myhost.test.ex H=(myhost.test.ex) [1.2.3.4] P=esmtp S=sss for verify@domain.com

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* The stand-alone version just tests the algorithm. We have to drag
@@ -12,15 +13,17 @@ in the MD5 computation functions, without their own stand-alone main
 program. */
 
 #ifdef STAND_ALONE
-#define CRAM_STAND_ALONE
-#include "md5.c"
+# define CRAM_STAND_ALONE
+# include "md5.c"
 
 
 /* This is the normal, non-stand-alone case */
 
 #else
-#include "../exim.h"
-#include "cram_md5.h"
+# include "../exim.h"
+
+# ifdef AUTH_CRAM_MD5
+#  include "cram_md5.h"
 
 /* Options specific to the cram_md5 authentication mechanism. */
 
@@ -48,15 +51,15 @@ auth_cram_md5_options_block auth_cram_md5_option_defaults = {
 };
 
 
-#ifdef MACRO_PREDEF
+#  ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_cram_md5_init(auth_instance *ablock) {}
+void auth_cram_md5_init(driver_instance* ablock) {}
 int auth_cram_md5_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_cram_md5_client(auth_instance *ablock, void *sx, int timeout,
     uschar *buffer, int buffsize) {return 0;}
 
-#else	/*!MACRO_PREDEF*/
+#  else	/*!MACRO_PREDEF*/
 
 
 /*************************************************
@@ -68,20 +71,24 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-auth_cram_md5_init(auth_instance *ablock)
+auth_cram_md5_init(driver_instance * a)
 {
-auth_cram_md5_options_block *ob =
-  (auth_cram_md5_options_block *)(ablock->options_block);
-if (ob->server_secret != NULL) ablock->server = TRUE;
-if (ob->client_secret != NULL)
+auth_instance * ablock = (auth_instance *)a;
+auth_cram_md5_options_block * ob =
+  (auth_cram_md5_options_block *)(a->options_block);
+
+if (ob->server_secret)
+  ablock->server = TRUE;
+if (ob->client_secret)
   {
   ablock->client = TRUE;
-  if (ob->client_name == NULL) ob->client_name = primary_hostname;
+  if (!ob->client_name) ob->client_name = primary_hostname;
   }
 }
 
-#endif	/*!MACRO_PREDEF*/
-#endif  /* STAND_ALONE */
+#  endif	/*!MACRO_PREDEF*/
+# endif		/*AUTH_CRAM_MD5*/
+#endif		/*!STAND_ALONE*/
 
 
 
@@ -153,7 +160,8 @@ md5_end(&base, md5secret, 16, digestptr);
 }
 
 
-#ifndef STAND_ALONE
+# ifndef STAND_ALONE
+#  ifdef AUTH_CRAM_MD5
 
 /*************************************************
 *             Server entry point                 *
@@ -162,13 +170,12 @@ md5_end(&base, md5secret, 16, digestptr);
 /* For interface, see auths/README */
 
 int
-auth_cram_md5_server(auth_instance *ablock, uschar *data)
+auth_cram_md5_server(auth_instance * ablock, uschar * data)
 {
-auth_cram_md5_options_block *ob =
-  (auth_cram_md5_options_block *)(ablock->options_block);
-uschar *challenge = string_sprintf("<%d.%ld@%s>", getpid(),
+auth_cram_md5_options_block * ob = ablock->drinst.options_block;
+uschar * challenge = string_sprintf("<%d.%ld@%s>", getpid(),
     (long int) time(NULL), primary_hostname);
-uschar *clear, *secret;
+uschar * clear, * secret;
 uschar digest[16];
 int i, rc, len;
 
@@ -185,7 +192,7 @@ if (*data) return UNEXPECTED;
 /* Send the challenge, read the return */
 
 if ((rc = auth_get_data(&data, challenge, Ustrlen(challenge))) != OK) return rc;
-if ((len = b64decode(data, &clear)) < 0) return BAD64;
+if ((len = b64decode(data, &clear, GET_TAINTED)) < 0) return BAD64;
 
 /* The return consists of a user name, space-separated from the CRAM-MD5
 digest, expressed in hex. Extract the user name and put it in $auth1 and $1.
@@ -193,7 +200,7 @@ The former is now the preferred variable; the latter is the original one. Then
 check that the remaining length is 32. */
 
 auth_vars[0] = expand_nstring[1] = clear;
-while (*clear && !isspace(*clear)) clear++;
+Uskip_nonwhite(&clear);
 if (!isspace(*clear)) return FAIL;
 *clear++ = 0;
 
@@ -264,8 +271,7 @@ auth_cram_md5_client(
   uschar *buffer,                        /* for reading response */
   int buffsize)                          /* size of buffer */
 {
-auth_cram_md5_options_block *ob =
-  (auth_cram_md5_options_block *)(ablock->options_block);
+auth_cram_md5_options_block * ob = ablock->drinst.options_block;
 uschar *secret = expand_string(ob->client_secret);
 uschar *name = expand_string(ob->client_name);
 uschar *challenge, *p;
@@ -285,7 +291,7 @@ if (!secret || !name)
   string_format(buffer, buffsize, "expansion of \"%s\" failed in "
     "%s authenticator: %s",
     !secret ? ob->client_secret : ob->client_name,
-    ablock->name, expand_string_message);
+    ablock->drinst.name, expand_string_message);
   return ERROR;
   }
 
@@ -297,7 +303,7 @@ if (smtp_write_command(sx, SCMD_FLUSH, "AUTH %s\r\n", ablock->public_name) < 0)
 if (!smtp_read_response(sx, buffer, buffsize, '3', timeout))
   return FAIL;
 
-if (b64decode(buffer + 4, &challenge) < 0)
+if (b64decode(buffer + 4, &challenge, buffer + 4) < 0)
   {
   string_format(buffer, buffsize, "bad base 64 string in challenge: %s",
     big_buffer + 4);
@@ -328,8 +334,33 @@ if (smtp_write_command(sx, SCMD_FLUSH, "%s\r\n", b64encode(CUS big_buffer,
 return smtp_read_response(sx, US buffer, buffsize, '2', timeout)
   ? OK : FAIL;
 }
-#endif  /* STAND_ALONE */
 
+
+# ifdef DYNLOOKUP
+#  define cram_md5_auth_info _auth_info
+# endif
+
+auth_info cram_md5_auth_info = {
+.drinfo = {
+  .driver_name =	US"cram_md5",                   /* lookup name */
+  .options =		auth_cram_md5_options,
+  .options_count =	&auth_cram_md5_options_count,
+  .options_block =	&auth_cram_md5_option_defaults,
+  .options_len =	sizeof(auth_cram_md5_options_block),
+  .init =		auth_cram_md5_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_cram_md5_server,
+.clientcode =		auth_cram_md5_client,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+
+#  endif  /*AUTH_CRAM_MD5*/
+# endif  /*!STAND_ALONE*/
 
 /*************************************************
 **************************************************
@@ -337,7 +368,7 @@ return smtp_read_response(sx, US buffer, buffsize, '2', timeout)
 **************************************************
 *************************************************/
 
-#ifdef STAND_ALONE
+# ifdef STAND_ALONE
 
 int main(int argc, char **argv)
 {
@@ -354,7 +385,7 @@ printf("\n");
 return 0;
 }
 
-#endif
+# endif	/*STAND_ALONE*/
 
 #endif	/*!MACRO_PREDEF*/
 /* End of cram_md5.c */

@@ -1,4 +1,4 @@
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo abcd
@@ -6,6 +6,8 @@ Connecting to 127.0.0.1 port 1225 ... connected
 <<< 250-myhost.test.ex Hello abcd [127.0.0.1]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-
@@ -22,16 +24,16 @@ Connecting to 127.0.0.1 port 1225 ... connected
 >>> This is a test message.
 +++ 2
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 +++ 2
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> unknown
@@ -47,7 +49,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 500
 <<< 500 Too many unrecognized commands
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> vrfy
@@ -66,7 +68,7 @@ Connecting to 127.0.0.1 port 1225 ... connected
 ??? 554
 <<< 554 Too many nonmail commands
 End of script
-Connecting to 127.0.0.1 port 1225 ... connected
+Connecting to 127.0.0.1 port PORT_D ... connected
 ??? 220
 <<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 >>> ehlo abcd
@@ -74,6 +76,8 @@ Connecting to 127.0.0.1 port 1225 ... connected
 <<< 250-myhost.test.ex Hello abcd [127.0.0.1]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-

@@ -1,7 +1,9 @@
 #!PERL_COMMAND
 
+# Copyright (c) The Exim Maintainers 2023
 # Copyright (c) 2001-2017 University of Cambridge.
 # See the file NOTICE for conditions of use and distribution.
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 # Perl script to generate statistics from one or more Exim log files.
 
@@ -393,7 +395,7 @@ Show the delivery times (B<DT>)for all the messages.
 Exim must have been configured to use the +deliver_time logging option
 for this option to work.
 
-I<list> is an optional list of times. Eg -show_dt1,2,4,8 will show
+I<list> is an optional list of times. E.g. -show_dt1,2,4,8 will show
 the number of messages with delivery times under 1 second, 2 seconds, 4 seconds,
 8 seconds, and over 8 seconds.
 
@@ -406,7 +408,7 @@ These figures will be skewed by pipelined messages so might not be that useful.
 Exim must have been configured to use the +queue_time_overall logging option
 for this option to work.
 
-I<list> is an optional list of times. Eg -show_rt1,2,4,8 will show
+I<list> is an optional list of times. E.g. -show_rt1,2,4,8 will show
 the number of messages with receipt times under 1 second, 2 seconds, 4 seconds,
 8 seconds, and over 8 seconds.
 
@@ -434,14 +436,14 @@ May be combined with B<-byhost> and/or B<-bydomain> and/or B<-byemail>.
 =item B<-pattern> I<Description> I</Pattern/>
 
 Look for the specified pattern and count the number of lines in which it appears.
-This option can be specified multiple times. Eg:
+This option can be specified multiple times:
 
  -pattern 'Refused connections' '/refused connection/'
 
 
 =item B<-merge>
 
-This option allows eximstats to merge old eximstat reports together. Eg:
+This option allows eximstats to merge old eximstat reports together:
 
  eximstats mainlog.sun > report.sun.txt
  eximstats mainlog.mon > report.mon.txt
@@ -518,8 +520,8 @@ we will output an error message if we don't find any.
 =item B<-d>
 
 Debug flag. This outputs the eval()'d parser onto STDOUT which makes it
-easier to trap errors in the eval section. Remember to add 1 to the line numbers to allow for the
-title!
+easier to trap errors in the eval section.
+Remember to add 1 to the line numbers to allow for the title!
 
 =back
 
@@ -557,7 +559,7 @@ use File::Basename;
 # use Time::Local;  # PH/FANF
 use POSIX;
 
-if (@ARGV and $ARGV[0] eq '--version') {
+if (@ARGV and ($ARGV[0] eq '--version' || $ARGV[0] eq '-v')) {
     print basename($0) . ": $0\n",
         "build: EXIM_RELEASE_VERSIONEXIM_VARIANT_VERSION\n",
         "perl(runtime): $]\n";
@@ -1898,7 +1900,11 @@ sub generate_parser {
       next if ($length < 38 + $extra);
     }
 
-    $id   = substr($_, 20 + $extra, 16);
+    # $id = substr($_, 20 + $extra, 16);	# old ID was 16 chars
+    $id = substr($_, 20 + $extra, 23);		# new IS is 23 chars
+    $id =~ s/(\S+).*/$1/;
+    $extra += length($id) - 16;
+
     $flag = substr($_, 37 + $extra, 2);
 
     if ($flag !~ /^([<>=*-]+|SA)$/ && /rejected|refused|dropped/) {
@@ -4243,4 +4249,5 @@ if ($xls_fh) {
 }
 
 
+# vim:ft=perl:
 # End of eximstats

@@ -1,15 +1,16 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 dropping to exim gid; retaining priv uid
-locking TESTSUITE/spool/db/retry.lockfile
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: a1@myhost.test.ex
@@ -40,14 +41,17 @@ routing d3@myhost.test.ex
 --------> u1 router <--------
 local_part=d3 domain=myhost.test.ex
 checking local_parts
+d3 in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=d3 domain=myhost.test.ex
 checking local_parts
+d3 in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=d3 domain=myhost.test.ex
 checking local_parts
+d3 in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=d3 domain=myhost.test.ex
@@ -61,22 +65,25 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^d\d
 routed by ut4 router (unseen)
-  envelope to: d3@myhost.test.ex
-  transport: ut4
+  envelope to:	d3@myhost.test.ex
+  transport:	ut4
 "unseen" set: replicated d3@myhost.test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing d2@myhost.test.ex
 --------> u1 router <--------
 local_part=d2 domain=myhost.test.ex
 checking local_parts
+d2 in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=d2 domain=myhost.test.ex
 checking local_parts
+d2 in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=d2 domain=myhost.test.ex
 checking local_parts
+d2 in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=d2 domain=myhost.test.ex
@@ -89,22 +96,25 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^d\d
 routed by ut4 router (unseen)
-  envelope to: d2@myhost.test.ex
-  transport: ut4
+  envelope to:	d2@myhost.test.ex
+  transport:	ut4
 "unseen" set: replicated d2@myhost.test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing d1@myhost.test.ex
 --------> u1 router <--------
 local_part=d1 domain=myhost.test.ex
 checking local_parts
+d1 in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=d1 domain=myhost.test.ex
 checking local_parts
+d1 in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=d1 domain=myhost.test.ex
 checking local_parts
+d1 in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=d1 domain=myhost.test.ex
@@ -117,18 +127,20 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^d\d
 routed by ut4 router (unseen)
-  envelope to: d1@myhost.test.ex
-  transport: ut4
+  envelope to:	d1@myhost.test.ex
+  transport:	ut4
 "unseen" set: replicated d1@myhost.test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing c1@myhost.test.ex
 --------> u1 router <--------
 local_part=c1 domain=myhost.test.ex
 checking local_parts
+c1 in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=c1 domain=myhost.test.ex
 checking local_parts
+c1 in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=c1 domain=myhost.test.ex
@@ -142,14 +154,15 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^c\d
 routed by ut3 router (unseen)
-  envelope to: c1@myhost.test.ex
-  transport: ut3
+  envelope to:	c1@myhost.test.ex
+  transport:	ut3
 "unseen" set: replicated c1@myhost.test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing b1@myhost.test.ex
 --------> u1 router <--------
 local_part=b1 domain=myhost.test.ex
 checking local_parts
+b1 in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=b1 domain=myhost.test.ex
@@ -163,8 +176,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^b\d
 routed by ut2 router (unseen)
-  envelope to: b1@myhost.test.ex
-  transport: ut2
+  envelope to:	b1@myhost.test.ex
+  transport:	ut2
 "unseen" set: replicated b1@myhost.test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing a1@myhost.test.ex
@@ -180,10 +193,9 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=^a\d
 routed by u1 router (unseen)
-  envelope to: a1@myhost.test.ex
-  transport: ut1
+  envelope to:	a1@myhost.test.ex
+  transport:	ut1
 "unseen" set: replicated a1@myhost.test.ex
-locking TESTSUITE/spool/db/retry.lockfile
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: a1@myhost.test.ex
@@ -222,8 +234,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: d3@myhost.test.ex
-  transport: real
+  envelope to:	d3@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing d2@myhost.test.ex
 --------> real router <--------
@@ -236,8 +248,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: d2@myhost.test.ex
-  transport: real
+  envelope to:	d2@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing d1@myhost.test.ex
 --------> real router <--------
@@ -250,13 +262,14 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: d1@myhost.test.ex
-  transport: real
+  envelope to:	d1@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing c1@myhost.test.ex
 --------> ut4 router <--------
 local_part=c1 domain=myhost.test.ex
 checking local_parts
+c1 in local_parts? no (end of list)
 ut4 router skipped: local_parts mismatch
 --------> real router <--------
 local_part=c1 domain=myhost.test.ex
@@ -268,17 +281,19 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: c1@myhost.test.ex
-  transport: real
+  envelope to:	c1@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing b1@myhost.test.ex
 --------> ut3 router <--------
 local_part=b1 domain=myhost.test.ex
 checking local_parts
+b1 in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=b1 domain=myhost.test.ex
 checking local_parts
+b1 in local_parts? no (end of list)
 ut4 router skipped: local_parts mismatch
 --------> real router <--------
 local_part=b1 domain=myhost.test.ex
@@ -290,21 +305,24 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: b1@myhost.test.ex
-  transport: real
+  envelope to:	b1@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing a1@myhost.test.ex
 --------> ut2 router <--------
 local_part=a1 domain=myhost.test.ex
 checking local_parts
+a1 in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=a1 domain=myhost.test.ex
 checking local_parts
+a1 in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=a1 domain=myhost.test.ex
 checking local_parts
+a1 in local_parts? no (end of list)
 ut4 router skipped: local_parts mismatch
 --------> real router <--------
 local_part=a1 domain=myhost.test.ex
@@ -316,8 +334,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: a1@myhost.test.ex
-  transport: real
+  envelope to:	a1@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -336,62 +354,60 @@ After routing:
     d3@myhost.test.ex
   Failed addresses:
   Deferred addresses:
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1237 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => a1 <a1@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1238 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => b1 <b1@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1239 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => c1 <c1@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1240 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => d1 <d1@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1241 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => d2 <d2@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1242 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => d3 <d3@myhost.test.ex> R=real T=real
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1243 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => a1 <a1@myhost.test.ex> R=u1 T=ut1
-locking TESTSUITE/spool/db/retry.lockfile
 transport error EPIPE ignored
+>>>>>>>>>>>>>>>> Exim pid=p1244 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
-  ** b1@myhost.test.ex R=ut2 T=ut2: Child process of ut2 transport returned 127 (could mean unable to exec or command does not exist) from command: /non/existent/file
-locking TESTSUITE/spool/db/retry.lockfile
+  ** b1@myhost.test.ex R=ut2 T=ut2 : Child process of ut2 transport returned 127 (could mean unable to exec or command does not exist) from command: /non/existent/file
 transport error EPIPE ignored
+>>>>>>>>>>>>>>>> Exim pid=p1245 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   == c1@myhost.test.ex R=ut3 T=ut3 defer (0): Child process of ut3 transport returned 127 (could mean unable to exec or command does not exist) from command: /non/existent/file
-locking TESTSUITE/spool/db/retry.lockfile
-locking TESTSUITE/spool/db/wait-ut4.lockfile
-cmdlog: '220'
+cmdlog: '220:EHLO:220:MAIL:250:RCPT:250:DATA:334:.:250:QUIT+:250'
+>>>>>>>>>>>>>>>> Exim pid=p1246 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => d1@myhost.test.ex R=ut4 T=ut4 H=127.0.0.1 [127.0.0.1] C="250 OK"
-locking TESTSUITE/spool/db/retry.lockfile
-cmdlog: '220'
+cmdlog: '220:EHLO:220:MAIL:250:RCPT:450:QUIT+:250'
+>>>>>>>>>>>>>>>> Exim pid=p1247 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   == d2@myhost.test.ex R=ut4 T=ut4 defer (-44) H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after RCPT TO:<d2@myhost.test.ex>: 450 soft error
-locking TESTSUITE/spool/db/retry.lockfile
-locking TESTSUITE/spool/db/wait-ut4.lockfile
-cmdlog: '220'
+cmdlog: '220:EHLO:220:MAIL:250:RCPT:550:QUIT+:250'
+>>>>>>>>>>>>>>>> Exim pid=p1248 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
-  ** d3@myhost.test.ex R=ut4 T=ut4 H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after RCPT TO:<d3@myhost.test.ex>: 550 hard error
-locking TESTSUITE/spool/db/retry.lockfile
+  ** d3@myhost.test.ex R=ut4 T=ut4 H=127.0.0.1 [127.0.0.1] : SMTP error from remote mail server after RCPT TO:<d3@myhost.test.ex>: 550 hard error
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: MAIN
-  <= <> R=10HmaX-0005vi-00 U=EXIMUSER P=local S=sss
+  <= <> R=10HmaX-000000005vi-0000 U=EXIMUSER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 dropping to exim gid; retaining priv uid
-locking TESTSUITE/spool/db/retry.lockfile
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: CALLER@myhost.test.ex
 unique = CALLER@myhost.test.ex
@@ -401,18 +417,22 @@ routing CALLER@myhost.test.ex
 --------> u1 router <--------
 local_part=CALLER domain=myhost.test.ex
 checking local_parts
+CALLER in local_parts? no (end of list)
 u1 router skipped: local_parts mismatch
 --------> ut2 router <--------
 local_part=CALLER domain=myhost.test.ex
 checking local_parts
+CALLER in local_parts? no (end of list)
 ut2 router skipped: local_parts mismatch
 --------> ut3 router <--------
 local_part=CALLER domain=myhost.test.ex
 checking local_parts
+CALLER in local_parts? no (end of list)
 ut3 router skipped: local_parts mismatch
 --------> ut4 router <--------
 local_part=CALLER domain=myhost.test.ex
 checking local_parts
+CALLER in local_parts? no (end of list)
 ut4 router skipped: local_parts mismatch
 --------> real router <--------
 local_part=CALLER domain=myhost.test.ex
@@ -425,8 +445,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by real router
-  envelope to: CALLER@myhost.test.ex
-  transport: real
+  envelope to:	CALLER@myhost.test.ex
+  transport:	real
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -434,12 +454,12 @@ After routing:
   Remote deliveries:
   Failed addresses:
   Deferred addresses:
-locking TESTSUITE/spool/db/retry.lockfile
+>>>>>>>>>>>>>>>> Exim pid=p1251 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   => CALLER <CALLER@myhost.test.ex> R=real T=real
 LOG: MAIN
   Completed
->>>>>>>>>>>>>>>> Exim pid=p1238 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> Exim pid=p1237 (bounce-message) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1250 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1249 (bounce-message) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1236 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

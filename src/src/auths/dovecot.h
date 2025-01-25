@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* Copyright (c) The Exim Maintainters 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Private structure for the private options. */
 
@@ -24,7 +25,7 @@ extern auth_dovecot_options_block auth_dovecot_option_defaults;
 
 /* The entry points for the mechanism */
 
-extern void auth_dovecot_init(auth_instance *);
+extern void auth_dovecot_init(driver_instance *);
 extern int auth_dovecot_server(auth_instance *, uschar *);
 
 /* End of dovecot.h */

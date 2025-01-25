@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2024 */
 /* Copyright (c) Jeremy Harris 1995 - 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file provides an Exim authenticator driver for
 a server to verify a client SSL certificate
@@ -11,6 +13,8 @@ a server to verify a client SSL certificate
 
 
 #include "../exim.h"
+
+#ifdef AUTH_TLS		/* Remainder of file */
 #include "tls.h"
 
 /* Options specific to the tls authentication mechanism. */
@@ -43,7 +47,7 @@ auth_tls_options_block auth_tls_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_tls_init(auth_instance *ablock) {}
+void auth_tls_init(driver_instance *ablock) {}
 int auth_tls_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_tls_client(auth_instance *ablock, void * sx,
   int timeout, uschar *buffer, int buffsize) {return 0;}
@@ -62,9 +66,10 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-auth_tls_init(auth_instance *ablock)
+auth_tls_init(driver_instance * a)
 {
-ablock->public_name = ablock->name;	/* needed for core code */
+auth_instance * ablock = (auth_instance *)a;
+ablock->public_name = a->name;	/* needed for core code */
 }
 
 
@@ -78,7 +83,7 @@ ablock->public_name = ablock->name;	/* needed for core code */
 int
 auth_tls_server(auth_instance *ablock, uschar *data)
 {
-auth_tls_options_block * ob = (auth_tls_options_block *)ablock->options_block;
+auth_tls_options_block * ob = ablock->drinst.options_block;
 
 if (ob->server_param1)
   auth_vars[expand_nmax++] = expand_string(ob->server_param1);
@@ -90,5 +95,28 @@ return auth_check_serv_cond(ablock);
 }
 
 
-#endif   /*!MACRO_PREDEF*/
+# ifdef DYNLOOKUP
+#  define tls_auth_info _auth_info
+# endif
+
+auth_info tls_auth_info = {
+.drinfo = {
+  .driver_name =	US"tls",                   /* lookup name */
+  .options =		auth_tls_options,
+  .options_count =	&auth_tls_options_count,
+  .options_block =	&auth_tls_option_defaults,
+  .options_len =	sizeof(auth_tls_options_block),
+  .init =		auth_tls_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_tls_server,
+.clientcode =		NULL,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*AUTH_TLS*/
 /* End of tls.c */

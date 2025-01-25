@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 originator: uid=CALLER_UID gid=CALLER_GID login=CALLER name=CALLER_NAME
@@ -7,33 +8,35 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 Sender: CALLER@test.ex
 >>Headers received:
-To: x@y.z
-Cc: a@b.c
-Bcc: p@q.r
+ To: x@y.z
+ Cc: a@b.c
+ Bcc: p@q.r
 
 >>Headers after rewriting and local additions:
-T To: x@y.z
-C Cc: a@b.c
-* Bcc: p@q.r
-I Message-Id: <E10HmaX-0005vi-00@mail.test.ex>
-F From: CALLER_NAME <CALLER@test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ T To: x@y.z
+ C Cc: a@b.c
+ * Bcc: p@q.r
+ I Message-Id: <E10HmaX-000000005vi-0000@mail.test.ex>
+ F From: CALLER_NAME <CALLER@test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by mail.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmaX-0005vi-00;
+	id 10HmaX-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmaX-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmaX-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 originator: uid=CALLER_UID gid=CALLER_GID login=CALLER name=CALLER_NAME
@@ -42,34 +45,35 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 Sender: CALLER@test.ex
 >>Headers received:
-To: x@y.z
-Cc: a@b.c
-Bcc: p@q.r
-Resent-to: aa@bb.cc
-Resent-cc: pp@qq.rr
-Resent-bcc: xx@yy.zz
+ To: x@y.z
+ Cc: a@b.c
+ Bcc: p@q.r
+ Resent-to: aa@bb.cc
+ Resent-cc: pp@qq.rr
+ Resent-bcc: xx@yy.zz
 
 >>Headers after rewriting and local additions:
-  Resent-Date: Tue, 2 Mar 1999 09:44:33 +0000
-I Resent-Message-Id: <E10HmaY-0005vi-00@mail.test.ex>
-T To: x@y.z
-C Cc: a@b.c
-B Bcc: p@q.r
-T Resent-to: aa@bb.cc
-C Resent-cc: pp@qq.rr
-* Resent-bcc: xx@yy.zz
-F Resent-From: CALLER_NAME <CALLER@test.ex>
+   Resent-Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Resent-Message-Id: <E10HmaY-000000005vi-0000@mail.test.ex>
+ T To: x@y.z
+ C Cc: a@b.c
+ B Bcc: p@q.r
+ T Resent-to: aa@bb.cc
+ C Resent-cc: pp@qq.rr
+ * Resent-bcc: xx@yy.zz
+ F Resent-From: CALLER_NAME <CALLER@test.ex>
 
-Data file name: TESTSUITE/spool//input//10HmaY-0005vi-00-D
-Data file written for message 10HmaY-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaY-000000005vi-0000-D
+Data file written for message 10HmaY-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by mail.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmaY-0005vi-00;
+	id 10HmaY-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmaY-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmaY-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

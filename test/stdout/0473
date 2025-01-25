@@ -1,6 +1,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -24,6 +25,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -33,6 +35,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -42,6 +45,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -52,6 +56,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -61,6 +66,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -74,6 +80,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -85,6 +92,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -104,6 +112,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -113,6 +122,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -134,6 +144,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -143,6 +154,7 @@
 220 the.local.host.name ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-the.local.host.name Hello CALLER at xxxx
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -151,7 +163,7 @@
 221 the.local.host.name closing connection
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -163,7 +175,7 @@ RCPT TO:<r1@test.ex>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -175,7 +187,7 @@ RCPT TO:<r1@test.ex>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -185,7 +197,7 @@ MAIL FROM:<s3@other.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -197,7 +209,7 @@ RCPT TO:<r1@test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -209,7 +221,7 @@ RCPT TO:<r1@test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 server ready
 EHLO the.local.host.name
@@ -221,7 +233,7 @@ RCPT TO:<r9@test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 server ready
 EHLO the.local.host.name
@@ -233,7 +245,7 @@ RCPT TO:<x9@test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -245,7 +257,7 @@ RCPT TO:<the.local.host.name--testing@two.test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -255,7 +267,7 @@ MAIL FROM:<>
 RCPT TO:<the.local.host.name--testing@three.test.ex>
 550 Bad receipient, dropping conn
 >*eof
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -267,7 +279,7 @@ RCPT TO:<r12@three.test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO the.local.host.name
@@ -277,7 +289,7 @@ MAIL FROM:<>
 RCPT TO:<r11@two.test.ex>
 *sleep 2
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 *sleep 2
 End of script

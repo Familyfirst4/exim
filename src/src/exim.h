@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* Source files for exim all #include this header, which drags in everything
@@ -124,16 +125,6 @@ making unique names. */
 #endif
 #ifndef EXIM_ARITH_MIN
 # define EXIM_ARITH_MIN (-EXIM_ARITH_MAX - 1)
-#endif
-
-/* Some systems have PATH_MAX and some have MAX_PATH_LEN. */
-
-#ifndef PATH_MAX
-# ifdef MAX_PATH_LEN
-#  define PATH_MAX MAX_PATH_LEN
-# else
-#  define PATH_MAX 1024
-# endif
 #endif
 
 /* RFC 5321 specifies that the maximum length of a local-part is 64 octets
@@ -531,30 +522,53 @@ config.h, mytypes.h, and store.h, so we don't need to mention them explicitly.
 */
 
 #include "local_scan.h"
+#include "path_max.h"
 #include "macros.h"
-#include "hintsdb.h"
+#include "blob.h"
+#ifndef MACRO_PREDEF
+# include "hintsdb.h"
+#endif
 #include "hintsdb_structs.h"
 #include "structs.h"
 #include "blob.h"
 #include "hash.h"
 #include "globals.h"
 #include "functions.h"
-#include "dbfunctions.h"
+#ifndef MACRO_PREDEF
+# include "dbfunctions.h"
+#endif
 #include "osfunctions.h"
 
 #ifdef EXPERIMENTAL_BRIGHTMAIL
 # include "bmi_spam.h"
 #endif
 #ifdef SUPPORT_SPF
-# include "spf.h"
+# include "miscmods/spf.h"
+# include "miscmods/spf_api.h"
 #endif
 #ifndef DISABLE_DKIM
-# include "dkim.h"
+# include "miscmods/dkim.h"
+# include "miscmods/dkim_api.h"
 #endif
 #ifdef SUPPORT_DMARC
-# include "dmarc.h"
+# include "miscmods/dmarc.h"
+# include "miscmods/dmarc_api.h"
 # include <opendmarc/dmarc.h>
 #endif
+#ifdef EXPERIMENTAL_ARC
+# include "miscmods/arc_api.h"
+#endif
+#ifdef RADIUS_CONFIG_FILE
+# include "miscmods/radius_api.h"
+#endif
+#ifdef SUPPORT_PAM
+# include "miscmods/pam_api.h"
+#endif
+#ifdef EXIM_PERL
+# include "miscmods/perl_api.h"
+#endif
+#include "miscmods/exim_filter_api.h"
+#include "miscmods/sieve_filter_api.h"
 
 /* The following stuff must follow the inclusion of config.h because it
 requires various things that are set therein. */
@@ -568,7 +582,7 @@ requires various things that are set therein. */
 #endif
 
 #ifdef ENABLE_DISABLE_FSYNC
-# define EXIMfsync(f) (disable_fsync? 0 : fsync(f))
+# define EXIMfsync(f) (disable_fsync ? 0 : fsync(f))
 #else
 # define EXIMfsync(f) fsync(f)
 #endif

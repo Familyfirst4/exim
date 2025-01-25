@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2021 - 2023 */
 /* Copyright (c) Jeremy Harris 2017 - 2018 */
-/* Copyright (c) The Exim Maintainers 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Global functions */
 
@@ -21,6 +22,7 @@ extern void options_routers(void);
 extern void options_transports(void);
 extern void options_auths(void);
 extern void options_logging(void);
+extern void expansions(void);
 extern void params_dkim(void);
 #ifndef DISABLE_TLS
 extern void options_tls(void);

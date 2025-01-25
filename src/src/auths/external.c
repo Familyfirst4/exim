@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2023 - 2024 */
 /* Copyright (c) Jeremy Harris 2019-2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file provides an Exim authenticator driver for
 a server to verify a client SSL certificate, using the EXTERNAL
@@ -12,6 +14,8 @@ method defined in RFC 4422 Appendix A.
 
 
 #include "../exim.h"
+
+#ifdef AUTH_EXTERNAL	/* Remainder of file */
 #include "external.h"
 
 /* Options specific to the external authentication mechanism. */
@@ -40,7 +44,7 @@ auth_external_options_block auth_external_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_external_init(auth_instance *ablock) {}
+void auth_external_init(driver_instance *ablock) {}
 int auth_external_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_external_client(auth_instance *ablock, void * sx,
   int timeout, uschar *buffer, int buffsize) {return 0;}
@@ -59,12 +63,17 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-auth_external_init(auth_instance *ablock)
+auth_external_init(driver_instance * a)
 {
-auth_external_options_block * ob = (auth_external_options_block *)ablock->options_block;
-if (!ablock->public_name) ablock->public_name = ablock->name;
-if (ablock->server_condition) ablock->server = TRUE;
-if (ob->client_send) ablock->client = TRUE;
+auth_instance * ablock = (auth_instance *)a;
+auth_external_options_block * ob = a->options_block;
+
+if (!ablock->public_name)
+  ablock->public_name = a->name;
+if (ablock->server_condition)
+  ablock->server = TRUE;
+if (ob->client_send)
+  ablock->client = TRUE;
 }
 
 
@@ -78,7 +87,7 @@ if (ob->client_send) ablock->client = TRUE;
 int
 auth_external_server(auth_instance * ablock, uschar * data)
 {
-auth_external_options_block * ob = (auth_external_options_block *)ablock->options_block;
+auth_external_options_block * ob = ablock->drinst.options_block;
 int rc;
 
 /* If data was supplied on the AUTH command, decode it, and split it up into
@@ -103,7 +112,7 @@ if (expand_nmax == 0) 	/* skip if rxd data */
 if (ob->server_param2)
   {
   uschar * s = expand_string(ob->server_param2);
-  auth_vars[expand_nmax] = s;
+  auth_vars[expand_nmax = 1] = s;
   expand_nstring[++expand_nmax] = s;
   expand_nlength[expand_nmax] = Ustrlen(s);
   if (ob->server_param3)
@@ -134,8 +143,7 @@ auth_external_client(
   uschar *buffer,                        /* buffer for reading response */
   int buffsize)                          /* size of buffer */
 {
-auth_external_options_block *ob =
-  (auth_external_options_block *)(ablock->options_block);
+const auth_external_options_block * ob = ablock->drinst.options_block;
 const uschar * text = ob->client_send;
 int rc;
 
@@ -151,5 +159,28 @@ return OK;
 
 
 
-#endif   /*!MACRO_PREDEF*/
+# ifdef DYNLOOKUP
+#  define external_auth_info _auth_info
+# endif
+
+auth_info external_auth_info = {
+.drinfo = {
+  .driver_name =	US"external",                   /* lookup name */
+  .options =		auth_external_options,
+  .options_count =	&auth_external_options_count,
+  .options_block =	&auth_external_option_defaults,
+  .options_len =	sizeof(auth_external_options_block),
+  .init =		auth_external_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_external_server,
+.clientcode =		auth_external_client,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*AUTH_EXTERNAL*/
 /* End of external.c */

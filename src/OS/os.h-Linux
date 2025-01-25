@@ -1,6 +1,7 @@
 /* Exim: OS-specific C header file for Linux */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2020 */
-/* Copyright (c) The Exim Maintainers 2021 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /* See the file NOTICE for conditions of use and distribution. */
 
 
@@ -100,5 +101,7 @@ then change the 0 to 1 in the next block. */
 #ifndef NS_MAXMSG
 # define NS_MAXMSG 65535
 #endif
+
+#define EXIM_HAVE_STRCHRNUL
 
 /* End */

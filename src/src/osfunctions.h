@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2016 */
 /* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Prototypes for os-specific functions. For utilities, we don't need the one
 that uses a type that isn't defined for them. */
@@ -38,6 +39,10 @@ extern int           os_unsetenv(const uschar *);
 #endif
 #ifndef os_getcwd
 extern uschar       *os_getcwd(uschar *, size_t);
+#endif
+
+#ifndef EXIM_HAVE_STRCHRNUL
+extern char * strchrnul(const char *, int);
 #endif
 
 /* End of osfunctions.h */

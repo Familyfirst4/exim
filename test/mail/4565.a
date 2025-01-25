@@ -8,14 +8,14 @@ Authentication-Results: test.ex;
 Received: from localhost ([127.0.0.1] helo=test.ex)
 	by test.ex with esmtp (Exim x.yz)
 	(envelope-from <CALLER@bloggs.com>)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for a@test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
 ARC-Seal: i=1; cv=none; a=rsa-sha256; d=test.ex; s=sel;
-	 b=1J94ImExSjtnwHY/c/aN3BX/xlnQfi6CPdGQvbeSdsbCCEtOqK9547tA54tYFh8beeVECAR0xu
-	  9fCSAjZ/0WM7mrxKNMbWkoHNoejUhNkcxJOtFmiS/0JKPQGk8HTE7FHLbogUQvEJoVBBnqo6xW
-	  nFtzlI3JfLnWvB3FQ316xLs=;
-ARC-Authentication-Results: i=1; test.ex;
+	 b=guJqF/mOsuUjSLbdDSMvwf13qMVw2TPUmUhp37HWgIFppyAwBueoEQ+tqaxZBhqw54W9TiHA8o
+	  JTsfWJemHwDWiP4BI9ccdeiWrpAIxb2QfL09oybcs6sQHMTvYsWItmuWQlMMsGMqTtrNdi1E+B
+	  WHu89huK0FxZOBBJpj634IQ=;
+ARC-Authentication-Results: i=1; test.ex; smtp.remote-ip=127.0.0.1;
 	dkim=fail (body hash mismatch; body probably modified in transit)
 		 header.d=example.com header.s=sel header.a=rsa-sha256;
 	arc=none
@@ -41,7 +41,7 @@ Authentication-Results: test.ex;
 Received: from [127.0.0.1] (helo=xxx)
 	by test.ex with smtp (Exim x.yz)
 	(envelope-from <CALLER@bloggs.com>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for za@test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
@@ -59,4 +59,36 @@ Message-ID: <qwerty1234@disco-zombie.net>
 Subject: simple test
 
 This is a simple test.
+
+From CALLER@bloggs.com Tue Mar 02 09:44:33 1999
+Authentication-Results: test.ex;
+	iprev=pass (localhost) smtp.remote-ip=127.0.0.1;
+	dkim=pass header.d=test.ex header.s=sel header.a=rsa-sha256;
+	arc=none
+Received: from localhost ([127.0.0.1] helo=test.ex)
+	by test.ex with esmtp (Exim x.yz)
+	(envelope-from <CALLER@bloggs.com>)
+	id 10HmbA-000000005vi-0000
+	for a@test.ex;
+	Tue, 2 Mar 1999 09:44:33 +0000
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=test.ex;
+	s=sel; h=Subject:From:Sender:Reply-To:Date:Message-ID:To:Cc:MIME-Version:
+	Content-Type:Content-Transfer-Encoding:Content-ID:Content-Description:
+	Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID:
+	In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
+	List-Post:List-Owner:List-Archive;
+	bh=HUzfKKxIjPIa07lkj5uzDQ3q5YTRF/NwAUE7dhrrfvs=; b=yavfHhrzPG+t+V0TrfHfY7Jg0M
+	7md35zrlO9P5bKfP6IhbI4xALqSNJGu/8QI7jtyQCgP66Pwa46eoYvfbz9xuVDn/ZlO934ZvX7cBU
+	98yHBGUhoJB6rijlByYfODw3KkQMD/htl/+JQAnJ302v+p9Ui6a8QlYpzuq27BSz6UBc=;
+Authentication-Results: test.ex;
+	arc=none
+Received: from [127.0.0.1] (helo=xxx)
+	by test.ex with smtp (Exim x.yz)
+	(envelope-from <CALLER@bloggs.com>)
+	id 10HmaZ-000000005vi-0000
+	for za@test.ex;
+	Tue, 2 Mar 1999 09:44:33 +0000
+Subject: Test
+
+This is a test body.
 

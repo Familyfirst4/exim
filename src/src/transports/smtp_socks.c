@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) Jeremy Harris 2015 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* SOCKS version 5 proxy, client-mode */
 
@@ -121,7 +122,7 @@ switch(method)
     HDEBUG(D_transport|D_acl|D_v)
       {
       debug_printf_indent("  SOCKS>>");
-      for (int i = 0; i<len; i++) debug_printf(" %02x", s[i]);
+      for (int j = 0; j<len; j++) debug_printf(" %02x", s[j]);
       debug_printf("\n");
       }
     if (send(fd, s, len, 0) < 0)
@@ -157,8 +158,7 @@ static int
 socks_get_proxy(socks_opts * proxies, unsigned nproxies)
 {
 unsigned int i;
-socks_opts * sd;
-socks_opts * lim = &proxies[nproxies];
+const socks_opts * sd, * lim = &proxies[nproxies];
 long rnd, weights;
 unsigned pri;
 
@@ -195,25 +195,21 @@ return -1;
 /* Make a connection via a socks proxy
 
 Arguments:
- host		smtp target host
- host_af	address family
- port		remote tcp port number
- interface	local interface
- tb		transport
- timeout	connection timeout (zero for indefinite)
+ sc		details for making connection: host, af, interface, transport
+ early_data	data to send down the smtp channel (once proxied)
 
 Return value:
  0 on success; -1 on failure, with errno set
 */
 
 int
-socks_sock_connect(host_item * host, int host_af, int port, uschar * interface,
-  transport_instance * tb, int timeout)
+socks_sock_connect(smtp_connect_args * sc, const blob * early_data)
 {
-smtp_transport_options_block * ob =
-  (smtp_transport_options_block *)tb->options_block;
-const uschar * proxy_list;
-const uschar * proxy_spec;
+transport_instance * tb = sc->tblock;
+smtp_transport_options_block * ob = tb->drinst.options_block;
+int timeout = ob->connect_timeout;
+const uschar * proxy_list = ob->socks_proxy,	/* already expanded */
+	      * proxy_spec;
 int sep = 0;
 int fd;
 time_t tmo;
@@ -223,17 +219,10 @@ socks_opts proxies[32];			/* max #proxies handled */
 unsigned nproxies;
 socks_opts * sob = NULL;
 unsigned size;
-blob early_data;
+blob proxy_early_data;
 
 if (!timeout) timeout = 24*60*60;	/* use 1 day for "indefinite" */
 tmo = time(NULL) + timeout;
-
-if (!(proxy_list = expand_string(ob->socks_proxy)))
-  {
-  log_write(0, LOG_MAIN|LOG_PANIC, "Bad expansion for socks_proxy in %s",
-    tb->name);
-  return -1;
-  }
 
 /* Read proxy list */
 
@@ -265,8 +254,8 @@ for sending on connection */
 
 state = US"method select";
 buf[0] = 5; buf[1] = 1; buf[2] = sob->auth_type;
-early_data.data = buf;
-early_data.len = 3;
+proxy_early_data.data = buf;
+proxy_early_data.len = 3;
 
 /* Try proxies until a connection succeeds */
 
@@ -274,7 +263,7 @@ for(;;)
   {
   int idx;
   host_item proxy;
-  smtp_connect_args sc = {.sock = -1};
+  smtp_connect_args proxy_sc = {.sock = -1};
 
   if ((idx = socks_get_proxy(proxies, nproxies)) < 0)
     {
@@ -288,14 +277,14 @@ for(;;)
   proxy.address = proxy.name = sob->proxy_host;
   proxy.port = sob->port;
 
-  sc.tblock = tb;
-  sc.ob = ob;
-  sc.host = &proxy;
-  sc.host_af = Ustrchr(sob->proxy_host, ':') ? AF_INET6 : AF_INET;
-  sc.interface = interface;
+  proxy_sc.tblock = tb;
+  proxy_sc.ob = ob;
+  proxy_sc.host = &proxy;
+  proxy_sc.host_af = Ustrchr(sob->proxy_host, ':') ? AF_INET6 : AF_INET;
+  proxy_sc.interface = sc->interface;
 
   /*XXX we trust that the method-select command is idempotent */
-  if ((fd = smtp_sock_connect(&sc, sob->timeout, &early_data)) >= 0)
+  if ((fd = smtp_sock_connect(&proxy_sc, sob->timeout, &proxy_early_data)) >= 0)
     {
     proxy_local_address = string_copy(proxy.address);
     proxy_local_port = sob->port;
@@ -308,7 +297,8 @@ for(;;)
 
 /* Do the socks protocol stuff */
 
-HDEBUG(D_transport|D_acl|D_v) debug_printf_indent("  SOCKS>> 05 01 %02x\n", sob->auth_type);
+HDEBUG(D_transport|D_acl|D_v)
+  debug_printf_indent("  SOCKS>> 05 01 %02x\n", sob->auth_type);
 
 /* expect method response */
 
@@ -328,8 +318,10 @@ if (  buf[0] != 5
   goto proxy_err;
 
  {
+  int host_af = sc->host_af;
+  const host_item * host = sc->host;
   union sockaddr_46 sin;
-  (void) ip_addr(&sin, host_af, host->address, port);
+  (void) ip_addr(&sin, host_af, host->address, host->port);
 
   /* send connect (ipver, ipaddr, port) */
 
@@ -387,6 +379,22 @@ proxy_session = TRUE;
 
 HDEBUG(D_transport|D_acl|D_v)
   debug_printf_indent("  proxy farside: [%s]:%d\n", proxy_external_address, proxy_external_port);
+
+if (early_data && early_data->data && early_data->len)
+  if (send(fd, early_data->data, early_data->len, 0) < 0)
+    {
+    int save_errno = errno;
+    HDEBUG(D_transport|D_acl|D_v)
+      {
+      debug_printf_indent("failed: %s", CUstrerror(save_errno));
+      if (save_errno == ETIMEDOUT)
+	debug_printf(" (timeout=%s)", readconf_printtime(ob->connect_timeout));
+      debug_printf("\n");
+      }
+    (void)close(fd);
+    fd= -1;
+    errno = save_errno;
+    }
 
 return fd;
 

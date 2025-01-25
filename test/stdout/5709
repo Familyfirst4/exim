@@ -1,0 +1,19 @@
+Connecting to 127.0.0.1 port PORT_D ... connected
+??? 220
+<<< 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+>>> HELO nonexistent.test.ex
+??? 250
+<<< 250 myhost.test.ex Hello nonexistent.test.ex [127.0.0.1]
+>>> HELO badcname.test.ex
+??? 250
+<<< 250 myhost.test.ex Hello badcname.test.ex [127.0.0.1]
+>>> HELO test.again.dns
+??? 250
+<<< 250 myhost.test.ex Hello test.again.dns [127.0.0.1]
+>>> HELO localhost
+??? 250
+<<< 250 myhost.test.ex Hello localhost [127.0.0.1]
+>>> QUIT
+??? 221
+<<< 221 myhost.test.ex closing connection
+End of script

@@ -48,6 +48,11 @@
 550 Sender verify failed
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+250 myhost.test.ex Hello root at test [V4NET.0.0.1]
+250 OK
+451 Could not complete sender verify callout
+221 myhost.test.ex closing connection
+220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250 myhost.test.ex Hello root at test [V4NET.0.0.3]
 250 OK
 550-Callout verification failed:
@@ -105,6 +110,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello root at me [V4NET.0.0.6]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -114,6 +120,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello root at me [V4NET.0.0.3]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -123,6 +130,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello root at me [V4NET.0.0.3]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -132,6 +140,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello root at me [V4NET.0.0.7]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -156,7 +165,7 @@
 221 myhost.test.ex closing connection
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -168,7 +177,7 @@ RCPT TO:<ok@localhost>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -180,7 +189,7 @@ RCPT TO:<bad@localhost>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -192,7 +201,7 @@ RCPT TO:<uncheckable@localhost1>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -202,7 +211,7 @@ MAIL FROM:<>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -213,7 +222,7 @@ MAIL FROM:<>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -223,7 +232,7 @@ MAIL FROM:<>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -235,7 +244,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -248,7 +257,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -260,7 +269,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -272,7 +281,7 @@ RCPT TO:<abcd@x.y.z>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -284,7 +293,7 @@ RCPT TO:<abcd@x.y.z>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -302,7 +311,7 @@ RCPT TO:<postmaster@localhost1>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -320,7 +329,7 @@ RCPT TO:<postmaster@localhost1>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -334,7 +343,7 @@ RCPT TO:<ok@localhost1>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -348,7 +357,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -362,7 +371,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -382,7 +391,7 @@ RCPT TO:<z@remote.domain>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 LHLO myhost.test.ex
@@ -394,6 +403,6 @@ RCPT TO:<z@remote.lmtp>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 End of script

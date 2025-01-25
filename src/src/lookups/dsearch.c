@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* The idea for this code came from Matthew Byng-Maddick, but his original has
 been heavily reworked a lot for Exim 4 (and it now uses stat() (more precisely:
@@ -20,22 +21,24 @@ lstat()) rather than a directory scan). */
 *              Open entry point                  *
 *************************************************/
 
-/* See local README for interface description. We open the directory to test
-whether it exists and whether it is searchable. However, we don't need to keep
-it open, because the "search" can be done by a call to lstat() rather than
-actually scanning through the list of files. */
+/* See local README for interface description. We stat the directory to test
+whether it exists. Searchability only gets determined in the "search" function.
+*/
 
 static void *
 dsearch_open(const uschar * dirname, uschar ** errmsg)
 {
-DIR * dp = exim_opendir(dirname);
-if (!dp)
+struct stat statbuf;
+
+if (is_tainted(dirname))
   {
-  *errmsg = string_open_failed("%s for directory search", dirname);
-  return NULL;
+  log_write(0, LOG_MAIN|LOG_PANIC, "Tainted dirname '%s'", dirname);
+  errno = EACCES;
   }
-closedir(dp);
-return (void *)(-1);
+else if (Ustat(dirname, &statbuf) >= 0)
+  return (void *)(-1);
+*errmsg = string_open_failed("%s for directory search", dirname);
+return NULL;
 }
 
 
@@ -50,7 +53,6 @@ static BOOL
 dsearch_check(void * handle, const uschar * filename, int modemask,
   uid_t * owners, gid_t * owngroups, uschar ** errmsg)
 {
-handle = handle;
 if (*filename == '/')
   return lf_check_file(-1, filename, S_IFDIR, modemask, owners, owngroups,
     "dsearch", errmsg) == 0;
@@ -69,6 +71,7 @@ return FALSE;
 #define FILTER_FILE	BIT(2)
 #define FILTER_DIR	BIT(3)
 #define FILTER_SUBDIR	BIT(4)
+#define ALLOW_PATH	BIT(5)
 
 /* See local README for interface description. We use lstat() instead of
 scanning the directory, as it is hopefully faster to let the OS do the scanning
@@ -83,13 +86,6 @@ struct stat statbuf;
 int save_errno;
 uschar * filename;
 unsigned flags = 0;
-
-if (Ustrchr(keystring, '/') != 0)
-  {
-  *errmsg = string_sprintf("key for dsearch lookup contains a slash: %s",
-    keystring);
-  return DEFER;
-  }
 
 if (opts)
   {
@@ -109,6 +105,24 @@ if (opts)
       else if (Ustrcmp(ele, "subdir") == 0)
 	flags |= FILTER_TYPE | FILTER_SUBDIR;	/* like dir but not "." or ".." */
       }
+    else if (Ustrcmp(ele, "key=path") == 0)
+      flags |= ALLOW_PATH;
+  }
+
+if (flags & ALLOW_PATH)
+  {
+  if (Ustrstr(keystring, "/../") != NULL || Ustrstr(keystring, "/./"))
+    {
+    *errmsg = string_sprintf(
+      "key for dsearch lookup contains bad component: %s", keystring);
+    return DEFER;
+    }
+  }
+else if (Ustrchr(keystring, '/') != NULL)
+  {
+  *errmsg = string_sprintf("key for dsearch lookup contains a slash: %s",
+    keystring);
+  return DEFER;
   }
 
 filename = string_sprintf("%s/%s", dirname, keystring);
@@ -119,7 +133,7 @@ if (  Ulstat(filename, &statbuf) >= 0
        	 && S_ISDIR(statbuf.st_mode)
 	 && (  flags & FILTER_DIR
 	    || keystring[0] != '.'
-	    || keystring[1] && keystring[1] != '.'
+	    || keystring[1] && (keystring[1] != '.' || keystring[2])
    )  )  )  )
   {
   /* Since the filename exists in the filesystem, we can return a
@@ -188,3 +202,5 @@ static lookup_info *_lookup_list[] = { &_lookup_info };
 lookup_module_info dsearch_lookup_module_info = { LOOKUP_MODULE_INFO_MAGIC, _lookup_list, 1 };
 
 /* End of lookups/dsearch.c */
+/* vi: aw ai sw=2
+*/

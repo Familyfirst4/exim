@@ -1,9 +1,11 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -14,10 +16,11 @@ send_to_server transport entered
   tempreject@test.ex
 using the transport's hosts: 127.0.0.1
 getting address for 127.0.0.1
-checking status of 127.0.0.1
-127.0.0.1 [127.0.0.1]:1111 retry-status = usable
-delivering 10HmaZ-0005vi-00 to 127.0.0.1 [127.0.0.1] (tempreject@test.ex)
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...  connected
+checking retry status of 127.0.0.1
+127.0.0.1 [127.0.0.1]:10001 retry-status = usable
+delivering 10HmaZ-000000005vi-0000 to 127.0.0.1 [127.0.0.1] (tempreject@test.ex)
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
 cmd buf flush ddd bytes
@@ -43,7 +46,7 @@ transport_check_waiting entered
 transport_check_waiting: FALSE
 will pipeline QUIT
 cannot use sendfile for body: spoolfile not wireformat
-  SMTP>> .
+  SMTP+> .
 writing data block fd=dddd size=sss timeout=300 (more expected)
   SMTP+> QUIT
 cmd buf flush ddd bytes (more expected)
@@ -54,20 +57,23 @@ LOG: MAIN
 ok=0 send_quit=0 send_rset=1 continue_more=0 yield=0 first_address is NULL
   SMTP<< 221 Closing connection
   SMTP(close)>>
-cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.:QUIT:451:221'
-added retry item for T:127.0.0.1:127.0.0.1:PORT_D:10HmaZ-0005vi-00: errno=-46 more_errno=dd,A flags=6
+cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.+:QUIT+:451:221'
+added retry item for T:[127.0.0.1]:127.0.0.1:PORT_D:10HmaZ-000000005vi-0000: errno=-46 more_errno=dd,A flags=6
 all IP addresses skipped or deferred at least one address
 Leaving send_to_server transport
+>>>>>>>>>>>>>>>> Exim pid=p1236 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   == tempreject@test.ex R=client T=send_to_server defer (-46) H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after end of data: 451 Service not available
 >>>>>>>>>>>>>>>> Exim pid=p1235 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -78,12 +84,13 @@ send_to_server transport entered
   permreject@test.ex
 using the transport's hosts: 127.0.0.1
 getting address for 127.0.0.1
-checking status of 127.0.0.1
-no host retry record
-no message retry record
-127.0.0.1 [127.0.0.1]:1111 retry-status = usable
-delivering 10HmbA-0005vi-00 to 127.0.0.1 [127.0.0.1] (permreject@test.ex)
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...  connected
+checking retry status of 127.0.0.1
+ no host retry record
+ no message retry record
+127.0.0.1 [127.0.0.1]:10001 retry-status = usable
+delivering 10HmbA-000000005vi-0000 to 127.0.0.1 [127.0.0.1] (permreject@test.ex)
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
 cmd buf flush ddd bytes
@@ -109,7 +116,7 @@ transport_check_waiting entered
 transport_check_waiting: FALSE
 will pipeline QUIT
 cannot use sendfile for body: spoolfile not wireformat
-  SMTP>> .
+  SMTP+> .
 writing data block fd=dddd size=sss timeout=300 (more expected)
   SMTP+> QUIT
 cmd buf flush ddd bytes (more expected)
@@ -118,10 +125,11 @@ cmd buf flush ddd bytes (more expected)
 ok=0 send_quit=0 send_rset=1 continue_more=0 yield=0 first_address is NULL
   SMTP<< 221 Closing connection
   SMTP(close)>>
-cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.:QUIT:550:221'
+cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.+:QUIT+:550:221'
 Leaving send_to_server transport
+>>>>>>>>>>>>>>>> Exim pid=p1239 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
-  ** permreject@test.ex R=client T=send_to_server H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after end of data: 550 content rejected
+  ** permreject@test.ex R=client T=send_to_server H=127.0.0.1 [127.0.0.1] : SMTP error from remote mail server after end of data: 550 content rejected
 LOG: MAIN
   permreject@test.ex: error ignored
 LOG: MAIN
@@ -129,11 +137,13 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> Exim pid=p1238 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -144,12 +154,13 @@ send_to_server transport entered
   permreject@test.ex
 using the transport's hosts: 127.0.0.1
 getting address for 127.0.0.1
-checking status of 127.0.0.1
-no host retry record
-no message retry record
-127.0.0.1 [127.0.0.1]:1111 retry-status = usable
-delivering 10HmbB-0005vi-00 to 127.0.0.1 [127.0.0.1] (permreject@test.ex)
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...  connected
+checking retry status of 127.0.0.1
+ no host retry record
+ no message retry record
+127.0.0.1 [127.0.0.1]:10001 retry-status = usable
+delivering 10HmbB-000000005vi-0000 to 127.0.0.1 [127.0.0.1] (permreject@test.ex)
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_D ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
 cmd buf flush ddd bytes
@@ -175,7 +186,7 @@ transport_check_waiting entered
 transport_check_waiting: FALSE
 will pipeline QUIT
 cannot use sendfile for body: spoolfile not wireformat
-  SMTP>> .
+  SMTP+> .
 writing data block fd=dddd size=sss timeout=300 (more expected)
   SMTP+> QUIT
 cmd buf flush ddd bytes (more expected)
@@ -186,11 +197,12 @@ LOG: MAIN
 ok=0 send_quit=0 send_rset=1 continue_more=0 yield=0 first_address is NULL
   SMTP(closed)<<
   SMTP(close)>>
-cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.:QUIT'
-added retry item for T:127.0.0.1:127.0.0.1:PORT_D:10HmbB-0005vi-00: errno=-18 more_errno=dd,A flags=6
+cmdlog: '220:EHLO:250-:MAIL|:RCPT|:DATA:250:250:300:.+:QUIT+'
+added retry item for T:[127.0.0.1]:127.0.0.1:PORT_D:10HmbB-000000005vi-0000: errno=-18 more_errno=dd,A flags=6
 all IP addresses skipped or deferred at least one address
 Leaving send_to_server transport
+>>>>>>>>>>>>>>>> Exim pid=p1242 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 LOG: MAIN
   == permreject@test.ex R=client T=send_to_server defer (-18) H=127.0.0.1 [127.0.0.1]: Remote host closed connection in response to end of data
->>>>>>>>>>>>>>>> Exim pid=p1240 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> Exim pid=p1239 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1241 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1240 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

@@ -1,5 +1,7 @@
+/* Copyright (c) The Exim Maintainers 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "exim.h"
 
@@ -199,9 +201,7 @@ iconv_close(icd);
 #endif
 
 yield = string_catn(yield, outbuf, outptr - outbuf);
-
-if (yield->s[yield->ptr-1] == '.')
-  yield->ptr--;
+gstring_trim_trailing(yield, '.');
 
 return string_from_gstring(yield);
 }

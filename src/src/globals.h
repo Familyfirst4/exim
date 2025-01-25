@@ -2,9 +2,13 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2025 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
+#ifndef GLOBALS_H
+#define GLOBALS_H
 
 /* Almost all the global variables are defined together in this one header, so
 that they are easy to find. However, those that are visible during the
@@ -93,8 +97,6 @@ typedef struct {
   const uschar *cipher_stdname; /* Cipher used, RFC version */
   const uschar *ver;	      /* TLS version */
 
-  BOOL    on_connect;         /* For older MTAs that don't STARTTLS */
-  uschar *on_connect_ports;   /* Ports always tls-on-connect */
   void   *ourcert;            /* Certificate we presented, binary */
   void	 *peercert;           /* Certificate of peer, binary */
   uschar *peerdn;             /* DN from peer */
@@ -115,8 +117,11 @@ typedef struct {
   BOOL	  host_resumable:1;
   BOOL	  ticket_received:1;
 #endif
-  BOOL	  verify_override:1;	/* certificate_verified only due to tls_try_verify_hosts */
+
   BOOL	  ext_master_secret:1;	/* extended-master-secret was used */
+  BOOL	  channelbind_exporter:1; /* channelbinding is EXPORTER not UNIQUE */
+  BOOL    on_connect:1;         /* For older MTAs that don't STARTTLS */
+  BOOL	  verify_override:1;	/* certificate_verified only due to tls_try_verify_hosts */
 } tls_support;
 extern tls_support tls_in;
 extern tls_support tls_out;
@@ -132,10 +137,14 @@ extern uschar *tls_certificate;        /* Certificate file */
 extern uschar *tls_crl;                /* CRL File */
 extern int     tls_dh_max_bits;        /* don't accept higher lib suggestions */
 extern uschar *tls_dhparam;            /* DH param file */
+#ifdef EXPERIMENTAL_TLS_EARLY_BANNER
+extern uschar *tls_early_banner_hosts; /* use Early Data for SMTP banner */
+#endif
 extern uschar *tls_eccurve;            /* EC curve */
 # ifndef DISABLE_OCSP
 extern uschar *tls_ocsp_file;          /* OCSP stapling proof file */
 # endif
+extern uschar *tls_on_connect_ports;   /* Ports always tls-on-connect */
 extern uschar *tls_privatekey;         /* Private key file */
 extern BOOL    tls_remember_esmtp;     /* For YAEB */
 extern uschar *tls_require_ciphers;    /* So some can be avoided */
@@ -244,6 +253,7 @@ extern struct global_flags {
  BOOL   no_mbox_unspool			:1; /* don't unlink files in /scan directory */
 #endif
  BOOL   no_multiline_responses		:1; /* For broken clients */
+ BOOL   notifier_socket_en		:1; /* Permit create of notifier socket */
 
  BOOL   parse_allow_group		:1; /* Allow group syntax */
  BOOL   parse_found_group		:1; /* In the middle of a group */
@@ -254,8 +264,6 @@ extern struct global_flags {
 
  BOOL   queue_2stage			:1; /* Run queue in 2-stage manner */
  BOOL   queue_only_policy		:1; /* ACL or local_scan wants queue_only */
- BOOL   queue_run_first_delivery	:1; /* If TRUE, first deliveries only */
- BOOL   queue_run_force			:1; /* TRUE to force during queue run */
  BOOL   queue_run_local			:1; /* Local deliveries only in queue run */
  BOOL   queue_running			:1; /* TRUE for queue running process and */
  BOOL   queue_smtp			:1; /* Disable all immediate SMTP (-odqs)*/
@@ -295,6 +303,7 @@ extern struct global_flags {
  BOOL   tcp_in_fastopen_data		:1; /* fastopen carried data */
  BOOL   tcp_in_fastopen_logged		:1; /* one-time logging */
  BOOL   tcp_out_fastopen_logged		:1; /* one-time logging */
+ BOOL	tls_on_connect			:1; /* all listen ports are t-o-c */
  BOOL   timestamps_utc			:1; /* Use UTC for all times */
  BOOL   transport_filter_timed_out	:1; /* True if it did */
  BOOL   trusted_caller			:1; /* Caller is trusted */
@@ -322,10 +331,11 @@ extern uschar *acl_smtp_connect;       /* ACL run on SMTP connection */
 extern uschar *acl_smtp_data;          /* ACL run after DATA received */
 #ifndef DISABLE_PRDR
 extern uschar *acl_smtp_data_prdr;     /* ACL run after DATA received if in PRDR mode*/
-const extern pcre2_code *regex_PRDR;         /* For recognizing PRDR settings */
+extern const pcre2_code *regex_PRDR;   /* For recognizing PRDR settings */
 #endif
+extern uschar *acl_smtp_atrn;          /* ACL run for ATRN */
 #ifndef DISABLE_DKIM
-extern uschar *acl_smtp_dkim;          /* ACL run for DKIM signatures / domains */
+extern uschar *acl_smtp_dkim;          /* ACL run for DKIM signatures/domains */
 #endif
 extern uschar *acl_smtp_etrn;          /* ACL run for ETRN */
 extern uschar *acl_smtp_expn;          /* ACL run for EXPN */
@@ -341,36 +351,36 @@ extern uschar *acl_smtp_quit;          /* ACL run for QUIT */
 extern uschar *acl_smtp_rcpt;          /* ACL run for RCPT */
 extern uschar *acl_smtp_starttls;      /* ACL run for STARTTLS */
 extern uschar *acl_smtp_vrfy;          /* ACL run for VRFY */
+#ifndef DISABLE_WELLKNOWN
+extern uschar *acl_smtp_wellknown;     /* ACL run for WELLKNOWN */
+#endif
 extern tree_node *acl_var_c;           /* ACL connection variables */
 extern tree_node *acl_var_m;           /* ACL message variables */
 extern uschar *acl_verify_message;     /* User message for verify failure */
 extern string_item *acl_warn_logged;   /* Logged lines */
+extern int acl_where;		       /* Current running ACL */
 extern uschar *acl_wherecodes[];       /* Response codes for ACL fails */
 extern uschar *acl_wherenames[];       /* Names for messages */
 extern address_item *addr_duplicate;   /* Duplicate address list */
 extern address_item address_defaults;  /* Default data for address item */
-extern uschar *address_file;           /* Name of file when delivering to one */
-extern uschar *address_pipe;           /* Pipe command when delivering to one */
+extern const uschar *address_file;           /* Name of file when delivering to one */
+extern const uschar *address_pipe;           /* Pipe command when delivering to one */
 extern tree_node *addresslist_anchor;  /* Tree of defined address lists */
 extern int     addresslist_count;      /* Number defined */
 extern gid_t  *admin_groups;           /* List of admin groups */
 extern BOOL    allow_domain_literals;  /* As it says */
 extern BOOL    allow_mx_to_ip;         /* Allow MX records to -> ip address */
-#ifdef EXPERIMENTAL_ARC
-extern struct arc_set *arc_received;   /* highest ARC instance evaluation struct */
-extern int     arc_received_instance;  /* highest ARC instance number in headers */
-extern int     arc_oldest_pass;        /* lowest passing instance number in headers */
-extern const uschar *arc_state;	       /* verification state */
-extern const uschar *arc_state_reason;
-#endif
 extern BOOL    allow_utf8_domains;     /* For experimenting */
+extern const uschar *atrn_domains;     /* Domains requested for transfer */
+extern const uschar *atrn_host;        /* host spec for client */
+extern const uschar *atrn_mode;	       /* "C"ustomer, "P"rovider, or empty */
 extern uschar *authenticated_fail_id;  /* ID that failed authentication */
 extern uschar *authenticated_id;       /* ID that was authenticated */
 extern uschar *authenticated_sender;   /* From AUTH on MAIL */
 extern BOOL    authentication_failed;  /* TRUE if AUTH was tried and failed */
 extern uschar *authenticator_name;     /* for debug and error messages */
 extern uschar *auth_advertise_hosts;   /* Only advertise to these */
-extern auth_info auths_available[];    /* Vector of available auth mechanisms */
+extern auth_info * auths_available;	/* List of available auth mechanisms */
 extern auth_instance *auths;           /* Chain of instantiated auths */
 extern auth_instance auth_defaults;    /* Default values */
 extern uschar *auth_defer_msg;         /* Error message for log */
@@ -399,7 +409,7 @@ extern int     bsmtp_transaction_linecount; /* Start of last transaction */
 extern int     body_8bitmime;          /* sender declared BODY= ; 7=7BIT, 8=8BITMIME */
 extern uschar *bounce_message_file;    /* Template file */
 extern uschar *bounce_message_text;    /* One-liner */
-extern uschar *bounce_recipient;       /* When writing an errmsg */
+extern const uschar *bounce_recipient; /* When writing an errmsg */
 extern BOOL    bounce_return_body;     /* Include body in returned message */
 extern int     bounce_return_linesize_limit; /* Max line length in return */
 extern BOOL    bounce_return_message;  /* Include message in bounce */
@@ -431,26 +441,34 @@ extern gstring *client_cmd_log;	       /* debug log of client cmds & responses *
 extern int     clmacro_count;          /* Number of command line macros */
 extern uschar *clmacros[];             /* Copy of them, for re-exec */
 extern BOOL    commandline_checks_require_admin; /* belt and braces for insecure setups */
+extern const uschar *connection_id;    /* connection cookie for log */
 extern int     connection_max_messages;/* Max down one SMTP connection */
 extern FILE   *config_file;            /* Configuration file */
 extern const uschar *config_filename;  /* Configuration file name */
 extern gid_t   config_gid;             /* Additional group owner */
-extern int     config_lineno;          /* Line number */
-extern uschar *config_main_filelist;   /* List of possible config files */
+extern unsigned config_lineno;         /* Line number */
+extern const uschar *config_main_filelist; /* List of possible config files */
 extern uschar *config_main_filename;   /* File name actually used */
 extern uschar *config_main_directory;  /* Directory where the main config file was found */
 extern uid_t   config_uid;             /* Additional owner */
-extern uschar *continue_proxy_cipher;  /* TLS cipher for proxied continued delivery */
-extern BOOL    continue_proxy_dane;    /* proxied conn is DANE */
-extern uschar *continue_proxy_sni;     /* proxied conn SNI */
-extern uschar *continue_hostname;      /* Host for continued delivery */
-extern uschar *continue_host_address;  /* IP address for ditto */
-extern int     continue_sequence;      /* Sequence num for continued delivery */
-extern uschar *continue_transport;     /* Transport for continued delivery */
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+extern unsigned continue_flags;	       /* TLS-related info for connection */
+#ifndef DISABLE_ESMTP_LIMITS
 extern unsigned continue_limit_mail;   /* Peer advertised limit */
 extern unsigned continue_limit_rcpt;
 extern unsigned continue_limit_rcptdom;
+#endif
+extern int     continue_fd;	       /* Connection for continuation */
+extern uschar *continue_proxy_cipher;  /* TLS cipher for proxied continued delivery */
+extern BOOL    continue_proxy_dane;    /* proxied conn is DANE */
+extern uschar *continue_proxy_sni;     /* proxied conn SNI */
+extern const uschar *continue_hostname;      /* Host for continued delivery */
+extern const uschar *continue_host_address;  /* IP address for ditto */
+extern uschar  continue_next_id[];     /* Next message_id from hintsdb */
+extern unsigned continue_sequence;     /* Sequence num for continued delivery */
+extern const uschar *continue_transport; /* Transport for continued delivery */
+#ifndef COMPILE_UTILITY
+extern open_db *continue_retry_db;     /* Hintsdb for retries */
+extern open_db *continue_wait_db;      /* Hintsdb for wait-transport */
 #endif
 
 
@@ -459,6 +477,7 @@ extern uschar *csa_status;             /* Client SMTP Authorization result */
 typedef struct {
   unsigned     callout_hold_only:1;    /* Conn is only for verify callout */
   unsigned     delivery:1;             /* When to attempt */
+  unsigned     tpt_sender:1;           /* Use tpt-defined sender */
   unsigned     defer_pass:1;           /* Pass 4xx to caller rather than spooling */
   unsigned     is_tls:1;	       /* Conn has TLS active */
   client_conn_ctx cctx;                /* Open connection */
@@ -515,14 +534,14 @@ extern const uschar *deliver_host_address; /* Address for remote delivery filter
 extern int     deliver_host_port;      /* Address for remote delivery filter */
 extern uschar *deliver_in_buffer;      /* Buffer for copying file */
 extern ino_t   deliver_inode;          /* Inode for appendfile */
-extern uschar *deliver_localpart;      /* The local part for delivery */
+extern const uschar *deliver_localpart;/* The local part for delivery */
 extern uschar *deliver_localpart_data; /* From local part lookup (de-tainted) */
-extern uschar *deliver_localpart_orig; /* The original local part for delivery */
-extern uschar *deliver_localpart_parent; /* The parent local part for delivery */
-extern uschar *deliver_localpart_prefix; /* The stripped prefix, if any */
-extern uschar *deliver_localpart_prefix_v; /* The stripped-prefix variable portion, if any */
-extern uschar *deliver_localpart_suffix; /* The stripped suffix, if any */
-extern uschar *deliver_localpart_suffix_v; /* The stripped-suffix variable portion, if any */
+extern const uschar *deliver_localpart_orig;		/* The original local part for delivery */
+extern const uschar *deliver_localpart_parent;		/* The parent local part for delivery */
+extern const uschar *deliver_localpart_prefix;		/* The stripped prefix, if any */
+extern const uschar *deliver_localpart_prefix_v;	/* The stripped-prefix variable portion, if any */
+extern const uschar *deliver_localpart_suffix;		/* The stripped suffix, if any */
+extern const uschar *deliver_localpart_suffix_v;	/* The stripped-suffix variable portion, if any */
 extern uschar *deliver_out_buffer;     /* Buffer for copying file */
 extern int     deliver_queue_load_max; /* Different value for queue running */
 extern address_item *deliver_recipients; /* Current set of addresses */
@@ -532,33 +551,6 @@ extern uschar *deliver_selectstring_sender; /* For selecting by sender */
 extern BOOL    disable_fsync;          /* Not for normal use */
 #endif
 extern BOOL    disable_ipv6;           /* Don't do any IPv6 things */
-
-#ifndef DISABLE_DKIM
-extern unsigned dkim_collect_input;    /* Runtime count of dkim signtures; tracks whether SMTP input is fed to DKIM validation */
-extern uschar *dkim_cur_signer;        /* Expansion variable, holds the current "signer" domain or identity during a acl_smtp_dkim run */
-extern int     dkim_key_length;        /* Expansion variable, length of signing key in bits */
-extern void   *dkim_signatures;	       /* Actually a (pdkim_signature *) but most files do not need to know */
-extern uschar *dkim_signers;           /* Expansion variable, holds colon-separated list of domains and identities that have signed a message */
-extern uschar *dkim_signing_domain;    /* Expansion variable, domain used for signing a message. */
-extern uschar *dkim_signing_selector;  /* Expansion variable, selector used for signing a message. */
-extern uschar *dkim_verify_hashes;     /* Preference order for signatures */
-extern uschar *dkim_verify_keytypes;   /* Preference order for signatures */
-extern uschar *dkim_verify_min_keysizes; /* list of minimum key sizes, keyed by algo */
-extern BOOL    dkim_verify_minimal;    /* Shortcircuit signture verification */
-extern uschar *dkim_verify_overall;    /* First successful domain verified, or null */
-extern uschar *dkim_verify_signers;    /* Colon-separated list of domains for each of which we call the DKIM ACL */
-extern uschar *dkim_verify_status;     /* result for this signature */
-extern uschar *dkim_verify_reason;     /* result for this signature */
-#endif
-#ifdef SUPPORT_DMARC
-extern uschar *dmarc_domain_policy;    /* Expansion for declared policy of used domain */
-extern uschar *dmarc_forensic_sender;  /* Set sender address for forensic reports */
-extern uschar *dmarc_history_file;     /* Expansion variable, file to store dmarc results */
-extern uschar *dmarc_status;           /* Expansion variable, one word value */
-extern uschar *dmarc_status_text;      /* Expansion variable, human readable value */
-extern uschar *dmarc_tld_file;         /* Mozilla TLDs text file */
-extern uschar *dmarc_used_domain;      /* Expansion variable, domain libopendmarc chose for DMARC policy lookup */
-#endif
 
 extern uschar *dns_again_means_nonexist; /* Domains that are badly set up */
 extern int     dns_csa_search_limit;   /* How deep to search for CSA SRV records */
@@ -599,7 +591,7 @@ extern int     errors_sender_rc;       /* Return after message to sender*/
 
 #ifndef DISABLE_EVENT
 extern uschar *event_action;           /* expansion for delivery events */
-extern uschar *event_data;	       /* event data */
+extern const uschar *event_data;       /* event data */
 extern int     event_defer_errno;      /* error number set when a remote delivery is deferred with a host error */
 extern const uschar *event_name;       /* event classification */
 #endif
@@ -607,7 +599,6 @@ extern const uschar *event_name;       /* event classification */
 extern gid_t   exim_gid;               /* To be used with exim_uid */
 extern BOOL    exim_gid_set;           /* TRUE if exim_gid set */
 extern uschar *exim_path;              /* Path to exec exim */
-extern const uschar *exim_sieve_extension_list[]; /* list of sieve extensions */
 extern uid_t   exim_uid;               /* Non-root uid for exim */
 extern BOOL    exim_uid_set;           /* TRUE if exim_uid set */
 extern int     expand_level;	       /* Nesting depth; indent for debug */
@@ -623,8 +614,8 @@ extern uschar *fake_response_text;     /* User defined message for the above. De
 extern int     filter_n[FILTER_VARIABLE_COUNT]; /* filter variables */
 extern int     filter_sn[FILTER_VARIABLE_COUNT]; /* variables set by system filter */
 extern int     filter_test;            /* Filter test type */
-extern uschar *filter_test_sfile;      /* System filter test file */
-extern uschar *filter_test_ufile;      /* User filter test file */
+extern const uschar *filter_test_sfile;/* System filter test file */
+extern const uschar *filter_test_ufile;/* User filter test file */
 extern uschar *filter_thisaddress;     /* For address looping */
 extern int     finduser_retries;       /* Retry count for getpwnam() */
 extern uid_t   fixed_never_users[];    /* Can't be overridden */
@@ -660,12 +651,16 @@ extern uschar *host_lookup_order;      /* Order of host lookup types */
 extern uschar *host_lookup_msg;        /* Text for why it failed */
 extern int     host_number;            /* For sharing spools */
 extern uschar *host_number_string;     /* For expanding */
-extern uschar *hosts_require_helo;     /* check for HELO/EHLO before MAIL */
 extern uschar *host_reject_connection; /* Reject these hosts */
+extern uschar *hosts_connection_nolog; /* Limits the logging option */
+extern uschar *hosts_require_helo;     /* check for HELO/EHLO before MAIL */
+extern uschar *hosts_treat_as_local;   /* For routing */
+#ifdef EXPERIMENTAL_XCLIENT
+extern uschar *hosts_xclient;	       /* Allow XCLIENT command for specified hosts */
+#endif
 extern tree_node *hostlist_anchor;     /* Tree of defined host lists */
 extern int     hostlist_count;         /* Number defined */
-extern uschar *hosts_connection_nolog; /* Limits the logging option */
-extern uschar *hosts_treat_as_local;   /* For routing */
+
 
 extern int     ignore_bounce_errors_after; /* Keep them for this time. */
 extern BOOL    ignore_fromline_local;  /* Local SMTP ignore fromline */
@@ -680,7 +675,8 @@ extern uschar *keep_environment;       /* Whitelist for environment variables */
 extern int     keep_malformed;         /* Time to keep malformed messages */
 
 extern uschar *eldap_dn;               /* Where LDAP DNs are left */
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+extern const uschar *letter_digit_hyphen_dot; /* Legitimate DNS host name chars */
+#ifndef DISABLE_ESMTP_LIMITS
 extern uschar *limits_advertise_hosts; /* for banner/EHLO pipelining */
 #endif
 extern int     load_average;           /* Most recently read load average */
@@ -702,6 +698,7 @@ extern int     localpartlist_count;    /* Number defined */
 extern uschar *log_buffer;             /* For constructing log entries */
 extern int     log_default[];          /* Initialization list for log_selector */
 extern uschar *log_file_path;          /* If unset, use default */
+extern const uschar *log_ports;	       /* If set, port numbers to log */
 extern int     log_notall[];           /* Log options excluded from +all */
 extern bit_table log_options[];        /* Table of options */
 extern int     log_options_count;      /* Size of table */
@@ -711,8 +708,8 @@ extern uschar *log_selector_string;    /* As supplied in the config */
 extern FILE   *log_stderr;             /* Copy of stderr for log use, or NULL */
 extern BOOL    log_timezone;           /* TRUE to include the timezone in log lines */
 extern uschar *login_sender_address;   /* The actual sender address */
-extern lookup_info **lookup_list;      /* Array of pointers to available lookups */
-extern int     lookup_list_count;      /* Number of entries in the list */
+extern tree_node *lookups_tree;        /* Tree of available lookups */
+extern unsigned lookup_list_count;     /* Number of entries in the list */
 extern uschar *lookup_dnssec_authenticated; /* AD status of dns lookup */
 extern int     lookup_open_max;        /* Max lookup files to cache */
 extern uschar *lookup_value;           /* Value looked up from file */
@@ -745,10 +742,10 @@ extern uschar *message_size_limit;     /* As it says */
 #ifdef SUPPORT_I18N
 extern BOOL    message_smtputf8;       /* Internationalized mail handling */
 extern int     message_utf8_downconvert; /* convert from utf8 */
-const extern pcre2_code *regex_UTF8;         /* For recognizing SMTPUTF8 settings */
+extern const   pcre2_code *regex_UTF8;         /* For recognizing SMTPUTF8 settings */
 #endif
 extern uschar  message_subdir[];       /* Subdirectory for messages */
-extern uschar *message_reference;      /* Reference for error messages */
+extern const uschar *message_reference;/* Reference for error messages */
 
 /* MIME ACL expandables */
 #ifdef WITH_CONTENT_SCAN
@@ -791,7 +788,7 @@ extern uschar *originator_login;       /* Login of same */
 extern uschar *originator_name;        /* Full name of same */
 extern uid_t   originator_uid;         /* Uid of ditto */
 extern uschar *override_local_interfaces; /* Value of -oX argument */
-extern uschar *override_pid_file_path; /* Value of -oP argument */
+extern const uschar *override_pid_file_path; /* Value of -oP argument */
 
 extern BOOL    panic_coredump;	       /* SEGV rather than exit, on LOG_PANIC_DIE */
 extern pcre2_general_context * pcre_gen_ctx;	/* pcre memory management */
@@ -801,7 +798,7 @@ extern pcre2_general_context * pcre_mlc_ctx;
 extern pcre2_compile_context * pcre_mlc_cmp_ctx;
 
 extern uschar *percent_hack_domains;   /* Local domains for which '% operates */
-extern uschar *pid_file_path;          /* For writing daemon pids */
+extern const uschar *pid_file_path;    /* For writing daemon pids */
 #ifndef DISABLE_PIPE_CONNECT
 extern uschar *pipe_connect_advertise_hosts; /* for banner/EHLO pipelining */
 #endif
@@ -819,19 +816,22 @@ extern uschar *process_log_path;       /* Alternate path */
 extern const uschar *process_purpose;  /* for debug output */
 extern BOOL    prod_requires_admin;    /* TRUE if prodding requires admin */
 
-#if defined(SUPPORT_PROXY) || defined(SUPPORT_SOCKS)
+#if defined(SUPPORT_PROXY) || defined(SUPPORT_SOCKS) || defined(EXPERIMENTAL_XCLIENT)
 extern uschar *hosts_proxy;            /* Hostlist which (require) use proxy protocol */
 extern uschar *proxy_external_address; /* IP of remote interface of proxy */
-extern int     proxy_external_port;    /* Port on remote interface of proxy */
+extern unsigned proxy_external_port;   /* Port on remote interface of proxy */
 extern uschar *proxy_local_address;    /* IP of local interface of proxy */
-extern int     proxy_local_port;       /* Port on local interface of proxy */
+extern unsigned proxy_local_port;      /* Port on local interface of proxy */
 extern int     proxy_protocol_timeout; /* Timeout for proxy negotiation */
-extern BOOL    proxy_session;          /* TRUE if receiving mail from valid proxy  */
+extern BOOL    proxy_session;          /* TRUE if receiving mail from valid proxy
+					  or sending via one */
 #endif
 
 extern uschar *prvscheck_address;      /* Set during prvscheck expansion item */
 extern uschar *prvscheck_keynum;       /* Set during prvscheck expansion item */
 extern uschar *prvscheck_result;       /* Set during prvscheck expansion item */
+
+extern qrunner *qrunners;	       /* tracking data for queues */
 
 extern const uschar *qualify_domain_recipient; /* Domain to qualify recipients with */
 extern uschar *qualify_domain_sender;  /* Domain to qualify senders with */
@@ -862,8 +862,8 @@ extern tree_node *ratelimiters_cmd;    /* Results of command ratelimit checks */
 extern tree_node *ratelimiters_conn;   /* Results of connection ratelimit checks */
 extern tree_node *ratelimiters_mail;   /* Results of per-mail ratelimit checks */
 extern uschar *raw_active_hostname;    /* Pre-expansion */
-extern uschar *raw_sender;             /* Before rewriting */
-extern uschar **raw_recipients;        /* Before rewriting */
+extern const uschar *raw_sender;       /* Before rewriting */
+extern const uschar **raw_recipients;  /* Before rewriting */
 extern int     raw_recipients_count;
 extern const uschar * rc_names[];      /* Mostly for debug output */
 extern int     rcpt_count;             /* Count of RCPT commands in a message */
@@ -875,7 +875,7 @@ extern int     receive_linecount;      /* Mainly for BSMTP errors */
 extern int     receive_messagecount;   /* Mainly for BSMTP errors */
 extern int     receive_timeout;        /* For non-SMTP acceptance */
 extern int     received_count;         /* Count of Received: headers */
-extern uschar *received_for;           /* For "for" field */
+extern const uschar *received_for;     /* For "for" field */
 extern uschar *received_header_text;   /* Definition of Received: header */
 extern int     received_headers_max;   /* Max count of Received: headers */
 extern struct timeval received_time;   /* Time the message started to be received */
@@ -884,14 +884,15 @@ extern uschar *recipient_data;         /* lookup data for recipients */
 extern uschar *recipient_unqualified_hosts; /* Permitted unqualified recipients */
 extern uschar *recipient_verify_failure; /* What went wrong */
 extern int     recipients_list_max;    /* Maximum number fitting in list */
-extern int     recipients_max;         /* Max permitted */
+extern uschar *recipients_max;         /* Max permitted */
+extern int     recipients_max_expanded;
 extern BOOL    recipients_max_reject;  /* If TRUE, reject whole message */
 extern const pcre2_code *regex_AUTH;         /* For recognizing AUTH settings */
 extern const pcre2_code  *regex_check_dns_names; /* For DNS name checking */
 extern const pcre2_code  *regex_From;        /* For recognizing "From_" lines */
 extern const pcre2_code  *regex_CHUNKING;    /* For recognizing CHUNKING (RFC 3030) */
 extern const pcre2_code  *regex_IGNOREQUOTA; /* For recognizing IGNOREQUOTA (LMTP) */
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+#ifndef DISABLE_ESMTP_LIMITS
 extern const pcre2_code  *regex_LIMITS; /* For recognizing LIMITS */
 #endif
 extern const pcre2_code  *regex_PIPELINING;  /* For recognizing PIPELINING */
@@ -902,12 +903,12 @@ extern const pcre2_code  *regex_EARLY_PIPE;  /* For recognizing PIPE_CONNCT */
 extern int    regex_cachesize;		     /* number of entries */
 extern const pcre2_code  *regex_ismsgid;     /* Compiled r.e. for message ID */
 extern const pcre2_code  *regex_smtp_code;   /* For recognizing SMTP codes */
-extern const uschar *regex_vars[];           /* $regexN variables */
 #ifdef WHITELIST_D_MACROS
 extern const pcre2_code  *regex_whitelisted_macro; /* For -D macro values */
 #endif
 #ifdef WITH_CONTENT_SCAN
 extern uschar *regex_match_string;     /* regex that matched a line (regex ACL condition) */
+extern const uschar *regex_vars[];
 #endif
 extern int     remote_delivery_count;  /* Number of remote addresses */
 extern int     remote_max_parallel;    /* Maximum parallel delivery */
@@ -916,7 +917,7 @@ extern retry_config *retries;          /* Chain of retry config information */
 extern int     retry_data_expire;      /* When to expire retry data */
 extern int     retry_interval_max;     /* Absolute maximum */
 extern int     retry_maximum_timeout;  /* The maximum timeout */
-extern uschar *return_path;            /* Return path for a message */
+extern const uschar *return_path;            /* Return path for a message */
 extern BOOL    return_path_remove;     /* Remove return-path headers */
 extern int     rewrite_existflags;     /* Indicate which headers have rewrites */
 extern uschar *rfc1413_hosts;          /* RFC hosts */
@@ -924,10 +925,10 @@ extern int     rfc1413_query_timeout;  /* Timeout on RFC 1413 calls */
 /* extern BOOL    rfc821_domains;  */       /* If set, syntax is 821, not 822 => being abolished */
 extern uid_t   root_gid;               /* The gid for root */
 extern uid_t   root_uid;               /* The uid for root */
-extern router_info routers_available[];/* Vector of available routers */
+extern router_info *routers_available; /* List of available router drivers */
 extern router_instance *routers;       /* Chain of instantiated routers */
 extern router_instance router_defaults;/* Default values */
-extern uschar *router_name;            /* Name of router last started */
+extern const uschar *router_name;      /* Name of router last started */
 extern tree_node *router_var;	       /* Variables set by router */
 extern ip_address_item *running_interfaces; /* Host's running interfaces */
 extern uschar *running_status;         /* Flag string for testing */
@@ -937,7 +938,7 @@ extern uschar *search_error_message;   /* Details of lookup problem */
 extern uschar *self_hostname;          /* Self host after routing->directors */
 extern unsigned int sender_address_cache[(MAX_NAMED_LIST * 2)/32]; /* Cache bits for sender */
 extern uschar *sender_address_data;    /* address_data from sender verify */
-extern uschar *sender_address_unrewritten; /* Set if rewritten by verify */
+extern const uschar *sender_address_unrewritten; /* Set if rewritten by verify */
 extern uschar *sender_data;            /* lookup result for senders */
 extern unsigned int sender_domain_cache[(MAX_NAMED_LIST * 2)/32]; /* Cache bits for sender domain */
 extern uschar *sender_fullhost;        /* Sender host name + address */
@@ -960,7 +961,7 @@ extern uschar *sending_ip_address;     /* Address of outgoing (SMTP) interface *
 extern int     sending_port;           /* Port of outgoing interface */
 extern SIGNAL_BOOL sigalrm_seen;       /* Flag for sigalrm_handler */
 extern const uschar *sigalarm_setter;  /* For debug, set to callpoint of alarm() */
-extern uschar **sighup_argv;           /* Args for re-execing after SIGHUP */
+extern const uschar **sighup_argv;     /* Args for re-execing after SIGHUP */
 extern int     slow_lookup_log;        /* Log DNS lookups taking longer than N millisecs */
 extern int     smtp_accept_count;      /* Count of connections */
 extern BOOL    smtp_accept_keepalive;  /* Set keepalive on incoming */
@@ -995,7 +996,7 @@ extern int     smtp_mailcmd_max;       /* Limit for MAIL commands */
 extern int     smtp_max_synprot_errors;/* Max syntax/protocol errors */
 extern int     smtp_max_unknown_commands; /* As it says */
 extern uschar *smtp_names[];	       /* decode for command codes */
-extern uschar *smtp_notquit_reason;    /* Global for disconnect reason */
+extern const uschar *smtp_notquit_reason; /* Global for disconnect reason */
 extern FILE   *smtp_out;               /* Incoming SMTP output file */
 extern uschar *smtp_ratelimit_hosts;   /* Rate limit these hosts */
 extern uschar *smtp_ratelimit_mail;    /* Parameters for MAIL limiting */
@@ -1027,16 +1028,6 @@ extern uschar *spam_action;            /* the spamd recommended-action */
 extern uschar *spam_score;             /* the spam score (float) */
 extern uschar *spam_score_int;         /* spam_score * 10 (int) */
 #endif
-#ifdef SUPPORT_SPF
-extern uschar *spf_guess;              /* spf best-guess record */
-extern uschar *spf_header_comment;     /* spf header comment */
-extern uschar *spf_received;           /* Received-SPF: header */
-extern uschar *spf_result;             /* spf result in string form */
-extern BOOL    spf_result_guessed;     /* spf result is of best-guess operation */
-extern uschar *spf_smtp_comment;       /* spf comment to include in SMTP reply */
-extern uschar *spf_smtp_comment_template;
-                                       /* template to construct the spf comment by libspf2 */
-#endif
 extern BOOL    split_spool_directory;  /* TRUE to use multiple subdirs */
 extern FILE   *spool_data_file;	       /* handle for -D file */
 extern uschar *spool_directory;        /* Name of spool directory */
@@ -1055,7 +1046,7 @@ extern const uschar *submission_name;  /* User name set from ACL */
 extern BOOL    syslog_duplication;     /* FALSE => no duplicate logging */
 extern int     syslog_facility;        /* As defined by Syslog.h */
 extern BOOL    syslog_pid;             /* TRUE if PID on syslogs */
-extern uschar *syslog_processname;     /* 'ident' param to openlog() */
+extern const uschar *syslog_processname; /* 'ident' param to openlog() */
 extern BOOL    syslog_timestamp;       /* TRUE if time on syslogs */
 extern uschar *system_filter;          /* Name of system filter file */
 
@@ -1075,6 +1066,7 @@ extern tfo_state_t tcp_out_fastopen;   /* TCP fast open */
 #ifdef USE_TCP_WRAPPERS
 extern uschar *tcp_wrappers_daemon_name; /* tcpwrappers daemon lookup name */
 #endif
+extern int     test_harness_identd_port; /* For use when testing */
 extern int     test_harness_load_avg;  /* For use when testing */
 extern int     thismessage_size_limit; /* Limit for this message */
 extern int     timeout_frozen_after;   /* Max time to keep frozen messages */
@@ -1082,15 +1074,15 @@ extern int     timeout_frozen_after;   /* Max time to keep frozen messages */
 extern struct timeval timestamp_startup; /* For development measurements */
 #endif
 
-extern uschar *transport_name;         /* Name of transport last started */
+extern const uschar *transport_name;   /* Name of transport last started */
 extern int     transport_count;        /* Count of bytes transported */
 extern int     transport_newlines;     /* Accurate count of number of newline chars transported */
 extern const uschar **transport_filter_argv; /* For on-the-fly filtering */
 extern int     transport_filter_timeout; /* Timeout for same */
 
-extern transport_info transports_available[]; /* Vector of available transports */
-extern transport_instance *transports; /* Chain of instantiated transports */
-extern transport_instance transport_defaults; /* Default values */
+extern transport_info * transports_available;	/* Listof available transports */
+extern transport_instance *transports;		/* Chain of instantiated transports */
+extern transport_instance transport_defaults;	/* Default values */
 
 extern int     transport_write_timeout;/* Set to time out individual writes */
 
@@ -1110,8 +1102,8 @@ extern uschar *uucp_from_pattern;      /* For recognizing "From " lines */
 extern uschar *uucp_from_sender;       /* For building the sender */
 
 extern uschar *warn_message_file;      /* Template for warning messages */
-extern uschar *warnmsg_delay;          /* String form of delay time */
-extern uschar *warnmsg_recipients;     /* Recipients of warning message */
+extern const uschar *warnmsg_delay;    /* String form of delay time */
+extern const uschar *warnmsg_recipients; /* Recipients of warning message */
 extern BOOL    write_rejectlog;        /* Control of reject logging */
 
 extern uschar *verify_mode;	       /* Running a router in verify mode */
@@ -1122,4 +1114,10 @@ extern uschar *version_string;         /* Version string */
 
 extern int     warning_count;          /* Delay warnings sent for this msg */
 
+#ifndef DISABLE_WELLKNOWN
+extern uschar *wellknown_advertise_hosts;/* Allow WELLKNOWN command for specified hosts */
+extern uschar *wellknown_response;     /* SMTP response for WELLKNOWN verb */
+#endif
+
+#endif	/* whole file */
 /* End of globals.h */

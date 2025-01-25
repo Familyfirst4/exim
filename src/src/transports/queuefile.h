@@ -5,6 +5,7 @@
 /* Copyright (c) Andrew Colin Kissa <andrew@topdog.za.net> 2016 */
 /* Copyright (c) University of Cambridge 2016 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Private structure for the private options. */
 
@@ -23,7 +24,7 @@ extern queuefile_transport_options_block queuefile_transport_option_defaults;
 
 /* The main and init entry points for the transport */
 
+extern void queuefile_transport_init(driver_instance *);
 extern BOOL queuefile_transport_entry(transport_instance *, address_item *);
-extern void queuefile_transport_init(transport_instance *);
 
 /* End of transports/queuefile.h */

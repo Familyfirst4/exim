@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Code for handling Access Control Lists (ACLs) */
 
@@ -29,7 +30,7 @@ enum { ACL_ACCEPT, ACL_DEFER, ACL_DENY, ACL_DISCARD, ACL_DROP, ACL_REQUIRE,
 
 /* ACL verbs */
 
-static uschar *verbs[] = {
+static const uschar * verbs[] = {
     [ACL_ACCEPT] =	US"accept",
     [ACL_DEFER] =	US"defer",
     [ACL_DENY] =	US"deny",
@@ -56,12 +57,11 @@ static int msgcond[] = {
 
 #endif
 
-/* ACL condition and modifier codes - keep in step with the table that
-follows.
-down. */
+/* ACL condition and modifier codes */
 
 enum { ACLC_ACL,
        ACLC_ADD_HEADER,
+       ACLC_ATRN_DOMAINS,
        ACLC_AUTHENTICATED,
 #ifdef EXPERIMENTAL_BRIGHTMAIL
        ACLC_BMI_OPTIN,
@@ -118,7 +118,8 @@ enum { ACLC_ACL,
        ACLC_SPF_GUESS,
 #endif
        ACLC_UDPSEND,
-       ACLC_VERIFY };
+       ACLC_VERIFY,
+};
 
 /* ACL conditions/modifiers: "delay", "control", "continue", "endpass",
 "message", "log_message", "log_reject_target", "logwrite", "queue" and "set" are
@@ -129,217 +130,242 @@ being the prefix of another; the binary-search in the list will go wrong. */
 typedef struct condition_def {
   uschar	*name;
 
-/* Flag to indicate the condition/modifier has a string expansion done
-at the outer level. In the other cases, expansion already occurs in the
-checking functions. */
-  BOOL		expand_at_top:1;
+  /* Flags for actions or checks to do during readconf for this condition */
+  unsigned	flags;
+#define ACD_EXP		BIT(0)	/* do expansion at outer level*/
+#define ACD_MOD		BIT(1)	/* is a modifier */
+#define ACD_LOAD	BIT(2)	/* supported by a dynamic-load module */
 
-  BOOL		is_modifier:1;
-
-/* Bit map vector of which conditions and modifiers are not allowed at certain
-times. For each condition and modifier, there's a bitmap of dis-allowed times.
-For some, it is easier to specify the negation of a small number of allowed
-times. */
+  /* Bit map vector of which conditions and modifiers are not allowed at certain
+  times. For each condition and modifier, there's a bitmap of dis-allowed times.
+  For some, it is easier to specify the negation of a small number of allowed
+  times. */
   unsigned	forbids;
+#define FORBIDDEN(times)	(times)
+#define PERMITTED(times)	((unsigned) ~(times))
 
 } condition_def;
 
 static condition_def conditions[] = {
-  [ACLC_ACL] =			{ US"acl",		FALSE, FALSE,	0 },
+  [ACLC_ACL] =			{ US"acl",		0,
+				  FORBIDDEN(0) },
 
-  [ACLC_ADD_HEADER] =		{ US"add_header",	TRUE, TRUE,
-				  (unsigned int)
-				  ~(ACL_BIT_MAIL | ACL_BIT_RCPT |
+  [ACLC_ADD_HEADER] =		{ US"add_header",	ACD_EXP | ACD_MOD,
+				  PERMITTED(ACL_BIT_MAIL | ACL_BIT_RCPT |
 				    ACL_BIT_PREDATA | ACL_BIT_DATA |
-#ifndef DISABLE_PRDR
 				    ACL_BIT_PRDR |
-#endif
 				    ACL_BIT_MIME | ACL_BIT_NOTSMTP |
 				    ACL_BIT_DKIM |
 				    ACL_BIT_NOTSMTP_START),
   },
 
-  [ACLC_AUTHENTICATED] =	{ US"authenticated",	FALSE, FALSE,
-				  ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START |
-				    ACL_BIT_CONNECT | ACL_BIT_HELO,
+  [ACLC_ATRN_DOMAINS] =		{ US"atrn_domains",	ACD_EXP,
+				  PERMITTED(ACL_BIT_ATRN)
+				},
+
+  [ACLC_AUTHENTICATED] =	{ US"authenticated",	0,
+				  FORBIDDEN(ACL_BIT_NOTSMTP |
+				    ACL_BIT_NOTSMTP_START |
+				    ACL_BIT_CONNECT | ACL_BIT_HELO),
   },
 #ifdef EXPERIMENTAL_BRIGHTMAIL
-  [ACLC_BMI_OPTIN] =		{ US"bmi_optin",	TRUE, TRUE,
-				  ACL_BIT_AUTH |
+  [ACLC_BMI_OPTIN] =		{ US"bmi_optin",	ACD_EXP | ACD_MOD,
+				  FORBIDDEN(ACL_BIT_AUTH |
 				    ACL_BIT_CONNECT | ACL_BIT_HELO |
 				    ACL_BIT_DATA | ACL_BIT_MIME |
-# ifndef DISABLE_PRDR
 				    ACL_BIT_PRDR |
-# endif
 				    ACL_BIT_ETRN | ACL_BIT_EXPN |
 				    ACL_BIT_MAILAUTH |
 				    ACL_BIT_MAIL | ACL_BIT_STARTTLS |
 				    ACL_BIT_VRFY | ACL_BIT_PREDATA |
-				    ACL_BIT_NOTSMTP_START,
+				    ACL_BIT_NOTSMTP_START),
   },
 #endif
-  [ACLC_CONDITION] =		{ US"condition",	TRUE, FALSE,	0 },
-  [ACLC_CONTINUE] =		{ US"continue",	TRUE, TRUE,	0 },
+  [ACLC_CONDITION] =		{ US"condition",	ACD_EXP,
+				  FORBIDDEN(0) },
+  [ACLC_CONTINUE] =		{ US"continue",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 
   /* Certain types of control are always allowed, so we let it through
   always and check in the control processing itself. */
-  [ACLC_CONTROL] =		{ US"control",	TRUE, TRUE,	0 },
+  [ACLC_CONTROL] =		{ US"control",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 
 #ifdef EXPERIMENTAL_DCC
-  [ACLC_DCC] =			{ US"dcc",		TRUE, FALSE,
-				  (unsigned int)
-				  ~(ACL_BIT_DATA |
-# ifndef DISABLE_PRDR
+  [ACLC_DCC] =			{ US"dcc",		ACD_EXP,
+				  PERMITTED(ACL_BIT_DATA |
 				  ACL_BIT_PRDR |
-# endif
 				  ACL_BIT_NOTSMTP),
   },
 #endif
 #ifdef WITH_CONTENT_SCAN
-  [ACLC_DECODE] =		{ US"decode",		TRUE, FALSE, (unsigned int) ~ACL_BIT_MIME },
+  [ACLC_DECODE] =		{ US"decode",		ACD_EXP,
+				  PERMITTED(ACL_BIT_MIME) },
 
 #endif
-  [ACLC_DELAY] =		{ US"delay",		TRUE, TRUE, ACL_BIT_NOTQUIT },
+  [ACLC_DELAY] =		{ US"delay",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(ACL_BIT_NOTQUIT) },
 #ifndef DISABLE_DKIM
-  [ACLC_DKIM_SIGNER] =		{ US"dkim_signers",	TRUE, FALSE, (unsigned int) ~ACL_BIT_DKIM },
-  [ACLC_DKIM_STATUS] =		{ US"dkim_status",	TRUE, FALSE, (unsigned int) ~ACL_BIT_DKIM },
+  [ACLC_DKIM_SIGNER] =		{ US"dkim_signers",
+# if SUPPORT_DKIM==2
+				  ACD_LOAD |
+# endif
+				  ACD_EXP, 
+				  PERMITTED(ACL_BIT_DKIM) },
+  [ACLC_DKIM_STATUS] =		{ US"dkim_status",
+# if SUPPORT_DKIM==2
+				  ACD_LOAD |
+# endif
+				  ACD_EXP,
+				  PERMITTED(ACL_BIT_DKIM | ACL_BIT_DATA | ACL_BIT_MIME
+				  | ACL_BIT_PRDR
+      ),
+  },
 #endif
 #ifdef SUPPORT_DMARC
-  [ACLC_DMARC_STATUS] =		{ US"dmarc_status",	TRUE, FALSE, (unsigned int) ~ACL_BIT_DATA },
+  [ACLC_DMARC_STATUS] =		{ US"dmarc_status",
+# if SUPPORT_DMARC==2
+				  ACD_LOAD |
+# endif
+				  ACD_EXP,
+				  PERMITTED(ACL_BIT_DATA) },
 #endif
 
   /* Explicit key lookups can be made in non-smtp ACLs so pass
   always and check in the verify processing itself. */
-  [ACLC_DNSLISTS] =		{ US"dnslists",	TRUE, FALSE,	0 },
+  [ACLC_DNSLISTS] =		{ US"dnslists",		0,
+				  FORBIDDEN(0) },
 
-  [ACLC_DOMAINS] =		{ US"domains",	FALSE, FALSE,
-				  (unsigned int)
-				  ~(ACL_BIT_RCPT | ACL_BIT_VRFY
-#ifndef DISABLE_PRDR
-				  |ACL_BIT_PRDR
-#endif
-      ),
-  },
-  [ACLC_ENCRYPTED] =		{ US"encrypted",	FALSE, FALSE,
-				  ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START |
-				    ACL_BIT_HELO,
-  },
-
-  [ACLC_ENDPASS] =		{ US"endpass",	TRUE, TRUE,	0 },
-
-  [ACLC_HOSTS] =		{ US"hosts",		FALSE, FALSE,
-				  ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START,
-  },
-  [ACLC_LOCAL_PARTS] =		{ US"local_parts",	FALSE, FALSE,
-				  (unsigned int)
-				  ~(ACL_BIT_RCPT | ACL_BIT_VRFY
-#ifndef DISABLE_PRDR
+  [ACLC_DOMAINS] =		{ US"domains",		0,
+				  PERMITTED(ACL_BIT_RCPT | ACL_BIT_VRFY
 				  | ACL_BIT_PRDR
-#endif
+      ),
+  },
+  [ACLC_ENCRYPTED] =		{ US"encrypted",	0,
+				  FORBIDDEN(ACL_BIT_NOTSMTP |
+				    ACL_BIT_NOTSMTP_START | ACL_BIT_CONNECT)
+  },
+
+  [ACLC_ENDPASS] =		{ US"endpass",	ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
+
+  [ACLC_HOSTS] =		{ US"hosts",		0,
+				  FORBIDDEN(ACL_BIT_NOTSMTP |
+				    ACL_BIT_NOTSMTP_START),
+  },
+  [ACLC_LOCAL_PARTS] =		{ US"local_parts",	0,
+				  PERMITTED(ACL_BIT_RCPT | ACL_BIT_VRFY
+				  | ACL_BIT_PRDR
       ),
   },
 
-  [ACLC_LOG_MESSAGE] =		{ US"log_message",	TRUE, TRUE,	0 },
-  [ACLC_LOG_REJECT_TARGET] =	{ US"log_reject_target", TRUE, TRUE,	0 },
-  [ACLC_LOGWRITE] =		{ US"logwrite",	TRUE, TRUE,	0 },
+  [ACLC_LOG_MESSAGE] =		{ US"log_message",	ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
+  [ACLC_LOG_REJECT_TARGET] =	{ US"log_reject_target", ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
+  [ACLC_LOGWRITE] =		{ US"logwrite",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 
 #ifdef WITH_CONTENT_SCAN
-  [ACLC_MALWARE] =		{ US"malware",	TRUE, FALSE,
-				  (unsigned int)
-				    ~(ACL_BIT_DATA |
-# ifndef DISABLE_PRDR
+  [ACLC_MALWARE] =		{ US"malware",		ACD_EXP,
+				  PERMITTED(ACL_BIT_DATA |
 				    ACL_BIT_PRDR |
-# endif
 				    ACL_BIT_NOTSMTP),
   },
 #endif
 
-  [ACLC_MESSAGE] =		{ US"message",	TRUE, TRUE,	0 },
+  [ACLC_MESSAGE] =		{ US"message",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 #ifdef WITH_CONTENT_SCAN
-  [ACLC_MIME_REGEX] =		{ US"mime_regex",	TRUE, FALSE, (unsigned int) ~ACL_BIT_MIME },
+  [ACLC_MIME_REGEX] =		{ US"mime_regex",	ACD_EXP,
+				  PERMITTED(ACL_BIT_MIME) },
 #endif
 
-  [ACLC_QUEUE] =		{ US"queue",		TRUE, TRUE,
-				  ACL_BIT_NOTSMTP |
-#ifndef DISABLE_PRDR
+  [ACLC_QUEUE] =		{ US"queue",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(ACL_BIT_NOTSMTP |
 				  ACL_BIT_PRDR |
-#endif
-				  ACL_BIT_DATA,
+				  ACL_BIT_DATA),
   },
 
-  [ACLC_RATELIMIT] =		{ US"ratelimit",	TRUE, FALSE,	0 },
-  [ACLC_RECIPIENTS] =		{ US"recipients",	FALSE, FALSE, (unsigned int) ~ACL_BIT_RCPT },
+  [ACLC_RATELIMIT] =		{ US"ratelimit",	ACD_EXP,
+				  FORBIDDEN(0) },
+  [ACLC_RECIPIENTS] =		{ US"recipients",	0,
+				  PERMITTED(ACL_BIT_RCPT) },
 
 #ifdef WITH_CONTENT_SCAN
-  [ACLC_REGEX] =		{ US"regex",		TRUE, FALSE,
-				  (unsigned int)
-				  ~(ACL_BIT_DATA |
-# ifndef DISABLE_PRDR
+  [ACLC_REGEX] =		{ US"regex",		ACD_EXP,
+				  PERMITTED(ACL_BIT_DATA |
 				    ACL_BIT_PRDR |
-# endif
 				    ACL_BIT_NOTSMTP |
 				    ACL_BIT_MIME),
   },
 
 #endif
-  [ACLC_REMOVE_HEADER] =	{ US"remove_header",	TRUE, TRUE,
-				  (unsigned int)
-				  ~(ACL_BIT_MAIL|ACL_BIT_RCPT |
+  [ACLC_REMOVE_HEADER] =	{ US"remove_header",	ACD_EXP | ACD_MOD,
+				  PERMITTED(ACL_BIT_MAIL|ACL_BIT_RCPT |
 				    ACL_BIT_PREDATA | ACL_BIT_DATA |
-#ifndef DISABLE_PRDR
 				    ACL_BIT_PRDR |
-#endif
 				    ACL_BIT_MIME | ACL_BIT_NOTSMTP |
 				    ACL_BIT_NOTSMTP_START),
   },
-  [ACLC_SEEN] =			{ US"seen",		TRUE, FALSE,	0 },
-  [ACLC_SENDER_DOMAINS] =	{ US"sender_domains",	FALSE, FALSE,
-				  ACL_BIT_AUTH | ACL_BIT_CONNECT |
+  [ACLC_SEEN] =			{ US"seen",		ACD_EXP,
+				  FORBIDDEN(0) },
+  [ACLC_SENDER_DOMAINS] =	{ US"sender_domains",	0,
+				  FORBIDDEN(ACL_BIT_AUTH | ACL_BIT_CONNECT |
 				    ACL_BIT_HELO |
 				    ACL_BIT_MAILAUTH | ACL_BIT_QUIT |
 				    ACL_BIT_ETRN | ACL_BIT_EXPN |
-				    ACL_BIT_STARTTLS | ACL_BIT_VRFY,
+				    ACL_BIT_STARTTLS | ACL_BIT_VRFY),
   },
-  [ACLC_SENDERS] =		{ US"senders",	FALSE, FALSE,
-				  ACL_BIT_AUTH | ACL_BIT_CONNECT |
+  [ACLC_SENDERS] =		{ US"senders",	0,
+				  FORBIDDEN(ACL_BIT_AUTH | ACL_BIT_CONNECT |
 				    ACL_BIT_HELO |
 				    ACL_BIT_MAILAUTH | ACL_BIT_QUIT |
 				    ACL_BIT_ETRN | ACL_BIT_EXPN |
-				    ACL_BIT_STARTTLS | ACL_BIT_VRFY,
+				    ACL_BIT_STARTTLS | ACL_BIT_VRFY),
   },
 
-  [ACLC_SET] =			{ US"set",		TRUE, TRUE,	0 },
+  [ACLC_SET] =			{ US"set",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 
 #ifdef WITH_CONTENT_SCAN
-  [ACLC_SPAM] =			{ US"spam",		TRUE, FALSE,
-				  (unsigned int) ~(ACL_BIT_DATA |
-# ifndef DISABLE_PRDR
+  [ACLC_SPAM] =			{ US"spam",		ACD_EXP,
+				  PERMITTED(ACL_BIT_DATA |
 				  ACL_BIT_PRDR |
-# endif
 				  ACL_BIT_NOTSMTP),
   },
 #endif
 #ifdef SUPPORT_SPF
-  [ACLC_SPF] =			{ US"spf",		TRUE, FALSE,
-				  ACL_BIT_AUTH | ACL_BIT_CONNECT |
+  [ACLC_SPF] =			{ US"spf",
+# if SUPPORT_SPF==2
+				  ACD_LOAD |
+# endif
+				  ACD_EXP,
+				  FORBIDDEN(ACL_BIT_AUTH | ACL_BIT_CONNECT |
 				    ACL_BIT_HELO | ACL_BIT_MAILAUTH |
 				    ACL_BIT_ETRN | ACL_BIT_EXPN |
 				    ACL_BIT_STARTTLS | ACL_BIT_VRFY |
-				    ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START,
+				    ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START),
   },
-  [ACLC_SPF_GUESS] =		{ US"spf_guess",	TRUE, FALSE,
-				  ACL_BIT_AUTH | ACL_BIT_CONNECT |
+  [ACLC_SPF_GUESS] =		{ US"spf_guess",
+# if SUPPORT_SPF==2
+				  ACD_LOAD |
+# endif
+				  ACD_EXP,
+				  FORBIDDEN(ACL_BIT_AUTH | ACL_BIT_CONNECT |
 				    ACL_BIT_HELO | ACL_BIT_MAILAUTH |
 				    ACL_BIT_ETRN | ACL_BIT_EXPN |
 				    ACL_BIT_STARTTLS | ACL_BIT_VRFY |
-				    ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START,
+				    ACL_BIT_NOTSMTP | ACL_BIT_NOTSMTP_START),
   },
 #endif
-  [ACLC_UDPSEND] =		{ US"udpsend",		TRUE, TRUE,	0 },
+  [ACLC_UDPSEND] =		{ US"udpsend",		ACD_EXP | ACD_MOD,
+				  FORBIDDEN(0) },
 
   /* Certain types of verify are always allowed, so we let it through
   always and check in the verify function itself */
-  [ACLC_VERIFY] =		{ US"verify",		TRUE, FALSE, 0 },
+  [ACLC_VERIFY] =		{ US"verify",		ACD_EXP,
+				  FORBIDDEN(0) },
 };
 
 
@@ -351,7 +377,7 @@ features_acl(void)
 for (condition_def * c = conditions; c < conditions + nelem(conditions); c++)
   {
   uschar buf[64], * p, * s;
-  int n = sprintf(CS buf, "_ACL_%s_", c->is_modifier ? "MOD" : "COND");
+  int n = sprintf(CS buf, "_ACL_%s_", c->flags & ACD_MOD ? "MOD" : "COND");
   for (p = buf + n, s = c->name; *s; s++) *p++ = toupper(*s);
   *p = '\0';
   builtin_macro_create(buf);
@@ -359,11 +385,50 @@ for (condition_def * c = conditions; c < conditions + nelem(conditions); c++)
 }
 #endif
 
+/******************************************************************************/
 
 #ifndef MACRO_PREDEF
 
-/* Return values from decode_control(); used as index so keep in step
-with the controls_list table that follows! */
+/* These tables support loading of dynamic modules triggered by an ACL
+condition use, spotted during readconf. See acl_read(). */
+
+# ifdef LOOKUP_MODULE_DIR
+typedef struct condition_module {
+  const uschar *	mod_name;	/* module for the givien conditions */
+  misc_module_info *	info;		/* NULL when not loaded */
+  const int *		conditions;	/* array of ACLC_*, -1 terminated */
+} condition_module;
+
+#  if SUPPORT_SPF==2
+static int spf_condx[] = { ACLC_SPF, ACLC_SPF_GUESS, -1 };
+#  endif
+#  if SUPPORT_DKIM==2
+static int dkim_condx[] = { ACLC_DKIM_SIGNER, ACLC_DKIM_STATUS, -1 };
+#  endif
+#  if SUPPORT_DMARC==2
+static int dmarc_condx[] = { ACLC_DMARC_STATUS, -1 };
+#  endif
+
+/* These are modules which can be loaded on seeing an ACL condition
+during readconf, The "arc" module is handled by custom coding. */
+
+static condition_module condition_modules[] = {
+#  if SUPPORT_SPF==2
+  {.mod_name = US"spf", .conditions = spf_condx},
+#  endif
+#  if SUPPORT_DKIM==2
+  {.mod_name = US"dkim", .conditions = dkim_condx},
+#  endif
+#  if SUPPORT_DMARC==2
+  {.mod_name = US"dmarc", .conditions = dmarc_condx},
+#  endif
+};
+
+# endif	/*LOOKUP_MODULE_DIR*/
+
+/****************************/
+
+/* Return values from decode_control() */
 
 enum {
   CONTROL_AUTH_UNADVERTISED,
@@ -403,6 +468,9 @@ enum {
 #ifdef SUPPORT_I18N
   CONTROL_UTF8_DOWNCONVERT,
 #endif
+#ifndef DISABLE_WELLKNOWN
+  CONTROL_WELLKNOWN,
+#endif
 };
 
 
@@ -441,9 +509,7 @@ static control_def controls_list[] = {
 [CONTROL_DKIM_VERIFY] =
   { US"dkim_disable_verify",     FALSE,
 				  ACL_BIT_DATA | ACL_BIT_NOTSMTP |
-# ifndef DISABLE_PRDR
 				  ACL_BIT_PRDR |
-# endif
 				  ACL_BIT_NOTSMTP_START
   },
 #endif
@@ -477,9 +543,7 @@ static control_def controls_list[] = {
 	  (unsigned)
 	  ~(ACL_BIT_MAIL | ACL_BIT_RCPT |
 	    ACL_BIT_PREDATA | ACL_BIT_DATA |
-#ifndef DISABLE_PRDR
 	    ACL_BIT_PRDR |
-#endif
 	    ACL_BIT_MIME)
   },
 [CONTROL_FAKEREJECT] =
@@ -487,9 +551,7 @@ static control_def controls_list[] = {
 	  (unsigned)
 	  ~(ACL_BIT_MAIL | ACL_BIT_RCPT |
 	    ACL_BIT_PREDATA | ACL_BIT_DATA |
-#ifndef DISABLE_PRDR
 	  ACL_BIT_PRDR |
-#endif
 	  ACL_BIT_MIME)
   },
 [CONTROL_FREEZE] =
@@ -556,7 +618,12 @@ static control_def controls_list[] = {
 #ifdef SUPPORT_I18N
 [CONTROL_UTF8_DOWNCONVERT] =
   { US"utf8_downconvert",        TRUE, (unsigned) ~(ACL_BIT_RCPT | ACL_BIT_VRFY)
-  }
+  },
+#endif
+#ifndef DISABLE_WELLKNOWN
+[CONTROL_WELLKNOWN] =
+  { US"wellknown",               TRUE, (unsigned) ~ACL_BIT_WELLKNOWN
+  },
 #endif
 };
 
@@ -665,7 +732,7 @@ find_control(const uschar * name, control_def * ol, int last)
 for (int first = 0; last > first; )
   {
   int middle = (first + last)/2;
-  uschar * s =  ol[middle].name;
+  const uschar * s =  ol[middle].name;
   int c = Ustrncmp(name, s, Ustrlen(s));
   if (c == 0) return middle;
   else if (c > 0) first = middle + 1;
@@ -691,7 +758,7 @@ Returns:      offset in list, or -1 if not found
 */
 
 static int
-acl_checkcondition(uschar * name, condition_def * list, int end)
+acl_findcondition(const uschar * name, const condition_def * list, int end)
 {
 for (int start = 0; start < end; )
   {
@@ -720,7 +787,7 @@ Returns:      offset in list, or -1 if not found
 */
 
 static int
-acl_checkname(uschar *name, uschar **list, int end)
+acl_checkname(const uschar * name, const uschar ** list, int end)
 {
 for (int start = 0; start < end; )
   {
@@ -792,16 +859,16 @@ return TRUE;
 
 static BOOL
 acl_data_to_cond(const uschar * s, acl_condition_block * cond,
-  const uschar * name, uschar ** error)
+  const uschar * name, BOOL taint, uschar ** error)
 {
 if (*s++ != '=')
   {
   *error = string_sprintf("\"=\" missing after ACL \"%s\" %s", name,
-    conditions[cond->type].is_modifier ? US"modifier" : US"condition");
-  return FALSE;;
+    conditions[cond->type].flags & ACD_MOD ? US"modifier" : US"condition");
+  return FALSE;
   }
 Uskip_whitespace(&s);
-cond->arg = string_copy(s);
+cond->arg = taint ? string_copy_taint(s, GET_TAINTED) : string_copy(s);
 return TRUE;
 }
 
@@ -863,7 +930,7 @@ while ((s = (*func)()))
 
   if ((v = acl_checkname(name, verbs, nelem(verbs))) < 0)
     {
-    if (!this)
+    if (!this)		/* not handling a verb right now */
       {
       *error = string_sprintf("unknown ACL verb \"%s\" in \"%s\"", name,
         saveline);
@@ -899,7 +966,7 @@ while ((s = (*func)()))
 
   /* Handle a condition or modifier. */
 
-  if ((c = acl_checkcondition(name, conditions, nelem(conditions))) < 0)
+  if ((c = acl_findcondition(name, conditions, nelem(conditions))) < 0)
     {
     *error = string_sprintf("unknown ACL condition/modifier in \"%s\"",
       saveline);
@@ -908,7 +975,7 @@ while ((s = (*func)()))
 
   /* The modifiers may not be negated */
 
-  if (negated && conditions[c].is_modifier)
+  if (negated && conditions[c].flags & ACD_MOD)
     {
     *error = string_sprintf("ACL error: negation is not allowed with "
       "\"%s\"", conditions[c].name);
@@ -925,6 +992,51 @@ while ((s = (*func)()))
       conditions[c].name, verbs[this->verb]);
     return NULL;
     }
+
+#ifdef LOOKUP_MODULE_DIR
+  if (conditions[c].flags & ACD_LOAD)
+    {				/* a loadable module supports this condition */
+    condition_module * cm;
+    uschar * t = NULL;
+
+    /* Over the list of modules we support, check the list of ACL conditions
+    each supports.  This assumes no duplicates. */
+
+    for (cm = condition_modules;
+        cm < condition_modules + nelem(condition_modules); cm++)
+      for (const int * cond = cm->conditions; *cond != -1; cond++)
+	if (*cond == c) goto found;
+    found:
+
+    if (cm >= condition_modules + nelem(condition_modules))
+      {						/* shouldn't happen */
+      *error = string_sprintf("ACL error: failed to locate support for '%s'",
+			      conditions[c].name);
+      return NULL;
+      }
+    if (  !cm->info				/* module not loaded */
+       && !(cm->info = misc_mod_find(cm->mod_name, &t)))
+      {
+      *error = string_sprintf("ACL error: failed to find module for '%s': %s",
+			      conditions[c].name, t);
+      return NULL;
+      }
+    }
+# ifdef EXPERIMENTAL_ARC
+  else if (c == ACLC_VERIFY)	/* Special handling for verify=arc; */
+    {	/* not invented a more general method yet- flag in verify_type_list? */
+    const uschar * t = s;
+    uschar * e;
+    if (  *t++ == '=' && Uskip_whitespace(&t) && Ustrncmp(t, "arc", 3) == 0
+       && !misc_mod_find(US"arc", &e))
+      {
+      *error = string_sprintf("ACL error: failed to find module for '%s': %s",
+			      conditions[c].name, e);
+      return NULL;
+      }
+    }
+# endif
+#endif	/*LOOKUP_MODULE_DIR*/
 
   cond = store_get(sizeof(acl_condition_block), GET_UNTAINTED);
   cond->next = NULL;
@@ -951,7 +1063,7 @@ while ((s = (*func)()))
   "endpass" has no data */
 
   if (c != ACLC_ENDPASS)
-    if (!acl_data_to_cond(s, cond, name, error)) return NULL;
+    if (!acl_data_to_cond(s, cond, name, FALSE, error)) return NULL;
   }
 
 return yield;
@@ -999,10 +1111,10 @@ else
 
 for (p = q; *p; p = q)
   {
-  const uschar *s;
+  const uschar * s;
   uschar * hdr;
   int newtype = htype_add_bot;
-  header_line **hptr = &acl_added_headers;
+  header_line ** hptr = &acl_added_headers;
 
   /* Find next header line within the string */
 
@@ -1069,7 +1181,6 @@ for (p = q; *p; p = q)
     h->type = newtype;
     h->slen = hlen;
     *hptr = h;
-    hptr = &h->next;
     }
   }
 }
@@ -1091,7 +1202,7 @@ for (header_line * h = acl_added_headers; h; h = h->next)
   g = string_append_listele_n(g, '\n', h->text, i);
   }
 
-return g ? g->s : NULL;
+return string_from_gstring(g);
 }
 
 
@@ -1138,9 +1249,9 @@ Returns:         nothing
 */
 
 static void
-acl_warn(int where, uschar *user_message, uschar *log_message)
+acl_warn(int where, const uschar * user_message, const uschar * log_message)
 {
-if (log_message != NULL && log_message != user_message)
+if (log_message && log_message != user_message)
   {
   uschar *text;
   string_item *logged;
@@ -1151,9 +1262,9 @@ if (log_message != NULL && log_message != user_message)
   /* If a sender verification has failed, and the log message is "sender verify
   failed", add the failure message. */
 
-  if (sender_verified_failed != NULL &&
-      sender_verified_failed->message != NULL &&
-      strcmpic(log_message, US"sender verify failed") == 0)
+  if (  sender_verified_failed
+     && sender_verified_failed->message
+     && strcmpic(log_message, US"sender verify failed") == 0)
     text = string_sprintf("%s: %s", text, sender_verified_failed->message);
 
   /* Search previously logged warnings. They are kept in malloc
@@ -1277,8 +1388,8 @@ Returns:     CSA_OK             successfully authorized
 */
 
 static int
-acl_verify_csa_address(dns_answer *dnsa, dns_scan *dnss, int reset,
-                       uschar *target)
+acl_verify_csa_address(const dns_answer * dnsa, dns_scan * dnss, int reset,
+                       const uschar * target)
 {
 int rc = CSA_FAIL_NOADDR;
 
@@ -1358,7 +1469,7 @@ uschar * target = store_get(TARGET_SIZE, GET_TAINTED);
 client's HELO domain. If the client has not said HELO, use its IP address
 instead. If it's a local client (exim -bs), CSA isn't applicable. */
 
-while (isspace(*domain) && *domain != '\0') ++domain;
+while (isspace(*domain) && *domain) ++domain;
 if (*domain == '\0') domain = sender_helo_name;
 if (!domain) domain = sender_host_address;
 if (!sender_host_address) return CSA_UNKNOWN;
@@ -1433,6 +1544,7 @@ for (rr = dns_next_rr(dnsa, &dnss, RESET_ANSWERS);
 
   /* Extract the numerical SRV fields (p is incremented) */
 
+  if (rr_bad_size(rr, 3 * sizeof(uint16_t))) continue;
   GETSHORT(priority, p);
   GETSHORT(weight, p);
   GETSHORT(port, p);
@@ -1598,9 +1710,10 @@ static verify_type_t verify_type_list[] = {
 
 
 enum { CALLOUT_DEFER_OK, CALLOUT_NOCACHE, CALLOUT_RANDOM, CALLOUT_USE_SENDER,
-  CALLOUT_USE_POSTMASTER, CALLOUT_POSTMASTER, CALLOUT_FULLPOSTMASTER,
-  CALLOUT_MAILFROM, CALLOUT_POSTMASTER_MAILFROM, CALLOUT_MAXWAIT, CALLOUT_CONNECT,
-  CALLOUT_HOLD, CALLOUT_TIME	/* TIME must be last */
+  CALLOUT_USE_TPTSENDER, CALLOUT_USE_POSTMASTER, CALLOUT_POSTMASTER,
+  CALLOUT_FULLPOSTMASTER, CALLOUT_MAILFROM, CALLOUT_POSTMASTER_MAILFROM,
+  CALLOUT_MAXWAIT, CALLOUT_CONNECT, CALLOUT_HOLD,
+  CALLOUT_TIME	/* TIME must be last */
   };
 typedef struct {
   uschar * name;
@@ -1615,7 +1728,8 @@ static callout_opt_t callout_opt_list[] = {
     { US"no_cache",   	  CALLOUT_NOCACHE,	 vopt_callout_no_cache,		FALSE, FALSE },
     { US"random",	  CALLOUT_RANDOM,	 vopt_callout_random,		FALSE, FALSE },
     { US"use_sender",     CALLOUT_USE_SENDER,	 vopt_callout_recipsender,	FALSE, FALSE },
-    { US"use_postmaster", CALLOUT_USE_POSTMASTER,vopt_callout_recippmaster,	FALSE, FALSE },
+    { US"use_tptsender",  CALLOUT_USE_TPTSENDER, vopt_callout_r_tptsender,	FALSE, FALSE },
+    { US"use_postmaster", CALLOUT_USE_POSTMASTER,vopt_callout_r_pmaster,	FALSE, FALSE },
     { US"postmaster_mailfrom",CALLOUT_POSTMASTER_MAILFROM,0,			TRUE,  FALSE },
     { US"postmaster",	  CALLOUT_POSTMASTER,	 0,				FALSE, FALSE },
     { US"fullpostmaster", CALLOUT_FULLPOSTMASTER,vopt_callout_fullpm,		FALSE, FALSE },
@@ -1638,6 +1752,30 @@ if ((period = readconf_readtime(s, 0, FALSE)) < 0)
     "\"verify %s\"", arg);
   }
 return period;
+}
+
+
+
+static BOOL
+sender_helo_verified_internal(void)
+{
+/* We can test the result of optional HELO verification that might have
+occurred earlier. If not, we can attempt the verification now. */
+
+if (!f.helo_verified && !f.helo_verify_failed) smtp_verify_helo();
+return f.helo_verified;
+}
+
+static int
+sender_helo_verified_cond(void)
+{
+return sender_helo_verified_internal() ? OK : FAIL;
+}
+
+uschar *
+sender_helo_verified_boolstr(void)
+{
+return sender_helo_verified_internal() ? US"yes" : US"no";
 }
 
 
@@ -1665,31 +1803,22 @@ static int
 acl_verify(int where, address_item *addr, const uschar *arg,
   uschar **user_msgptr, uschar **log_msgptr, int *basic_errno)
 {
-int sep = '/';
-int callout = -1;
-int callout_overall = -1;
-int callout_connect = -1;
-int verify_options = 0;
-int rc;
-BOOL verify_header_sender = FALSE;
-BOOL defer_ok = FALSE;
-BOOL callout_defer_ok = FALSE;
-BOOL no_details = FALSE;
-BOOL success_on_redirect = FALSE;
-BOOL quota = FALSE;
+int sep = '/', callout = -1, callout_overall = -1, callout_connect = -1;
+int verify_options = 0, rc;
+BOOL verify_header_sender = FALSE, defer_ok = FALSE, callout_defer_ok = FALSE;
+BOOL no_details = FALSE, success_on_redirect = FALSE, quota = FALSE;
 int quota_pos_cache = QUOTA_POS_DEFAULT, quota_neg_cache = QUOTA_NEG_DEFAULT;
-address_item *sender_vaddr = NULL;
-uschar *verify_sender_address = NULL;
-uschar *pm_mailfrom = NULL;
-uschar *se_mailfrom = NULL;
+address_item * sender_vaddr = NULL;
+const uschar * verify_sender_address = NULL;
+uschar * pm_mailfrom = NULL, * se_mailfrom = NULL;
 
 /* Some of the verify items have slash-separated options; some do not. Diagnose
 an error if options are given for items that don't expect them.
 */
 
-uschar *slash = Ustrchr(arg, '/');
-const uschar *list = arg;
-uschar *ss = string_nextinlist(&list, &sep, NULL, 0);
+uschar * slash = Ustrchr(arg, '/');
+const uschar * list = arg;
+uschar * ss = string_nextinlist(&list, &sep, NULL, 0);
 verify_type_t * vp;
 
 if (!ss) goto BAD_VERIFY;
@@ -1738,11 +1867,7 @@ switch(vp->value)
     return FAIL;
 
   case VERIFY_HELO:
-    /* We can test the result of optional HELO verification that might have
-    occurred earlier. If not, we can attempt the verification now. */
-
-    if (!f.helo_verified && !f.helo_verify_failed) smtp_verify_helo();
-    return f.helo_verified ? OK : FAIL;
+    return sender_helo_verified_cond();
 
   case VERIFY_CSA:
     /* Do Client SMTP Authorization checks in a separate function, and turn the
@@ -1757,19 +1882,11 @@ switch(vp->value)
 
 #ifdef EXPERIMENTAL_ARC
   case VERIFY_ARC:
-    {	/* Do Authenticated Received Chain checks in a separate function. */
-    const uschar * condlist = CUS string_nextinlist(&list, &sep, NULL, 0);
-    int csep = 0;
-    uschar * cond;
-
-    if (!(arc_state = acl_verify_arc())) return DEFER;
-    DEBUG(D_acl) debug_printf_indent("ARC verify result %s %s%s%s\n", arc_state,
-      arc_state_reason ? "(":"", arc_state_reason, arc_state_reason ? ")":"");
-
-    if (!condlist) condlist = US"none:pass";
-    while ((cond = string_nextinlist(&condlist, &csep, NULL, 0)))
-      if (Ustrcmp(arc_state, cond) == 0) return OK;
-    return FAIL;
+    {
+    const misc_module_info * mi = misc_mod_findonly(US"arc");
+    typedef int (*fn_t)(const uschar *);
+    if (mi) return (((fn_t *) mi->functions)[ARC_VERIFY])
+				(CUS string_nextinlist(&list, &sep, NULL, 0));
     }
 #endif
 
@@ -1838,9 +1955,10 @@ switch(vp->value)
       verify_sender_address = sender_address;
     else
       {
-      while (isspace(*s)) s++;
-      if (*s++ != '=') goto BAD_VERIFY;
-      while (isspace(*s)) s++;
+      if (Uskip_whitespace(&s) != '=')
+	goto BAD_VERIFY;
+      s++;
+      Uskip_whitespace(&s);
       verify_sender_address = string_copy(s);
       }
     }
@@ -1882,13 +2000,13 @@ while ((ss = string_nextinlist(&list, &sep, NULL, 0)))
     callout = CALLOUT_TIMEOUT_DEFAULT;
     if (*(ss += 7))
       {
-      while (isspace(*ss)) ss++;
+      Uskip_whitespace(&ss);
       if (*ss++ == '=')
         {
 	const uschar * sublist = ss;
         int optsep = ',';
 
-        while (isspace(*sublist)) sublist++;
+	Uskip_whitespace(&sublist);
         for (uschar * opt; opt = string_nextinlist(&sublist, &optsep, NULL, 0); )
           {
 	  callout_opt_t * op;
@@ -1902,14 +2020,14 @@ while ((ss = string_nextinlist(&list, &sep, NULL, 0)))
 	  if (op->has_option)
 	    {
 	    opt += Ustrlen(op->name);
-            while (isspace(*opt)) opt++;
+            Uskip_whitespace(&opt);
             if (*opt++ != '=')
               {
               *log_msgptr = string_sprintf("'=' expected after "
                 "\"%s\" in ACL verify condition \"%s\"", op->name, arg);
               return ERROR;
               }
-            while (isspace(*opt)) opt++;
+            Uskip_whitespace(&opt);
 	    }
 	  if (op->timeval && (period = v_period(opt, arg, log_msgptr)) < 0)
 	    return ERROR;
@@ -1952,14 +2070,14 @@ while ((ss = string_nextinlist(&list, &sep, NULL, 0)))
     quota = TRUE;
     if (*(ss += 5))
       {
-      while (isspace(*ss)) ss++;
+      Uskip_whitespace(&ss);
       if (*ss++ == '=')
         {
 	const uschar * sublist = ss;
         int optsep = ',';
 	int period;
 
-        while (isspace(*sublist)) sublist++;
+        Uskip_whitespace(&sublist);
         for (uschar * opt; opt = string_nextinlist(&sublist, &optsep, NULL, 0); )
 	  if (Ustrncmp(opt, "cachepos=", 9) == 0)
 	    if ((period = v_period(opt += 9, arg, log_msgptr)) < 0)
@@ -1987,13 +2105,22 @@ while ((ss = string_nextinlist(&list, &sep, NULL, 0)))
     }
   }
 
-if ((verify_options & (vopt_callout_recipsender|vopt_callout_recippmaster)) ==
-      (vopt_callout_recipsender|vopt_callout_recippmaster))
-  {
-  *log_msgptr = US"only one of use_sender and use_postmaster can be set "
-    "for a recipient callout";
-  return ERROR;
-  }
+ {
+  int ropts = verify_options &
+    (vopt_callout_recipsender|vopt_callout_r_tptsender|vopt_callout_r_pmaster);
+  if (ropts && verify_sender_address)
+    {
+    *log_msgptr = US"use_sender, use_tptsender or use_postmaster cannot be used"
+      "for a sender verify callout";
+    return ERROR;
+    }
+  if ((ropts-1) & -ropts)		/* more than one bit set */
+    {
+    *log_msgptr = US"only one of use_sender, use_tptsender and use_postmaster"
+      " can be set for a recipient callout";
+    return ERROR;
+    }
+ }
 
 /* Handle quota verification */
 if (quota)
@@ -2059,13 +2186,6 @@ callout handling, should ensure that this is not terribly inefficient. */
 
 else if (verify_sender_address)
   {
-  if ((verify_options & (vopt_callout_recipsender|vopt_callout_recippmaster)))
-    {
-    *log_msgptr = US"use_sender or use_postmaster cannot be used for a "
-      "sender verify callout";
-    return ERROR;
-    }
-
   sender_vaddr = verify_checked_sender(verify_sender_address);
   if (   sender_vaddr				/* Previously checked */
       && callout <= 0)				/* No callout needed this time */
@@ -2268,7 +2388,7 @@ static int
 decode_control(const uschar *arg, const uschar **pptr, int where, uschar **log_msgptr)
 {
 int idx, len;
-control_def * d;
+const control_def * d;
 uschar c;
 
 if (  (idx = find_control(arg, controls_list, nelem(controls_list))) < 0
@@ -2355,7 +2475,7 @@ BOOL leaky = FALSE, strict = FALSE, readonly = FALSE;
 BOOL noupdate = FALSE, badacl = FALSE;
 int mode = RATE_PER_WHAT;
 int old_pool, rc;
-tree_node **anchor, *t;
+tree_node ** anchor = NULL, * t;
 open_db dbblock, *dbm;
 int dbdb_size;
 dbdata_ratelimit *dbd;
@@ -2526,9 +2646,9 @@ else switch(mode)
     anchor = &ratelimiters_cmd;
     break;
   default:
-    anchor = NULL; /* silence an "unused" complaint */
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+    log_write_die(0, LOG_MAIN,
       "internal ACL error: unknown ratelimit mode %d", mode);
+    /*NOTREACHED*/
     break;
   }
 
@@ -2547,7 +2667,7 @@ if ((t = tree_search(*anchor, key)))
 /* We aren't using a pre-computed rate, so get a previously recorded rate
 from the database, which will be updated and written back if required. */
 
-if (!(dbm = dbfn_open(US"ratelimit", O_RDWR, &dbblock, TRUE, TRUE)))
+if (!(dbm = dbfn_open(US"ratelimit", O_RDWR|O_CREAT, &dbblock, TRUE, TRUE)))
   {
   store_pool = old_pool;
   sender_rate = NULL;
@@ -2929,7 +3049,7 @@ while ((ele = string_nextinlist(&list, &slash, NULL, 0)))
   else
     goto badopt;
 
-if (!(dbm = dbfn_open(US"seen", O_RDWR, &dbblock, TRUE, TRUE)))
+if (!(dbm = dbfn_open(US"seen", O_RDWR|O_CREAT, &dbblock, TRUE, TRUE)))
   {
   HDEBUG(D_acl) debug_printf_indent("database for 'seen' not available\n");
   *log_msgptr = US"database for 'seen' not available";
@@ -3002,16 +3122,13 @@ Returns:       OK        - Completed.
 */
 
 static int
-acl_udpsend(const uschar *arg, uschar **log_msgptr)
+acl_udpsend(const uschar * arg, uschar ** log_msgptr)
 {
 int sep = 0;
-uschar *hostname;
-uschar *portstr;
-uschar *portend;
-host_item *h;
-int portnum;
-int len;
-int r, s;
+uschar * hostname;
+const uschar * portstr, * portend;
+host_item * h;
+int portnum, len, r, s;
 uschar * errstr;
 
 hostname = string_nextinlist(&arg, &sep, NULL, 0);
@@ -3091,6 +3208,80 @@ return DEFER;
 
 
 
+#ifndef DISABLE_WELLKNOWN
+/*************************************************
+*   The "wellknown" ACL modifier                 *
+*************************************************/
+
+/* Called by acl_check_condition() below.
+
+Retrieve the given file and encode content as xtext.
+Prefix with a summary line giving the length of plaintext.
+Leave a global pointer to the whole, for output by
+the smtp verb handler code (smtp_in.c).
+
+Arguments:
+  arg          the option string for wellknown=
+  log_msgptr   for error messages
+
+Returns:       OK/FAIL
+*/
+
+static int
+wellknown_process(const uschar * arg, uschar ** log_msgptr)
+{
+struct stat statbuf;
+FILE * rf;
+gstring * g;
+
+wellknown_response = NULL;
+if (f.no_multiline_responses) return FAIL;
+
+/* Check for file existence */
+
+if (!*arg) return FAIL;
+if (Ustat(arg, &statbuf) != 0)
+  { *log_msgptr = US"stat"; goto fail; }
+
+/*XXX perhaps refuse to serve a group- or world-writeable file? */
+
+if (!(rf = Ufopen(arg, "r")))
+  { *log_msgptr = US"open"; goto fail; }
+
+/* Set up summary line for output */
+
+g = string_fmt_append(NULL, "SIZE=%lu\n", (long) statbuf.st_size);
+
+#define LINE_LIM 75
+for (int n = 0, ch; (ch = fgetc(rf)) != EOF; )
+  {
+  /* Xtext-encode, adding output linebreaks for input linebreaks
+  or when the line gets long enough */
+
+  if (ch == '\n')
+    { g = string_fmt_append(g, "+%02X", ch); n = LINE_LIM; }
+  else if (ch < 33 || ch > 126 || ch == '+' || ch == '=')
+    { g = string_fmt_append(g, "+%02X", ch); n += 3; }
+  else
+    { g = string_fmt_append(g, "%c", ch); n++; }
+
+  if (n >= LINE_LIM)
+    { g = string_catn(g, US"\n", 1); n = 0; }
+  }
+#undef LINE_LIM
+
+gstring_release_unused(g);
+wellknown_response = string_from_gstring(g);
+return OK;
+
+fail:
+  *log_msgptr = string_sprintf("wellknown: failed to %s file \"%s\": %s",
+		  *log_msgptr, arg, strerror(errno));
+  return FAIL;
+}
+#endif
+
+
 /*************************************************
 *   Handle conditions/modifiers on an ACL item   *
 *************************************************/
@@ -3121,16 +3312,12 @@ Returns:       OK        - all conditions are met
 */
 
 static int
-acl_check_condition(int verb, acl_condition_block *cb, int where,
-  address_item *addr, int level, BOOL *epp, uschar **user_msgptr,
-  uschar **log_msgptr, int *basic_errno)
+acl_check_condition(int verb, acl_condition_block * cb, int where,
+  address_item * addr, int level, BOOL * epp, uschar ** user_msgptr,
+  uschar ** log_msgptr, int * basic_errno)
 {
-uschar *user_message = NULL;
-uschar *log_message = NULL;
+uschar * user_message = NULL, * log_message = NULL;
 int rc = OK;
-#ifdef WITH_CONTENT_SCAN
-int sep = -'/';
-#endif
 
 for (; cb; cb = cb->next)
   {
@@ -3138,37 +3325,31 @@ for (; cb; cb = cb->next)
   int control_type;
   BOOL textonly = FALSE;
 
-  /* The message and log_message items set up messages to be used in
-  case of rejection. They are expanded later. */
-
-  if (cb->type == ACLC_MESSAGE)
+  switch (cb->type)
     {
-    HDEBUG(D_acl) debug_printf_indent("  message: %s\n", cb->arg);
-    user_message = cb->arg;
-    continue;
-    }
+    /* The message and log_message items set up messages to be used in
+    case of rejection. They are expanded later. */
 
-  if (cb->type == ACLC_LOG_MESSAGE)
-    {
-    HDEBUG(D_acl) debug_printf_indent("l_message: %s\n", cb->arg);
-    log_message = cb->arg;
-    continue;
-    }
+    case ACLC_MESSAGE:
+      HDEBUG(D_acl) debug_printf_indent("  message: %s\n", cb->arg);
+      user_message = cb->arg;	continue;
 
-  /* The endpass "condition" just sets a flag to show it occurred. This is
-  checked at compile time to be on an "accept" or "discard" item. */
+    case ACLC_LOG_MESSAGE:
+      HDEBUG(D_acl) debug_printf_indent("l_message: %s\n", cb->arg);
+      log_message = cb->arg;	continue;
 
-  if (cb->type == ACLC_ENDPASS)
-    {
-    *epp = TRUE;
-    continue;
+    /* The endpass "condition" just sets a flag to show it occurred. This is
+    checked at compile time to be on an "accept" or "discard" item. */
+
+    case ACLC_ENDPASS:
+      *epp = TRUE;		continue;
     }
 
   /* For other conditions and modifiers, the argument is expanded now for some
   of them, but not for all, because expansion happens down in some lower level
   checking functions in some cases. */
 
-  if (!conditions[cb->type].expand_at_top)
+  if (!(conditions[cb->type].flags & ACD_EXP))
     arg = cb->arg;
 
   else if (!(arg = expand_string_2(cb->arg, &textonly)))
@@ -3185,7 +3366,7 @@ for (; cb; cb = cb->next)
     {
     int lhswidth = 0;
     debug_printf_indent("check %s%s %n",
-      (!conditions[cb->type].is_modifier && cb->u.negated)? "!":"",
+      (!(conditions[cb->type].flags & ACD_MOD) && cb->u.negated) ? "!":"",
       conditions[cb->type].name, &lhswidth);
 
     if (cb->type == ACLC_SET)
@@ -3217,7 +3398,7 @@ for (; cb; cb = cb->next)
   if ((conditions[cb->type].forbids & (1 << where)) != 0)
     {
     *log_msgptr = string_sprintf("cannot %s %s condition in %s ACL",
-      conditions[cb->type].is_modifier ? "use" : "test",
+      conditions[cb->type].flags & ACD_MOD ? "use" : "test",
       conditions[cb->type].name, acl_wherenames[where]);
     return ERROR;
     }
@@ -3227,10 +3408,6 @@ for (; cb; cb = cb->next)
 
   switch(cb->type)
     {
-    case ACLC_ADD_HEADER:
-      setup_header(arg);
-      break;
-
     /* A nested ACL that returns "discard" makes sense only for an "accept" or
     "discard" verb. */
 
@@ -3243,6 +3420,28 @@ for (; cb; cb = cb->next)
           verbs[verb]);
         return ERROR;
         }
+      break;
+
+    case ACLC_ADD_HEADER:
+      setup_header(arg);
+      break;
+
+    case ACLC_ATRN_DOMAINS:
+      if (is_tainted(arg))
+	{
+	log_write(0, LOG_MAIN|LOG_PANIC,
+		  "attempt to used tainted value '%s' for atrn_domains%#s",
+		    arg,
+		    config_lineno
+		    ? string_sprintf(" (%s %d)", config_filename, config_lineno)
+		    : NULL);
+	*log_msgptr = US"internal configuration error";
+        return ERROR;
+	}
+      atrn_domains = string_copy(arg);
+      expand_level++;
+      rc = spool_has_one_undelivered_dom(arg);
+      expand_level--;
       break;
 
     case ACLC_AUTHENTICATED:
@@ -3283,7 +3482,7 @@ for (; cb; cb = cb->next)
 
     case ACLC_CONTROL:
       {
-      const uschar *p = NULL;
+      const uschar * p = NULL;
       control_type = decode_control(arg, &p, where, log_msgptr);
 
       /* Check if this control makes sense at this time */
@@ -3295,6 +3494,7 @@ for (; cb; cb = cb->next)
 	return ERROR;
 	}
 
+      /*XXX ought to sort these, just for sanity */
       switch(control_type)
 	{
 	case CONTROL_AUTH_UNADVERTISED:
@@ -3331,7 +3531,7 @@ for (; cb; cb = cb->next)
 	case CONTROL_DSCP:
 	  if (*p == '/')
 	    {
-	    int fd, af, level, optname, value;
+	    int fd, af, socklevel, optname, value;
 	    /* If we are acting on stdin, the setsockopt may fail if stdin is not
 	    a socket; we can accept that, we'll just debug-log failures anyway. */
 	    fd = fileno(smtp_in);
@@ -3342,8 +3542,8 @@ for (; cb; cb = cb->next)
 		    strerror(errno));
 	      break;
 	      }
-	    if (dscp_lookup(p+1, af, &level, &optname, &value))
-	      if (setsockopt(fd, level, optname, &value, sizeof(value)) < 0)
+	    if (dscp_lookup(p+1, af, &socklevel, &optname, &value))
+	      if (setsockopt(fd, socklevel, optname, &value, sizeof(value)) < 0)
 		{
 		HDEBUG(D_acl) debug_printf_indent("failed to set input DSCP[%s]: %s\n",
 		    p+1, strerror(errno));
@@ -3409,7 +3609,7 @@ for (; cb; cb = cb->next)
 	case CONTROL_FAKEREJECT:
 	  cancel_cutthrough_connection(TRUE, US"fakereject");
 	case CONTROL_FAKEDEFER:
-	  fake_response = (control_type == CONTROL_FAKEDEFER) ? DEFER : FAIL;
+	  fake_response = control_type == CONTROL_FAKEDEFER ? DEFER : FAIL;
 	  if (*p == '/')
 	    {
 	    const uschar *pp = p + 1;
@@ -3492,7 +3692,7 @@ for (; cb; cb = cb->next)
 
 	case CONTROL_DEBUG:
 	  {
-	  uschar * debug_tag = NULL, * debug_opts = NULL;
+	  const uschar * debug_tag = NULL, * debug_opts = NULL;
 	  BOOL kill = FALSE, stop = FALSE;
 
 	  while (*p == '/')
@@ -3589,10 +3789,16 @@ for (; cb; cb = cb->next)
 		{
 		pp += 6;
 		if (Ustrncmp(pp, "pass", 4) == 0) cutthrough.defer_pass = TRUE;
-		/* else if (Ustrncmp(pp, "spool") == 0) ;	default */
+		/* else if (Ustrncmp(pp, "spool", 5) == 0) ;	default */
 		}
-	      else
-		while (*pp && *pp != '/') pp++;
+	      else if (Ustrncmp(pp, "sender=", 7) == 0)
+		{
+		pp += 7;
+		if (Ustrncmp(pp, "transport", 9) == 0)
+		  cutthrough.tpt_sender = TRUE;
+		/* else if (Ustrcmp(pp, "orig") == 0) ;	default */
+		}
+	      while (*pp && *pp != '/') pp++;
 	      p = pp;
 	      }
 	    }
@@ -3640,18 +3846,24 @@ for (; cb; cb = cb->next)
 	    break;
 	    }
 	  return ERROR;
-#endif
+#endif	/*I18N*/
 
+#ifndef DISABLE_WELLKNOWN
+	case CONTROL_WELLKNOWN:
+	  rc = *p == '/' ? wellknown_process(p+1, log_msgptr) : FAIL;
+	  break;
+#endif
 	}
       break;
       }
 
-    #ifdef EXPERIMENTAL_DCC
+#ifdef EXPERIMENTAL_DCC
     case ACLC_DCC:
       {
       /* Separate the regular expression and any optional parameters. */
       const uschar * list = arg;
-      uschar *ss = string_nextinlist(&list, &sep, NULL, 0);
+      int sep = -'/';
+      uschar * ss = string_nextinlist(&list, &sep, NULL, 0);
       /* Run the dcc backend. */
       rc = dcc_process(&ss);
       /* Modify return code based upon the existence of options. */
@@ -3660,13 +3872,13 @@ for (; cb; cb = cb->next)
           rc = FAIL;   /* FAIL so that the message is passed to the next ACL */
       break;
       }
-    #endif
+#endif
 
-    #ifdef WITH_CONTENT_SCAN
+#ifdef WITH_CONTENT_SCAN
     case ACLC_DECODE:
       rc = mime_decode(&arg);
       break;
-    #endif
+#endif
 
     case ACLC_DELAY:
       {
@@ -3735,33 +3947,53 @@ for (; cb; cb = cb->next)
 
 #ifndef DISABLE_DKIM
     case ACLC_DKIM_SIGNER:
-      if (dkim_cur_signer)
-	rc = match_isinlist(dkim_cur_signer,
-                          &arg, 0, NULL, NULL, MCL_STRING, TRUE, NULL);
-      else
-	rc = FAIL;
-      break;
-
     case ACLC_DKIM_STATUS:
-      rc = match_isinlist(dkim_verify_status,
-			  &arg, 0, NULL, NULL, MCL_STRING, TRUE, NULL);
+      /* See comment on ACLC_SPF wrt. coding issues */
+      {
+      misc_module_info * mi = misc_mod_find(US"dkim", &log_message);
+      typedef int (*fn_t)(const uschar *);
+      rc = mi
+	? (((fn_t *) mi->functions)
+		      [cb->type == ACLC_DKIM_SIGNER
+			? DKIM_SIGNER_ISINLIST
+			: DKIM_STATUS_LISTMATCH]) (arg)
+	: DEFER;
       break;
+      }
 #endif
 
 #ifdef SUPPORT_DMARC
     case ACLC_DMARC_STATUS:
+      /* See comment on ACLC_SPF wrt. coding issues */
+      {
+      misc_module_info * mi = misc_mod_find(US"dmarc", &log_message);
+      typedef uschar * (*efn_t)(int);
+      const uschar * expanded_query;
+
+      if (!mi)
+	{ rc = DEFER; break; }			/* shouldn't happen */
+
       if (!f.dmarc_has_been_checked)
-	dmarc_process();
-      f.dmarc_has_been_checked = TRUE;
+	{
+	typedef int (*pfn_t)(void);
+	(void) (((pfn_t *) mi->functions)[DMARC_PROCESS]) ();
+	f.dmarc_has_been_checked = TRUE;
+	}
+
       /* used long way of dmarc_exim_expand_query() in case we need more
-       * view into the process in the future. */
-      rc = match_isinlist(dmarc_exim_expand_query(DMARC_VERIFY_STATUS),
+      view into the process in the future. */
+
+      /*XXX is this call used with any other arg? */
+      expanded_query = (((efn_t *) mi->functions)[DMARC_EXPAND_QUERY])
+						      (DMARC_VERIFY_STATUS);
+      rc = match_isinlist(expanded_query,
 			  &arg, 0, NULL, NULL, MCL_STRING, TRUE, NULL);
+      }
       break;
 #endif
 
     case ACLC_DNSLISTS:
-      rc = verify_check_dnsbl(where, &arg, log_msgptr);
+      rc = verify_check_dnsbl(where, arg, log_msgptr);
       break;
 
     case ACLC_DOMAINS:
@@ -3779,14 +4011,16 @@ for (; cb; cb = cb->next)
       if (!tls_in.cipher) rc = FAIL;
       else
 	{
-	uschar *endcipher = NULL;
-	uschar *cipher = Ustrchr(tls_in.cipher, ':');
-	if (!cipher) cipher = tls_in.cipher; else
+	uschar * endcipher = NULL;
+	const uschar * cipher = Ustrchr(tls_in.cipher, ':');
+
+	if (!cipher) cipher = tls_in.cipher;
+	else
 	  {
 	  endcipher = Ustrchr(++cipher, ':');
 	  if (endcipher) *endcipher = 0;
 	  }
-	rc = match_isinlist(cipher, &arg, 0, NULL, NULL, MCL_STRING, TRUE, NULL);
+	rc = match_isinlist(cipher, &arg, 0, NULL,NULL, MCL_STRING, TRUE, NULL);
 	if (endcipher) *endcipher = ':';
 	}
       break;
@@ -3813,11 +4047,10 @@ for (; cb; cb = cb->next)
 
     case ACLC_LOG_REJECT_TARGET:
       {
-      int logbits = 0;
-      int sep = 0;
-      const uschar *s = arg;
-      uschar * ss;
-      while ((ss = string_nextinlist(&s, &sep, NULL, 0)))
+      int logbits = 0, sep = 0;
+      const uschar * s = arg;
+
+      for (uschar * ss; ss = string_nextinlist(&s, &sep, NULL, 0); )
         {
         if (Ustrcmp(ss, "main") == 0) logbits |= LOG_MAIN;
         else if (Ustrcmp(ss, "panic") == 0) logbits |= LOG_PANIC;
@@ -3858,24 +4091,23 @@ for (; cb; cb = cb->next)
           }
         s++;
         }
-      while (isspace(*s)) s++;
+      Uskip_whitespace(&s);
 
       if (logbits == 0) logbits = LOG_MAIN;
       log_write(0, logbits, "%s", string_printing(s));
       break;
       }
 
-    #ifdef WITH_CONTENT_SCAN
+#ifdef WITH_CONTENT_SCAN
     case ACLC_MALWARE:			/* Run the malware backend. */
       {
       /* Separate the regular expression and any optional parameters. */
       const uschar * list = arg;
-      uschar * ss = string_nextinlist(&list, &sep, NULL, 0);
-      uschar * opt;
       BOOL defer_ok = FALSE;
-      int timeout = 0;
+      int timeout = 0, sep = -'/';
+      const uschar * ss = string_nextinlist(&list, &sep, NULL, 0);
 
-      while ((opt = string_nextinlist(&list, &sep, NULL, 0)))
+      for (uschar * opt; opt = string_nextinlist(&list, &sep, NULL, 0); )
         if (strcmpic(opt, US"defer_ok") == 0)
 	  defer_ok = TRUE;
 	else if (  strncmpic(opt, US"tmo=", 4) == 0
@@ -3895,7 +4127,7 @@ for (; cb; cb = cb->next)
     case ACLC_MIME_REGEX:
       rc = mime_regex(&arg, textonly);
       break;
-    #endif
+#endif
 
     case ACLC_QUEUE:
       if (is_tainted(arg))
@@ -3922,11 +4154,11 @@ for (; cb; cb = cb->next)
 	CUSS &recipient_data);
       break;
 
-    #ifdef WITH_CONTENT_SCAN
+#ifdef WITH_CONTENT_SCAN
     case ACLC_REGEX:
       rc = regex(&arg, textonly);
       break;
-    #endif
+#endif
 
     case ACLC_REMOVE_HEADER:
       setup_remove_header(arg);
@@ -3962,11 +4194,19 @@ for (; cb; cb = cb->next)
 #endif
 	 )
         store_pool = POOL_PERM;
+
 #ifndef DISABLE_DKIM	/* Overwriteable dkim result variables */
-      if (Ustrcmp(cb->u.varname, "dkim_verify_status") == 0)
-	dkim_verify_status = string_copy(arg);
-      else if (Ustrcmp(cb->u.varname, "dkim_verify_reason") == 0)
-	dkim_verify_reason = string_copy(arg);
+      if (  Ustrcmp(cb->u.varname, "dkim_verify_status") == 0
+	 || Ustrcmp(cb->u.varname, "dkim_verify_reason") == 0
+         )
+	  {
+	  misc_module_info * mi = misc_mod_findonly(US"dkim");
+	  typedef void (*fn_t)(const uschar *, void *);
+	  
+	  if (mi)
+	    (((fn_t *) mi->functions)[DKIM_SETVAR])
+					(cb->u.varname, string_copy(arg));
+	  }
       else
 #endif
 	acl_var_create(cb->u.varname)->data.ptr = string_copy(arg);
@@ -3979,7 +4219,8 @@ for (; cb; cb = cb->next)
       {
       /* Separate the regular expression and any optional parameters. */
       const uschar * list = arg;
-      uschar *ss = string_nextinlist(&list, &sep, NULL, 0);
+      int sep = -'/';
+      uschar * ss = string_nextinlist(&list, &sep, NULL, 0);
 
       rc = spam(CUSS &ss);
       /* Modify return code based upon the existence of options. */
@@ -3992,12 +4233,28 @@ for (; cb; cb = cb->next)
 
 #ifdef SUPPORT_SPF
     case ACLC_SPF:
-      rc = spf_process(&arg, sender_address, SPF_PROCESS_NORMAL);
-      break;
-
     case ACLC_SPF_GUESS:
-      rc = spf_process(&arg, sender_address, SPF_PROCESS_GUESS);
+      /* We have hardwired function-call numbers, and also prototypes for the
+      functions.  We could do a function name table search or (simpler)
+      a module include file with defines for the numbers
+      but I can't see how to deal with prototypes.  Is a K&R non-prototyped
+      function still usable with today's compilers (but we would lose on
+      type-checking)?  We could macroize the typedef, and even the function
+      table access - but it obscures how it works rather. */
+      {
+      misc_module_info * mi = misc_mod_find(US"spf", &log_message);
+      typedef int (*fn_t)(const uschar **, const uschar *, int);
+      fn_t fn;
+
+      if (!mi)
+	{ rc = DEFER; break; }			/* shouldn't happen */
+
+      fn = ((fn_t *) mi->functions)[SPF_PROCESS];
+
+      rc = fn(&arg, sender_address,
+	      cb->type == ACLC_SPF ? SPF_PROCESS_NORMAL : SPF_PROCESS_GUESS);
       break;
+      }
 #endif
 
     case ACLC_UDPSEND:
@@ -4018,14 +4275,14 @@ for (; cb; cb = cb->next)
       break;
 
     default:
-      log_write(0, LOG_MAIN|LOG_PANIC_DIE, "internal ACL error: unknown "
+      log_write_die(0, LOG_MAIN, "internal ACL error: unknown "
 	"condition %d", cb->type);
       break;
     }
 
   /* If a condition was negated, invert OK/FAIL. */
 
-  if (!conditions[cb->type].is_modifier && cb->u.negated)
+  if (!(conditions[cb->type].flags & ACD_MOD) && cb->u.negated)
     if (rc == OK) rc = FAIL;
     else if (rc == FAIL || rc == FAIL_DROP) rc = OK;
 
@@ -4282,19 +4539,17 @@ if (!s)
 /* At top level, we expand the incoming string. At lower levels, it has already
 been expanded as part of condition processing. */
 
-if (acl_level == 0)
+if (acl_level != 0)
+  ss = s;
+else if (!(ss = expand_string(s)))
   {
-  if (!(ss = expand_string(s)))
-    {
-    if (f.expand_string_forcedfail) return OK;
-    *log_msgptr = string_sprintf("failed to expand ACL string \"%s\": %s", s,
-      expand_string_message);
-    return ERROR;
-    }
+  if (f.expand_string_forcedfail) return OK;
+  *log_msgptr = string_sprintf("failed to expand ACL string \"%s\": %s", s,
+    expand_string_message);
+  return ERROR;
   }
-else ss = s;
 
-while (isspace(*ss)) ss++;
+Uskip_whitespace(&ss);
 
 /* If we can't find a named ACL, the default is to parse it as an inline one.
 (Unless it begins with a slash; non-existent files give rise to an error.) */
@@ -4318,7 +4573,7 @@ read an ACL from a file, and save it so it can be re-used. */
 
 if (Ustrchr(ss, ' ') == NULL)
   {
-  tree_node * t = tree_search(acl_anchor, ss);
+  const tree_node * t = tree_search(acl_anchor, ss);
   if (t)
     {
     if (!(acl = (acl_block *)(t->data.ptr)))
@@ -4326,7 +4581,7 @@ if (Ustrchr(ss, ' ') == NULL)
       HDEBUG(D_acl) debug_printf_indent("ACL \"%s\" is empty: implicit DENY\n", ss);
       return FAIL;
       }
-    acl_name = string_sprintf("ACL \"%s\"", ss);
+    acl_name = string_sprintf("ACL %s", ss);
     HDEBUG(D_acl) debug_printf_indent("using ACL \"%s\"\n", ss);
     }
 
@@ -4359,7 +4614,7 @@ if (Ustrchr(ss, ' ') == NULL)
     acl_text[statbuf.st_size] = 0;
     (void)close(fd);
 
-    acl_name = string_sprintf("ACL \"%s\"", ss);
+    acl_name = string_sprintf("ACL %s", ss);
     HDEBUG(D_acl) debug_printf_indent("read ACL from file %s\n", ss);
     }
   }
@@ -4397,8 +4652,15 @@ while ((acl_current = acl))
   *log_msgptr = *user_msgptr = NULL;
   f.acl_temp_details = FALSE;
 
-  HDEBUG(D_acl) debug_printf_indent("processing \"%s\" (%s %d)\n",
-    verbs[acl->verb], acl->srcfile, acl->srcline);
+  config_filename = acl->srcfile;
+  config_lineno = acl->srcline;
+
+  HDEBUG(D_acl)
+    {
+    debug_printf_indent("processing %s \"%s\"", acl_name, verbs[acl->verb]);
+    if (config_lineno) debug_printf(" (%s %d)", config_filename, config_lineno);
+    debug_printf("\n");
+    }
 
   /* Clear out any search error message from a previous check before testing
   this condition. */
@@ -4417,7 +4679,7 @@ while ((acl_current = acl))
 	verbs[acl->verb], acl_name);
       if (basic_errno != ERRNO_CALLOUTDEFER)
 	{
-	if (search_error_message != NULL && *search_error_message != 0)
+	if (search_error_message && *search_error_message)
 	  *log_msgptr = search_error_message;
 	if (smtp_return_error_details) f.acl_temp_details = TRUE;
 	}
@@ -4531,15 +4793,23 @@ while ((acl_current = acl))
       if (cond == OK)
 	acl_warn(where, *user_msgptr, *log_msgptr);
       else if (cond == DEFER && LOGGING(acl_warn_skipped))
-	log_write(0, LOG_MAIN, "%s Warning: ACL \"warn\" statement skipped: "
-	  "condition test deferred%s%s", host_and_ident(TRUE),
-	  *log_msgptr ? US": " : US"",
-	  *log_msgptr ? *log_msgptr : US"");
+	if (config_lineno > 0)
+	  log_write(0, LOG_MAIN,
+	    "%s Warning: ACL 'warn' statement skipped (in %s at line %d of %s):"
+	    " condition test deferred%s%s",
+	    host_and_ident(TRUE), acl_name, config_lineno, config_filename,
+	    *log_msgptr ? US": " : US"", *log_msgptr ? *log_msgptr : US"");
+	else
+	  log_write(0, LOG_MAIN,
+	    "%s Warning: ACL 'warn' statement skipped (in %s):"
+	    " condition test deferred%s%s",
+	    host_and_ident(TRUE), acl_name,
+	    *log_msgptr ? US": " : US"", *log_msgptr ? *log_msgptr : US"");
       *log_msgptr = *user_msgptr = NULL;  /* In case implicit DENY follows */
       break;
 
     default:
-      log_write(0, LOG_MAIN|LOG_PANIC_DIE, "internal ACL error: unknown verb %d",
+      log_write_die(0, LOG_MAIN, "internal ACL error: unknown verb %d",
 	acl->verb);
       break;
     }
@@ -4583,8 +4853,8 @@ if (!(tmp = string_dequote(&s)) || !(name = expand_string(tmp)))
 
 for (i = 0; i < 9; i++)
   {
-  while (*s && isspace(*s)) s++;
-  if (!*s) break;
+  if (!Uskip_whitespace(&s))
+    break;
   if (!(tmp = string_dequote(&s)) || !(tmp_arg[i] = expand_string(tmp)))
     {
     tmp = name;
@@ -4608,6 +4878,7 @@ while (i < 9)
 acl_level++;
 ret = acl_check_internal(where, addr, name, user_msgptr, log_msgptr);
 acl_level--;
+config_lineno = 0;
 
 acl_narg = sav_narg;
 for (i = 0; i < 9; i++) acl_arg[i] = sav_arg[i];
@@ -4653,6 +4924,7 @@ if (where == ACL_WHERE_RCPT)
 acl_level++;
 rc = acl_check_internal(where, addr, s, user_msgptr, log_msgptr);
 acl_level--;
+config_lineno = 0;
 return rc;
 }
 
@@ -4676,11 +4948,10 @@ Returns:       OK         access is granted by an ACCEPT verb
                DEFER      can't tell at the moment
                ERROR      disaster
 */
-int acl_where = ACL_WHERE_UNKNOWN;
 
 int
-acl_check(int where, uschar *recipient, uschar *s, uschar **user_msgptr,
-  uschar **log_msgptr)
+acl_check(int where, const uschar * recipient, uschar * s,
+  uschar ** user_msgptr, uschar ** log_msgptr)
 {
 int rc;
 address_item adb;
@@ -4721,6 +4992,7 @@ acl_level = 0;
 rc = acl_check_internal(where, addr, s, user_msgptr, log_msgptr);
 acl_level = 0;
 acl_where = ACL_WHERE_UNKNOWN;
+config_lineno = 0;
 
 /* Cutthrough - if requested,
 and WHERE_RCPT and not yet opened conn as result of recipient-verify,
@@ -4751,12 +5023,19 @@ switch (where)
     if (f.host_checking_callout)	/* -bhc mode */
       cancel_cutthrough_connection(TRUE, US"host-checking mode");
 
-    else if (  rc == OK
-	    && cutthrough.delivery
-	    && rcpt_count > cutthrough.nrcpt
-	    )
-      {
-      if ((rc = open_cutthrough_connection(addr)) == DEFER)
+    else if (cutthrough.delivery)
+      if (rc != OK)
+	{
+	HDEBUG(D_acl) debug_printf_indent(
+			"ignore cutthrough request; ACL did not accept\n");
+	}
+      else if (rcpt_count <= cutthrough.nrcpt)
+	{
+	HDEBUG(D_acl) debug_printf_indent(
+			"ignore cutthrough request; nonfirst message\n");
+	}
+      else if (  (rc = open_cutthrough_connection(addr, cutthrough.tpt_sender))
+	      == DEFER)
 	if (cutthrough.defer_pass)
 	  {
 	  uschar * s = addr->message;
@@ -4771,12 +5050,7 @@ switch (where)
 	  HDEBUG(D_acl) debug_printf_indent("cutthrough defer; will spool\n");
 	  rc = OK;
 	  }
-      }
-    else HDEBUG(D_acl) if (cutthrough.delivery)
-      if (rcpt_count <= cutthrough.nrcpt)
-	debug_printf_indent("ignore cutthrough request; nonfirst message\n");
-      else if (rc != OK)
-	debug_printf_indent("ignore cutthrough request; ACL did not accept\n");
+
     break;
 
   case ACL_WHERE_PREDATA:
@@ -4854,7 +5128,7 @@ Returns   the pointer to variable's tree node
 */
 
 tree_node *
-acl_var_create(uschar * name)
+acl_var_create(const uschar * name)
 {
 tree_node * node, ** root = name[0] == 'c' ? &acl_var_c : &acl_var_m;
 if (!(node = tree_search(*root, name)))
@@ -4896,9 +5170,11 @@ FILE * f = (FILE *)ctx;
 putc('-', f);
 if (is_tainted(value))
   {
-  int q = quoter_for_address(value);
+  const uschar * quoter_name;
   putc('-', f);
-  if (is_real_quoter(q)) fprintf(f, "(%s)", lookup_list[q]->name);
+  (void) quoter_for_address(value, &quoter_name);
+  if (quoter_name)
+    fprintf(f, "(%s)", quoter_name);
   }
 fprintf(f, "acl%c %s %d\n%s\n", name[0], name+1, Ustrlen(value), value);
 }
@@ -4907,17 +5183,17 @@ fprintf(f, "acl%c %s %d\n%s\n", name[0], name+1, Ustrlen(value), value);
 
 
 uschar *
-acl_standalone_setvar(const uschar * s)
+acl_standalone_setvar(const uschar * s, BOOL taint)
 {
 acl_condition_block * cond = store_get(sizeof(acl_condition_block), GET_UNTAINTED);
 uschar * errstr = NULL, * log_msg = NULL;
-BOOL endpass_seen;
+BOOL endpass_seen = FALSE;
 int e;
 
 cond->next = NULL;
 cond->type = ACLC_SET;
 if (!acl_varname_to_cond(&s, cond, &errstr)) return errstr;
-if (!acl_data_to_cond(s, cond, US"'-be'", &errstr)) return errstr;
+if (!acl_data_to_cond(s, cond, US"'-be'", taint, &errstr)) return errstr;
 
 if (acl_check_condition(ACL_WARN, cond, ACL_WHERE_UNKNOWN,
 			    NULL, 0, &endpass_seen, &errstr, &log_msg, &e) != OK)

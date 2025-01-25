@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* This single source file is used to compile three utility programs for
@@ -59,6 +60,11 @@ millisleep(int msec)
 uschar *
 readconf_printtime(int t)
 { return NULL; }
+const uschar * expand_string_2(const uschar * string, BOOL * textonly_p)
+{return NULL; }
+gstring *
+string_catn(gstring * g, const uschar * s, int count)
+{ return NULL; }
 gstring *
 string_vformat_trc(gstring * g, const uschar * func, unsigned line,
   unsigned size_limit, unsigned flags, const char *format, va_list ap)
@@ -76,11 +82,6 @@ unsigned int		log_selector[1];
 uschar *		queue_name;
 BOOL			split_spool_directory;
 
-
-/* These introduced by the taintwarn handling */
-#ifdef ALLOW_INSECURE_TAINTED_DATA
-BOOL    allow_insecure_tainted_data;
-#endif
 
 /******************************************************************************/
 
@@ -104,7 +105,7 @@ sigalrm_seen = 1;
 *************************************************/
 
 static void
-usage(uschar *name, uschar *options)
+usage(const uschar * name, const uschar * options)
 {
 printf("Usage: exim_%s%s  <spool-directory> <database-name>\n", name, options);
 printf("  <database-name> = retry | misc | wait-<transport-name> | callout | ratelimit | tls | seen\n");
@@ -112,6 +113,25 @@ exit(EXIT_FAILURE);
 }
 
 
+
+/*******************
+*   Debug output   *
+*******************/
+
+unsigned int debug_selector = 0;	/* set -1 for debugging */
+
+void
+debug_printf(const char * fmt, ...)
+{
+va_list ap;
+va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap);
+}
+void
+debug_printf_indent(const char * fmt, ...)
+{
+va_list ap;
+va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap);
+}
 
 /*************************************************
 *           Sort out the command arguments       *
@@ -121,11 +141,11 @@ exit(EXIT_FAILURE);
 second of them to be sure it is a known database name. */
 
 static int
-check_args(int argc, uschar **argv, uschar *name, uschar *options)
+check_args(int argc, uschar **argv, const uschar * name, const uschar * options)
 {
-uschar * aname = argv[optind + 1];
 if (argc - optind == 2)
   {
+  const uschar * aname = argv[optind + 1];
   if (Ustrcmp(aname, "retry") == 0)	return type_retry;
   if (Ustrcmp(aname, "misc") == 0)	return type_misc;
   if (Ustrncmp(aname, "wait-", 5) == 0)	return type_wait;
@@ -186,6 +206,17 @@ fprintf(stderr, "\n");
 va_end(ap);
 }
 
+void
+log_write_die(unsigned int selector, int flags, const char *format, ...)
+{
+va_list ap;
+va_start(ap, format);
+vfprintf(stderr, format, ap);
+fprintf(stderr, "\n");
+va_end(ap);
+exit(EXIT_FAILURE);
+}
+
 
 
 /*************************************************
@@ -197,7 +228,7 @@ static uschar time_buffer[sizeof("09-xxx-1999 hh:mm:ss  ")];
 uschar *
 print_time(time_t t)
 {
-struct tm *tmstr = utc ? gmtime(&t) : localtime(&t);
+const struct tm * tmstr = utc ? gmtime(&t) : localtime(&t);
 Ustrftime(time_buffer, sizeof(time_buffer), "%d-%b-%Y %H:%M:%S", tmstr);
 return time_buffer;
 }
@@ -272,7 +303,7 @@ the lock file.
 
 Arguments:
   name     The single-component name of one of Exim's database files.
-  flags    O_RDONLY or O_RDWR
+  flags    O_RDONLY or O_RDWR, O_CREAT
   dbblock  Points to an open_db block to be filled in.
   lof      Unused.
   panic	   Unused
@@ -283,78 +314,77 @@ Returns:   NULL if the open failed, or the locking failed.
 */
 
 open_db *
-dbfn_open(uschar *name, int flags, open_db *dbblock, BOOL lof, BOOL panic)
+dbfn_open(const uschar * name, int flags, open_db * dbblock,
+  BOOL lof, BOOL panic)
 {
 int rc;
 struct flock lock_data;
-BOOL read_only = flags == O_RDONLY;
 uschar * dirname, * filename;
 
 /* The first thing to do is to open a separate file on which to lock. This
 ensures that Exim has exclusive use of the database before it even tries to
-open it. If there is a database, there should be a lock file in existence. */
+open it. If there is a database, there should be a lock file in existence;
+if no lockfile we infer there is no database and error out.  We open the
+lockfile using the r/w mode requested for the DB, users lacking permission
+for the DB access mode will error out here. */
 
-#ifdef COMPILE_UTILITY
 if (  asprintf(CSS &dirname, "%s/db", spool_directory) < 0
    || asprintf(CSS &filename, "%s/%s.lockfile", dirname, name) < 0)
   return NULL;
-#else
-dirname = string_sprintf("%s/db", spool_directory);
-filename = string_sprintf("%s/%s.lockfile", dirname, name);
-#endif
 
-dbblock->lockfd = Uopen(filename, flags, 0);
-if (dbblock->lockfd < 0)
+dbblock->readonly = (flags & (O_WRONLY|O_RDWR)) == O_RDONLY;
+dbblock->lockfd = -1;
+if (exim_lockfile_needed())
   {
-  printf("** Failed to open database lock file %s: %s\n", filename,
-    strerror(errno));
-  return NULL;
+  if ((dbblock->lockfd = Uopen(filename, flags, 0)) < 0)
+    {
+    printf("** Failed to open database lock file %s: %s\n", filename,
+      strerror(errno));
+    return NULL;
+    }
+
+  /* Now we must get a lock on the opened lock file; do this with a blocking
+  lock that times out. */
+
+  lock_data.l_type = dbblock->readonly ? F_RDLCK : F_WRLCK;
+  lock_data.l_whence = lock_data.l_start = lock_data.l_len = 0;
+
+  sigalrm_seen = FALSE;
+  os_non_restarting_signal(SIGALRM, sigalrm_handler);
+  ALARM(EXIMDB_LOCK_TIMEOUT);
+  rc = fcntl(dbblock->lockfd, F_SETLKW, &lock_data);
+  ALARM_CLR(0);
+
+  if (sigalrm_seen) errno = ETIMEDOUT;
+  if (rc < 0)
+    {
+    printf("** Failed to get %s lock for %s: %s",
+      dbblock->readonly ? "read" : "write",
+      filename,
+      errno == ETIMEDOUT ? "timed out" : strerror(errno));
+    (void)close(dbblock->lockfd);
+    return NULL;
+    }
+
+  /* At this point we have an opened and locked separate lock file, that is,
+  exclusive access to the database, so we can go ahead and open it. */
   }
 
-/* Now we must get a lock on the opened lock file; do this with a blocking
-lock that times out. */
-
-lock_data.l_type = read_only ? F_RDLCK : F_WRLCK;
-lock_data.l_whence = lock_data.l_start = lock_data.l_len = 0;
-
-sigalrm_seen = FALSE;
-os_non_restarting_signal(SIGALRM, sigalrm_handler);
-ALARM(EXIMDB_LOCK_TIMEOUT);
-rc = fcntl(dbblock->lockfd, F_SETLKW, &lock_data);
-ALARM_CLR(0);
-
-if (sigalrm_seen) errno = ETIMEDOUT;
-if (rc < 0)
-  {
-  printf("** Failed to get %s lock for %s: %s",
-    flags & O_WRONLY ? "write" : "read",
-    filename,
-    errno == ETIMEDOUT ? "timed out" : strerror(errno));
-  (void)close(dbblock->lockfd);
-  return NULL;
-  }
-
-/* At this point we have an opened and locked separate lock file, that is,
-exclusive access to the database, so we can go ahead and open it. */
-
-#ifdef COMPILE_UTILITY
 if (asprintf(CSS &filename, "%s/%s", dirname, name) < 0) return NULL;
-#else
-filename = string_sprintf("%s/%s", dirname, name);
-#endif
-dbblock->dbptr = exim_dbopen(filename, dirname, flags, 0);
 
-if (!dbblock->dbptr)
+if (!(dbblock->dbptr = dbblock->readonly && !exim_lockfile_needed()
+		      ? exim_dbopen_multi(filename, dirname, flags, 0)
+		      : exim_dbopen(filename, dirname, flags, 0)))
   {
-  printf("** Failed to open DBM file %s for %s:\n   %s%s\n", filename,
-    read_only? "reading" : "writing", strerror(errno),
-    #ifdef USE_DB
+  printf("** Failed to open hintsdb file %s for %s: %s%s\n", filename,
+    dbblock->readonly ? "reading" : "writing", strerror(errno),
+#ifdef USE_DB
     " (or Berkeley DB error while opening)"
-    #else
+#else
     ""
-    #endif
+#endif
     );
-  (void)close(dbblock->lockfd);
+  if (dbblock->lockfd >= 0) (void)close(dbblock->lockfd);
   return NULL;
   }
 
@@ -369,17 +399,22 @@ return dbblock;
 *************************************************/
 
 /* Closing a file automatically unlocks it, so after closing the database, just
-close the lock file.
+close the lock file if there was one.
 
 Argument: a pointer to an open database block
 Returns:  nothing
 */
 
 void
-dbfn_close(open_db *dbblock)
+dbfn_close(open_db * dbp)
 {
-exim_dbclose(dbblock->dbptr);
-(void)close(dbblock->lockfd);
+if (dbp->readonly && !exim_lockfile_needed())
+  exim_dbclose_multi(dbp->dbptr);
+else
+  exim_dbclose(dbp->dbptr);
+
+if (dbp->lockfd >= 0)
+  (void) close(dbp->lockfd);
 }
 
 
@@ -403,12 +438,13 @@ Returns: a pointer to the retrieved record, or
 */
 
 void *
-dbfn_read_with_length(open_db *dbblock, const uschar *key, int *length)
+dbfn_read_with_length(open_db * dbblock, const uschar * key, int * length)
 {
-void *yield;
+void * yield;
 EXIM_DATUM key_datum, result_datum;
 int klen = Ustrlen(key) + 1;
 uschar * key_copy = store_get(klen, key);
+unsigned dlen;
 
 memcpy(key_copy, key, klen);
 
@@ -422,9 +458,11 @@ if (!exim_dbget(dbblock->dbptr, &key_datum, &result_datum)) return NULL;
 /* Assume for now that anything stored could have been tainted. Properly
 we should store the taint status along with the data. */
 
-yield = store_get(exim_datum_size_get(&result_datum), GET_TAINTED);
-memcpy(yield, exim_datum_data_get(&result_datum), exim_datum_size_get(&result_datum));
-if (length) *length = exim_datum_size_get(&result_datum);
+dlen = exim_datum_size_get(&result_datum);
+yield = store_get(dlen, GET_TAINTED);
+memcpy(yield, exim_datum_data_get(&result_datum), dlen);
+DEBUG(D_hints_lookup) debug_printf_indent("dbfn_read: size %u return\n", dlen);
+if (length) *length = dlen;
 
 exim_datum_free(&result_datum);    /* Some DBM libs require freeing */
 return yield;
@@ -514,7 +552,7 @@ Arguments:
   cursor   a pointer to a pointer to a cursor anchor, for those dbm libraries
            that use the notion of a cursor
 
-Returns:   the next record from the file, or
+Returns:   the next *key* (nul-terminated) from the file, or
            NULL if there are no more
 */
 
@@ -569,7 +607,7 @@ argc -= optind; argv += optind;
 spool_directory = argv[0];
 
 if (!(dbm = dbfn_open(argv[1], O_RDONLY, &dbblock, FALSE, TRUE)))
-  exit(1);
+  exit(EXIT_FAILURE);
 
 /* Scan the file, formatting the information for each entry. Note
 that data is returned in a malloc'ed block, in order that it be
@@ -622,7 +660,7 @@ for (uschar * key = dbfn_scan(dbm, TRUE, &cursor);
 	  print_time(retry->first_failed));
 	printf("%s  ", print_time(retry->last_try));
 	printf("%s %s\n", print_time(retry->next_try),
-	  (retry->expired)? "*" : "");
+	  retry->expired ? "*" : "");
 	break;
 
       case type_wait:
@@ -846,7 +884,7 @@ for(; (reset_point = store_mark()); store_reset(reset_point))
     {
     int verify = 1;
 
-    if (!(dbm = dbfn_open(aname, O_RDWR, &dbblock, FALSE, TRUE)))
+    if (!(dbm = dbfn_open(aname, O_RDWR|O_CREAT, &dbblock, FALSE, TRUE)))
       continue;
 
     if (Ustrcmp(field, "d") == 0)
@@ -1209,8 +1247,8 @@ oldest = time(NULL) - maxkeep;
 printf("Tidying Exim hints database %s/db/%s\n", argv[1], argv[2]);
 
 spool_directory = argv[1];
-if (!(dbm = dbfn_open(argv[2], O_RDWR, &dbblock, FALSE, TRUE)))
-  exit(1);
+if (!(dbm = dbfn_open(argv[2], O_RDWR|O_CREAT, &dbblock, FALSE, TRUE)))
+  exit(EXIT_FAILURE);
 
 /* Prepare for building file names */
 
@@ -1421,3 +1459,5 @@ return 0;
 #endif  /* EXIM_TIDYDB */
 
 /* End of exim_dbutil.c */
+/* vi: aw ai sw=2
+*/

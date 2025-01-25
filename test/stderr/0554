@@ -1,13 +1,14 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
-locking TESTSUITE/spool/db/retry.lockfile
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: x@y
-no   domain  retry record
-no   address retry record
+checking router retry status
+ no   domain  retry record
+ no   address retry record
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -15,40 +16,40 @@ After routing:
     x@y
   Failed addresses:
   Deferred addresses:
-checking status of 127.0.0.1
-locking TESTSUITE/spool/db/retry.lockfile
-no retry data available
+checking retry status of 127.0.0.1
+ no retry data available
 added retry item for R:x@y:<CALLER@myhost.test.ex>: errno=-44 more_errno=dd,A flags=0
-cmdlog: '220:EHLO:250:MAIL:250:RCPT:451:QUIT:250'
+cmdlog: '220:EHLO:250:MAIL:250:RCPT:451:QUIT+:250'
+>>>>>>>>>>>>>>>> Exim pid=p1235 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 reading retry information for R:x@y:<CALLER@myhost.test.ex> from subprocess
   added retry item
 LOG: MAIN
   == x@y R=r1 T=smtp defer (-44) H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after RCPT TO:<x@y>: 451 Temporary error
 Processing retry items
-Succeeded addresses:
-Failed addresses:
-Deferred addresses:
- x@y
-locking TESTSUITE/spool/db/retry.lockfile
-retry for R:x@y:<CALLER@myhost.test.ex> = * 0 0
-failing_interval=ttt message_age=ttt
-Writing retry data for R:x@y:<CALLER@myhost.test.ex>
-  first failed=dddd last try=dddd next try=+2 expired=0
-  errno=-44 more_errno=dd,A H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after RCPT TO:<x@y>: 451 Temporary error
+ Succeeded addresses:
+ Failed addresses:
+ Deferred addresses:
+  x@y
+   retry for R:x@y:<CALLER@myhost.test.ex> = * 0 0
+   failing_interval=ttt message_age=ttt
+   Writing retry data for R:x@y:<CALLER@myhost.test.ex>
+     first failed=dddd last try=dddd next try=+2 expired=0
+     errno=-44 more_errno=dd,A H=127.0.0.1 [127.0.0.1]: SMTP error from remote mail server after RCPT TO:<x@y>: 451 Temporary error
 end of retry processing
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
-locking TESTSUITE/spool/db/retry.lockfile
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: x@y
-no   domain  retry record
-have address retry record; next_try = now+0
-added retry item for R:x@y:<CALLER@myhost.test.ex>: errno=-1 more_errno=dd flags=1
-added retry item for R:x@y: errno=-1 more_errno=dd flags=1
-added retry item for R:y: errno=-1 more_errno=dd flags=1
+checking router retry status
+ no   domain  retry record
+ have address retry record; next_try = now+0
+added retry delete-item for R:x@y:<CALLER@myhost.test.ex>: errno=-1 more_errno=dd flags=1
+added retry delete-item for R:x@y: errno=-1 more_errno=dd flags=1
+added retry delete-item for R:y: errno=-1 more_errno=dd flags=1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -56,14 +57,13 @@ After routing:
     x@y
   Failed addresses:
   Deferred addresses:
-checking status of 127.0.0.1
-locking TESTSUITE/spool/db/retry.lockfile
-no host retry record
-no message retry record
-added retry item for R:x@y:<CALLER@myhost.test.ex>: errno=dd more_errno=dd,A flags=1
-added retry item for R:x@y: errno=dd more_errno=dd,A flags=1
-locking TESTSUITE/spool/db/wait-smtp.lockfile
-cmdlog: '220:EHLO:250:MAIL:250:RCPT:250:DATA:354:.:250:QUIT:250'
+checking retry status of 127.0.0.1
+ no host retry record
+ no message retry record
+added retry delete-item for R:x@y:<CALLER@myhost.test.ex>: errno=dd more_errno=dd,A flags=1
+added retry delete-item for R:x@y: errno=dd more_errno=dd,A flags=1
+cmdlog: '220:EHLO:250:MAIL:250:RCPT:250:DATA:354:.:250:QUIT+:250'
+>>>>>>>>>>>>>>>> Exim pid=p1237 (transport) terminating with rc=0 >>>>>>>>>>>>>>>>
 reading retry information for R:x@y from subprocess
   existing delete item dropped
   added delete item
@@ -82,15 +82,14 @@ reading retry information for R:x@y:<CALLER@myhost.test.ex> from subprocess
 LOG: MAIN
   => x@y R=r1 T=smtp H=127.0.0.1 [127.0.0.1] C="250 OK"
 Processing retry items
-Succeeded addresses:
- x@y
-locking TESTSUITE/spool/db/retry.lockfile
-deleted retry information for R:x@y:<CALLER@myhost.test.ex>
-deleted retry information for R:x@y
-deleted retry information for R:y
-Failed addresses:
-Deferred addresses:
+ Succeeded addresses:
+  x@y
+   deleted retry information for R:x@y:<CALLER@myhost.test.ex>
+   deleted retry information for R:x@y
+   deleted retry information for R:y
+ Failed addresses:
+ Deferred addresses:
 end of retry processing
 LOG: MAIN
   Completed
->>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

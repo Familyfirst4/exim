@@ -1,6 +1,6 @@
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -21,10 +21,10 @@ DATA
 354 Send data
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -33,7 +33,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -50,10 +50,10 @@ DATA
 354 Send data
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaY-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaY-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -62,7 +62,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -79,10 +79,10 @@ DATA
 354 Send data
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaZ-0005vi-00
+	id 10HmaZ-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaZ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaZ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -91,7 +91,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -100,7 +100,7 @@ EHLO myhost.test.ex
 250 AUTH LOGIN
 AUTH LOGIN
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -112,7 +112,7 @@ AUTH PLAIN AHVzZXJ4AHNlY3JldA==
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -121,7 +121,7 @@ EHLO myhost.test.ex
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -142,10 +142,10 @@ DATA
 354 Send data
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbF-0005vi-00
+	id 10HmbF-000000005vi-0000
 	for forcesender@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbF-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbF-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -154,7 +154,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -170,7 +170,7 @@ MAIL FROM:<CALLER@myhost.test.ex>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 ESMTP
 EHLO myhost.test.ex
@@ -191,10 +191,10 @@ DATA
 354 Send data
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbI-0005vi-00
+	id 10HmbI-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbI-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbI-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 

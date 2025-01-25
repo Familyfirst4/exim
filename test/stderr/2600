@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
@@ -11,7 +12,7 @@ dropping to exim gid; retaining priv uid
  file lookup required for select name from them where id='userx';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -22,7 +23,7 @@ dropping to exim gid; retaining priv uid
  cached data found but wrong opts;  file lookup required for select name from them where id='userx';
  c  in TESTSUITE/aux-fixed/sqlitedb
  replacing old cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -33,7 +34,7 @@ dropping to exim gid; retaining priv uid
  cached data found but wrong opts;  file lookup required for select name from them where id='userx';
  c  in TESTSUITE/aux-fixed/sqlitedb
  replacing old cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -43,7 +44,7 @@ dropping to exim gid; retaining priv uid
    type=sqlite key="select name from them where id='userx';" opts="file=TESTSUITE/aux-fixed/sqlitedb"
  cached data used for lookup of select name from them where id='userx';
    in TESTSUITE/aux-fixed/sqlitedb
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -76,7 +77,7 @@ dropping to exim gid; retaining priv uid
  file lookup required for select id,name from them where id='nothing';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: id=nothing name="" 
+ lookup yielded: id=nothing░name=""░
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -87,7 +88,7 @@ dropping to exim gid; retaining priv uid
  file lookup required for select * from them where id='quote2';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: name="\"stquot" id=quote2 
+ lookup yielded: name="\"stquot"░id=quote2░
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -98,8 +99,8 @@ dropping to exim gid; retaining priv uid
  file lookup required for select * from them where id='newline';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: name="before
- after" id=newline 
+ lookup yielded: name="before↩
+ after"░id=newline░
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -110,7 +111,7 @@ dropping to exim gid; retaining priv uid
  file lookup required for select * from them where id='tab';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: name="x	x" id=tab 
+ lookup yielded: name="x␉x"░id=tab░
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -121,7 +122,7 @@ dropping to exim gid; retaining priv uid
  file lookup required for select * from them where id='its';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: name=it's id=its 
+ lookup yielded: name=it's░id=its░
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
    cached open
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -132,10 +133,11 @@ dropping to exim gid; retaining priv uid
  file lookup required for select * from them where name='it''s';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: name=it's id=its 
+ lookup yielded: name=it's░id=its░
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 configuration file is TESTSUITE/test-config
@@ -162,6 +164,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [10.0.0.0]
 sender_rcvhost = [10.0.0.0] (helo=test)
@@ -173,70 +178,95 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts="file=TESTSUITE/aux-fixed/sqlitedb"
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.0.0.0'" opts="file=TESTSUITE/aux-fixed/sqlitedb"
-file lookup required for select * from them where id='10.0.0.0'
-  in TESTSUITE/aux-fixed/sqlitedb
-lookup forced cache cleanup
-lookup failed
-host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"? no (end of list)
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"?
+   ╎list element: sqlite,file=TESTSUITE/aux-fixed/sqlitedb;░select░*░from░them░where░id='10.0.0.0'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts="file=TESTSUITE/aux-fixed/sqlitedb"
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.0.0.0'" opts="file=TESTSUITE/aux-fixed/sqlitedb"
+   ╎file lookup required for select * from them where id='10.0.0.0'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎lookup forced cache cleanup
+   ╎lookup failed
+  host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"? no (end of list)
+  end sublist relay_hosts
 host in "+relay_hosts"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "deny" (TESTSUITE/test-config 34)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "deny" (TESTSUITE/test-config 34)
   message: relay not permitted
-deny: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": DENY
+deny: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: DENY
 SMTP>> 550 relay not permitted
 LOG: MAIN REJECT
   H=(test) [10.0.0.0] F=<a@b> rejected RCPT <c@d>: relay not permitted
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-  cached open
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts="file=TESTSUITE/aux-fixed/sqlitedb"
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.0.0.0'" opts="file=TESTSUITE/aux-fixed/sqlitedb"
-file lookup required for select * from them where id='10.0.0.0'
-  in TESTSUITE/aux-fixed/sqlitedb
-lookup forced cache cleanup
-lookup failed
-host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"? no (end of list)
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"?
+   ╎list element: sqlite,file=TESTSUITE/aux-fixed/sqlitedb;░select░*░from░them░where░id='10.0.0.0'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎  cached open
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts="file=TESTSUITE/aux-fixed/sqlitedb"
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.0.0.0'" opts="file=TESTSUITE/aux-fixed/sqlitedb"
+   ╎file lookup required for select * from them where id='10.0.0.0'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎lookup forced cache cleanup
+   ╎lookup failed
+  host in "sqlite,file=TESTSUITE/aux-fixed/sqlitedb; select * from them where id='10.0.0.0'"? no (end of list)
+  end sublist relay_hosts
 host in "+relay_hosts"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "deny" (TESTSUITE/test-config 34)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "deny" (TESTSUITE/test-config 34)
   message: relay not permitted
-deny: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": DENY
+deny: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: DENY
 SMTP>> 550 relay not permitted
 LOG: MAIN REJECT
   H=(test) [10.0.0.0] F=<a@b> rejected RCPT <c@d>: relay not permitted
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [10.0.0.0] closed by QUIT
+  SMTP connection from (test) [10.0.0.0] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1236
 configuration file is TESTSUITE/test-config
@@ -263,6 +293,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [10.0.0.0]
 sender_rcvhost = [10.0.0.0] (helo=test)
@@ -274,70 +307,95 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.0.0.0'" opts=NULL
-file lookup required for select * from them where id='10.0.0.0'
-  in TESTSUITE/aux-fixed/sqlitedb
-lookup forced cache cleanup
-lookup failed
-host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"? no (end of list)
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"?
+   ╎list element: sqlite;TESTSUITE/aux-fixed/sqlitedb░select░*░from░them░where░id='10.0.0.0'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts=NULL
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.0.0.0'" opts=NULL
+   ╎file lookup required for select * from them where id='10.0.0.0'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎lookup forced cache cleanup
+   ╎lookup failed
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"? no (end of list)
+  end sublist relay_hosts
 host in "+relay_hosts"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "deny" (TESTSUITE/test-config 34)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "deny" (TESTSUITE/test-config 34)
   message: relay not permitted
-deny: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": DENY
+deny: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: DENY
 SMTP>> 550 relay not permitted
 LOG: MAIN REJECT
   H=(test) [10.0.0.0] F=<a@b> rejected RCPT <c@d>: relay not permitted
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-  cached open
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.0.0.0'" opts=NULL
-file lookup required for select * from them where id='10.0.0.0'
-  in TESTSUITE/aux-fixed/sqlitedb
-lookup forced cache cleanup
-lookup failed
-host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"? no (end of list)
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"?
+   ╎list element: sqlite;TESTSUITE/aux-fixed/sqlitedb░select░*░from░them░where░id='10.0.0.0'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎  cached open
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.0.0.0'" partial=-1 affix=NULL starflags=0 opts=NULL
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.0.0.0'" opts=NULL
+   ╎file lookup required for select * from them where id='10.0.0.0'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎lookup forced cache cleanup
+   ╎lookup failed
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.0.0.0'"? no (end of list)
+  end sublist relay_hosts
 host in "+relay_hosts"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "deny" (TESTSUITE/test-config 34)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "deny" (TESTSUITE/test-config 34)
   message: relay not permitted
-deny: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": DENY
+deny: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: DENY
 SMTP>> 550 relay not permitted
 LOG: MAIN REJECT
   H=(test) [10.0.0.0] F=<a@b> rejected RCPT <c@d>: relay not permitted
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [10.0.0.0] closed by QUIT
+  SMTP connection from (test) [10.0.0.0] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1237
 configuration file is TESTSUITE/test-config
@@ -364,6 +422,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [10.10.10.10]
 sender_rcvhost = [10.10.10.10] (helo=test)
@@ -375,59 +436,84 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.10.10.10'" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.10.10.10'" opts=NULL
-file lookup required for select * from them where id='10.10.10.10'
-  in TESTSUITE/aux-fixed/sqlitedb
-creating new cache entry
-lookup yielded: name=ok id=10.10.10.10 
-host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"? yes (matched "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'")
-host in "+relay_hosts"? yes (matched "+relay_hosts")
-accept: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": ACCEPT
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"?
+   ╎list element: sqlite;TESTSUITE/aux-fixed/sqlitedb░select░*░from░them░where░id='10.10.10.10'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.10.10.10'" partial=-1 affix=NULL starflags=0 opts=NULL
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.10.10.10'" opts=NULL
+   ╎file lookup required for select * from them where id='10.10.10.10'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎creating new cache entry
+   ╎lookup yielded: name=ok░id=10.10.10.10░
+   ╎host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"? yes (matched "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'")
+  end sublist relay_hosts
+  host in "+relay_hosts"? yes (matched "+relay_hosts")
+accept: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< rcpt to:<c@d>
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 32)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 32)
 check domains = +local_domains
-d in "@"? no (end of list)
+d in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   d in "@"?
+   ╎list element: @
+   d in "@"? no (end of list)
+  end sublist local_domains
 d in "+local_domains"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 33)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 33)
 check hosts = +relay_hosts
-search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
-  cached open
-search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  key="select * from them where id='10.10.10.10'" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
-  type=sqlite key="select * from them where id='10.10.10.10'" opts=NULL
-cached data used for lookup of select * from them where id='10.10.10.10'
-  in TESTSUITE/aux-fixed/sqlitedb
-lookup yielded: name=ok id=10.10.10.10 
-host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"? yes (matched "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'")
-host in "+relay_hosts"? yes (matched "+relay_hosts")
-accept: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": ACCEPT
+host in "+relay_hosts"?
+ list element: +relay_hosts
+  start sublist relay_hosts
+  host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"?
+   ╎list element: sqlite;TESTSUITE/aux-fixed/sqlitedb░select░*░from░them░where░id='10.10.10.10'
+   ╎search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
+   ╎  cached open
+   ╎search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  key="select * from them where id='10.10.10.10'" partial=-1 affix=NULL starflags=0 opts=NULL
+   ╎LRU list:
+   ╎internal_search_find: file="TESTSUITE/aux-fixed/sqlitedb"
+   ╎  type=sqlite key="select * from them where id='10.10.10.10'" opts=NULL
+   ╎cached data used for lookup of select * from them where id='10.10.10.10'
+   ╎  in TESTSUITE/aux-fixed/sqlitedb
+   ╎lookup yielded: name=ok░id=10.10.10.10░
+   ╎host in "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'"? yes (matched "sqlite;TESTSUITE/aux-fixed/sqlitedb select * from them where id='10.10.10.10'")
+  end sublist relay_hosts
+  host in "+relay_hosts"? yes (matched "+relay_hosts")
+accept: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [10.10.10.10] closed by QUIT
+  SMTP connection from (test) [10.10.10.10] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1238
 configuration file is TESTSUITE/test-config
@@ -445,37 +531,40 @@ Sender: CALLER@myhost.test.ex
 Recipients:
   userx
 search_tidyup called
+WARNING: bad header line (no colon).  Assuming first line of body
 >>Headers received:
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
  rewrite_one_header: type=F:
    From: CALLER_NAME <CALLER@myhost.test.ex>
 search_tidyup called
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
-F From: CALLER_NAME <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
+ F From: CALLER_NAME <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for userx@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-0005vi-00
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-000000005vi-0000
 DSN: **** SPOOL_OUT - address: <userx@myhost.test.ex> errorsto: <NULL> orcpt: <NULL> dsn_flags: 0x0
-Renaming spool header file: TESTSUITE/spool//input//10HmaX-0005vi-00-H
+Renaming spool header file: TESTSUITE/spool//input//10HmaX-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
+receive_msg: tidyup
 search_tidyup called
-exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -DOPT=y -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-0005vi-00
+exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -DOPT=y -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-000000005vi-0000
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=EXIM_GID pid=p1239
 configuration file is TESTSUITE/test-config
@@ -485,9 +574,9 @@ dropping to exim gid; retaining priv uid
 seeking password data for user "CALLER": cache not available
 getpwnam() succeeded uid=CALLER_UID gid=CALLER_GID
 set_process_info: pppp delivering specified messages
-set_process_info: pppp delivering 10HmaX-0005vi-00
-Trying spool file TESTSUITE/spool//input//10HmaX-0005vi-00-D
-reading spool file 10HmaX-0005vi-00-H
+set_process_info: pppp delivering 10HmaX-000000005vi-0000
+Trying spool file TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+reading spool file 10HmaX-000000005vi-0000-H
 user=CALLER uid=CALLER_UID gid=CALLER_GID sender=CALLER@myhost.test.ex
 sender_local=1 ident=CALLER
 Non-recipients:
@@ -499,17 +588,13 @@ body_linecount=1 message_linecount=8
 DSN: set orcpt:   flags: 0x0
 Delivery address list:
   userx@myhost.test.ex 
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: userx@myhost.test.ex
 unique = userx@myhost.test.ex
-no   domain  retry record
-no   address retry record
+checking router retry status
+ no   domain  retry record
+ no   address retry record
 userx@myhost.test.ex: queued for routing
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing userx@myhost.test.ex
@@ -525,7 +610,7 @@ processing address_data
  file lookup required for select name from them where id='userx'
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
 calling r1 router
 r1 router called for userx@myhost.test.ex
   domain = myhost.test.ex
@@ -535,8 +620,8 @@ domain = myhost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: userx@myhost.test.ex
-  transport: t1
+  envelope to:	userx@myhost.test.ex
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -547,17 +632,12 @@ After routing:
 search_tidyup called
 >>>>>>>>>>>>>>>> Local deliveries >>>>>>>>>>>>>>>>
 --------> userx@myhost.test.ex <--------
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 search_tidyup called
 changed uid/gid: local delivery to userx <userx@myhost.test.ex> transport=t1
   uid=CALLER_UID gid=CALLER_GID pid=p1240
   home=NULL current=/
-set_process_info: pppp delivering 10HmaX-0005vi-00 to userx using t1
+set_process_info: pppp delivering 10HmaX-000000005vi-0000 to userx using t1
 appendfile transport entered
  search_open: sqlite "TESTSUITE/aux-fixed/sqlitedb"
  search_find: file="TESTSUITE/aux-fixed/sqlitedb"
@@ -586,6 +666,7 @@ writing data block fd=dddd size=sss timeout=0
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
 search_tidyup called
+>>>>>>>>>>>>>>>> Exim pid=p1240 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 journalling userx@myhost.test.ex
 t1 transport returned OK for userx@myhost.test.ex
 post-process userx@myhost.test.ex (0)
@@ -595,12 +676,12 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> deliveries are done >>>>>>>>>>>>>>>>
 changed uid/gid: post-delivery tidying
   uid=EXIM_UID gid=EXIM_GID pid=p1239
-set_process_info: pppp tidying up after delivering 10HmaX-0005vi-00
+set_process_info: pppp tidying up after delivering 10HmaX-000000005vi-0000
 Processing retry items
-Succeeded addresses:
- userx@myhost.test.ex: no retry items
-Failed addresses:
-Deferred addresses:
+ Succeeded addresses:
+  userx@myhost.test.ex: no retry items
+ Failed addresses:
+ Deferred addresses:
 end of retry processing
 DSN: processing router : r1
 DSN: processing successful delivery address: userx@myhost.test.ex
@@ -612,13 +693,14 @@ DSN: Remote SMTP server supports DSN: 0
 DSN: not sending DSN success message
 LOG: MAIN
   Completed
-end delivery of 10HmaX-0005vi-00
+end delivery of 10HmaX-000000005vi-0000
 search_tidyup called
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1239 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
@@ -631,10 +713,11 @@ dropping to exim gid; retaining priv uid
  file lookup required for select name from them where id='userx';
    in TESTSUITE/aux-fixed/sqlitedb
  creating new cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1241 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
@@ -647,10 +730,11 @@ dropping to exim gid; retaining priv uid
    type=sqlite key="select name from them where id='userx';" opts=NULL
  database lookup required for select name from them where id='userx';
  creating new cache entry
- lookup yielded: Ayen Other
+ lookup yielded: Ayen░Other
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1242 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
@@ -659,6 +743,7 @@ dropping to exim gid; retaining priv uid
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1243 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid

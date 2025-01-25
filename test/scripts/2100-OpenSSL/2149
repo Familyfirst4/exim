@@ -1,50 +1,61 @@
-# TLS: DH ciphers for OpenSSL
+# TLS: EC curves for OpenSSL
 #
-# DH param from file
-exim -DSERVER=server -DDATA=DIR/aux-fixed/dh2048 -bd -oX PORT_D
+# This is only checking the acceptability of option settings, not their effect
+# See packet captures for actual effects
+#
+# Baseline: tls_eccurve option not present
+exim -DSERVER=server -bd -oX PORT_D
 ****
-exim -odf userw@test.ex
-Test message
+exim -odf optnotpresent@test.ex
 ****
 killdaemon
 #
-# Too-big DH param (vs. tls_dh_max_bits), from file
-exim -DSERVER=server -DDATA=DIR/aux-fixed/dh3072 -bd -oX PORT_D
+# Explicit tls_eccurve setting of "auto"
+exim -DSERVER=server -DDATA=auto -bd -oX PORT_D
 ****
-exim -odf userx@test.ex
-Test message
-****
-killdaemon
-#
-# Too-small DH param (library limitation), from file
-exim -DSERVER=server -DDATA=DIR/aux-fixed/dh512 -bd -oX PORT_D
-****
-exim -odf usery@test.ex
-Test message
+exim -odf explicitauto@test.ex
 ****
 killdaemon
 #
-# Named DH-param
-exim -DSERVER=server -DDATA=ffdhe2048 -bd -oX PORT_D
+# prime256v1
+# Oddly,  3.0.5 packets show an EC-groups negotiation of C:x255519 S:secp256r1 C:secp256r1 S:secp256r1.
+# Hoever, note that RFC 8446 (TLS1.3) does NOT include prime256v1 as one of the allowable
+# supported groups (and it's not in the client "supported groups" extension, so what we see seems good.
+exim -DSERVER=server -DDATA=prime256v1 -bd -oX PORT_D
 ****
-exim -odf userz@test.ex
-Test message
-****
-killdaemon
-#
-# Named DH-param, logged deprecation
-exim -DSERVER=server -DDATA=ike24 -bd -oX PORT_D
-****
-exim -odf usera@test.ex
-Test message
+exim -odf prime256v1@test.ex
 ****
 killdaemon
 #
-# Named DH-param, panic-logged deprecation
-exim -DSERVER=server -DDATA=ike22 -bd -oX PORT_D
+# secp384r1
+# C:x25519 S:secp384r1
+exim -DSERVER=server -DDATA=secp384r1 -bd -oX PORT_D
 ****
-exim -odf userb@test.ex
-Test message
+exim -odf secp384r1@test.ex
 ****
 killdaemon
+#
+# "bogus".  Should fail to make connection.
+exim -DSERVER=server -DDATA=bogus -bd -oX PORT_D
+****
+exim -odf user_fail@test.ex
+****
+killdaemon
+#
+# Two-element list - will fail for pre- 1.1.1 OpenSSL
+# - the Hello Retry Req goes out with the earliest one from the list which matches the client's Supported Groups
+exim -DSERVER=server -DDATA=P-521:secp384r1 -bd -oX PORT_D
+****
+exim -odf user_list2@test.ex
+****
+killdaemon
+#
+#
+# List with an "auto" element embedded, which should override.
+exim -DSERVER=server '-DDATA= P-521 : P-384 : auto : P-256' -bd -oX PORT_D
+****
+exim -odf user_list_auto@test.ex
+****
+killdaemon
+#
 no_message_check

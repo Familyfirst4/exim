@@ -1,6 +1,6 @@
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -20,16 +20,16 @@ DATA
 351 Send more
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmaX-0005vi-00;
+	id 10HmaX-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
 .
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -41,7 +41,7 @@ RCPT TO:<e@test.ex>
 250 OK
 *sleep 2
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -58,7 +58,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -75,7 +75,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -92,7 +92,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -109,7 +109,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -126,7 +126,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -143,7 +143,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -160,7 +160,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -575,7 +575,7 @@ DATA
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -588,7 +588,7 @@ RCPT TO:<a@test.ex>
 RCPT TO:<b@test.ex>
 550 NO
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -608,16 +608,16 @@ DATA
 351 Send more
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmbP-0005vi-00;
+	id 10HmbP-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbP-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbP-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
 .
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -831,9 +831,9 @@ DATA
 354 go
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmbQ-0005vi-00;
+	id 10HmbQ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbQ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbQ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -947,9 +947,9 @@ DATA
 354 go
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmbQ-0005vi-00;
+	id 10HmbQ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbQ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbQ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -963,9 +963,9 @@ DATA
 354 go
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmbQ-0005vi-00;
+	id 10HmbQ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbQ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbQ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 

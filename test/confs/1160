@@ -1,4 +1,4 @@
-# Exim test configuration 2160
+# Exim test configuration 1160
 
 SERVER =
 
@@ -20,7 +20,7 @@ tls_on_connect_ports = PORT_D
 
 tls_certificate = DIR/aux-fixed/cert1
 
-log_selector = +millisec
+log_selector = +millisec +protocol_detail +tls_on_connect
 
 # ------ ACL ------
 

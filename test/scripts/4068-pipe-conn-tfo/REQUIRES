@@ -1,0 +1,3 @@
+feature _HAVE_TLS
+support PIPECONNECT
+support TCP_Fast_Open

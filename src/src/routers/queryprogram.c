@@ -2,11 +2,14 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
+
+#ifdef ROUTER_QUERYPROGRAM	/* Remainder of file */
 #include "rf_functions.h"
 #include "queryprogram.h"
 
@@ -46,7 +49,7 @@ int queryprogram_router_options_count =
 
 /* Dummy entries */
 queryprogram_router_options_block queryprogram_router_option_defaults = {0};
-void queryprogram_router_init(router_instance *rblock) {}
+void queryprogram_router_init(driver_instance *rblock) {}
 int queryprogram_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -79,7 +82,7 @@ queryprogram_router_options_block queryprogram_router_option_defaults = {
 consistency checks to be done, or anything else that needs to be set up. */
 
 void
-queryprogram_router_init(router_instance *rblock)
+queryprogram_router_init(driver_instance * rblock)
 {
 queryprogram_router_options_block *ob =
   (queryprogram_router_options_block *)(rblock->options_block);
@@ -87,13 +90,13 @@ queryprogram_router_options_block *ob =
 /* A command must be given */
 
 if (!ob->command)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "a command specification is required", rblock->name);
 
 /* A uid/gid must be supplied */
 
 if (!ob->cmd_uid_set && !ob->expand_cmd_uid)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "command_user must be specified", rblock->name);
 }
 
@@ -118,9 +121,9 @@ Returns:         nothing
 */
 
 static void
-add_generated(router_instance *rblock, address_item **addr_new,
-  address_item *addr, address_item *generated,
-  address_item_propagated *addr_prop)
+add_generated(router_instance * rblock, address_item ** addr_new,
+  address_item * addr, address_item * generated,
+  const address_item_propagated * addr_prop)
 {
 while (generated != NULL)
   {
@@ -138,12 +141,12 @@ while (generated != NULL)
   *addr_new = next;
 
   if (addr->child_count == USHRT_MAX)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s router generated more than %d "
-      "child addresses for <%s>", rblock->name, USHRT_MAX, addr->address);
+    log_write_die(0, LOG_MAIN, "%s router generated more than %d "
+      "child addresses for <%s>", rblock->drinst.name, USHRT_MAX, addr->address);
   addr->child_count++;
 
   DEBUG(D_route)
-    debug_printf("%s router generated %s\n", rblock->name, next->address);
+    debug_printf("%s router generated %s\n", rblock->drinst.name, next->address);
   }
 }
 
@@ -212,8 +215,8 @@ uschar buffer[1024];
 const uschar **argvptr;
 uschar *rword, *rdata, *s;
 address_item_propagated addr_prop;
-queryprogram_router_options_block *ob =
-  (queryprogram_router_options_block *)(rblock->options_block);
+queryprogram_router_options_block * ob =
+  (queryprogram_router_options_block *)(rblock->drinst.options_block);
 uschar *current_directory = ob->current_directory;
 ugid_block ugid;
 uid_t curr_uid = getuid();
@@ -224,7 +227,7 @@ uid_t *puid = &uid;
 gid_t *pgid = &gid;
 
 DEBUG(D_route) debug_printf("%s router called for %s: domain = %s\n",
-  rblock->name, addr->address, addr->domain);
+  rblock->drinst.name, addr->address, addr->domain);
 
 ugid.uid_set = ugid.gid_set = FALSE;
 
@@ -246,8 +249,8 @@ if (rc != OK) return rc;
 (initialization ensures that one or the other is set). */
 
 if (  !ob->cmd_uid_set
-   && !route_find_expanded_user(ob->expand_cmd_uid, rblock->name, US"router",
-	&upw, &uid, &(addr->message)))
+   && !route_find_expanded_user(ob->expand_cmd_uid, rblock->drinst.name,
+	US"router", &upw, &uid, &(addr->message)))
     return DEFER;
 
 /* Get the fixed or expanded gid, or take the gid from the passwd entry. */
@@ -255,7 +258,7 @@ if (  !ob->cmd_uid_set
 if (!ob->cmd_gid_set)
   if (ob->expand_cmd_gid)
     {
-    if (route_find_expanded_group(ob->expand_cmd_gid, rblock->name,
+    if (route_find_expanded_group(ob->expand_cmd_gid, rblock->drinst.name,
         US"router", &gid, &(addr->message)))
       return DEFER;
     }
@@ -264,7 +267,7 @@ if (!ob->cmd_gid_set)
   else
     {
     addr->message = string_sprintf("command_user set without command_group "
-      "for %s router", rblock->name);
+      "for %s router", rblock->drinst.name);
     return DEFER;
     }
 
@@ -286,12 +289,12 @@ if (curr_uid != root_uid && (uid != curr_uid || gid != curr_gid))
 
 /* Set up the command to run */
 
+GET_OPTION("command");
 if (!transport_set_up_command(&argvptr, /* anchor for arg list */
     ob->command,                        /* raw command */
-    TRUE,                               /* expand the arguments */
+    TSUC_EXPAND_ARGS,                   /* arguments expanded but must not be tainted */
     0,                                  /* not relevant when... */
     NULL,                               /* no transporting address */
-    FALSE,				/* args must be untainted */
     US"queryprogram router",            /* for error messages */
     &addr->message))                    /* where to put error message */
   return DEFER;
@@ -302,7 +305,7 @@ if ((pid = child_open_uid(argvptr, NULL, 0077, puid, pgid, &fd_in, &fd_out,
 			  current_directory, TRUE, US"queryprogram-cmd")) < 0)
   {
   addr->message = string_sprintf("%s router couldn't create child process: %s",
-    rblock->name, strerror(errno));
+    rblock->drinst.name, strerror(errno));
   return DEFER;
   }
 
@@ -317,22 +320,22 @@ if ((rc = child_close(pid, ob->timeout)) != 0)
   {
   if (rc > 0)
     addr->message = string_sprintf("%s router: command returned non-zero "
-      "code %d", rblock->name, rc);
+      "code %d", rblock->drinst.name, rc);
 
   else if (rc == -256)
     {
     addr->message = string_sprintf("%s router: command timed out",
-      rblock->name);
+      rblock->drinst.name);
     killpg(pid, SIGKILL);       /* Kill the whole process group */
     }
 
   else if (rc == -257)
     addr->message = string_sprintf("%s router: wait() failed: %s",
-      rblock->name, strerror(errno));
+      rblock->drinst.name, strerror(errno));
 
   else
     addr->message = string_sprintf("%s router: command killed by signal %d",
-      rblock->name, -rc);
+      rblock->drinst.name, -rc);
 
   return DEFER;
   }
@@ -347,7 +350,7 @@ len = read(fd_out, buffer, sizeof(buffer) - 1);
 if (len <= 0)
   {
   addr->message = string_sprintf("%s router: command failed to return data",
-    rblock->name);
+    rblock->drinst.name);
   return DEFER;
   }
 
@@ -360,10 +363,10 @@ buffer[len] = 0;
 DEBUG(D_route) debug_printf("command wrote: %s\n", buffer);
 
 rword = buffer;
-while (isspace(*rword)) rword++;
+Uskip_whitespace(&rword);
 rdata = rword;
-while (*rdata && !isspace(*rdata)) rdata++;
-if (*rdata) *rdata++ = 0;
+Uskip_nonwhite(&rdata);
+if (*rdata) *rdata++ = '\0';
 
 /* The word must be a known yield name. If it is "REDIRECT", the rest of the
 line is redirection data, as for a .forward file. It may not contain filter
@@ -385,16 +388,13 @@ if (strcmpic(rword, US"REDIRECT") == 0)
       RDO_INCLUDE |              /* forbid :include: */
       RDO_REWRITE,               /* rewrite generated addresses */
     NULL,                        /* :include: directory not relevant */
-    NULL,                        /* sieve vacation directory not relevant */
-    NULL,                        /* sieve enotify mailto owner not relevant */
-    NULL,                        /* sieve useraddress not relevant */
-    NULL,                        /* sieve subaddress not relevant */
+    NULL,                        /* sieve info not relevant */
     &ugid,                       /* uid/gid (but not set) */
     &generated,                  /* where to hang the results */
     &addr->message,              /* where to put messages */
     NULL,                        /* don't skip syntax errors */
     &filtertype,                 /* not used; will always be FILTER_FORWARD */
-    string_sprintf("%s router", rblock->name));
+    string_sprintf("%s router", rblock->drinst.name));
 
   switch (rc)
     {
@@ -456,7 +456,7 @@ if (strcmpic(rword, US"accept") != 0)
   else if (strcmpic(rword, US"defer") != 0)
     {
     addr->message = string_sprintf("bad command yield: %s %s", rword, rdata);
-    log_write(0, LOG_PANIC, "%s router: %s", rblock->name, addr->message);
+    log_write(0, LOG_PANIC, "%s router: %s", rblock->drinst.name, addr->message);
     }
   return DEFER;
   }
@@ -472,14 +472,14 @@ if ((s = expand_getkeyed(US"data", rdata)) && *s)
 
 if ((s = expand_getkeyed(US"transport", rdata)) && *s)
   {
-  transport_instance *transport;
-  for (transport = transports; transport; transport = transport->next)
-    if (Ustrcmp(transport->name, s) == 0) break;
+  transport_instance * transport;
+  for (transport = transports; transport; transport = transport->drinst.next)
+    if (Ustrcmp(transport->drinst.name, s) == 0) break;
   if (!transport)
     {
     addr->message = string_sprintf("unknown transport name %s yielded by "
       "command", s);
-    log_write(0, LOG_PANIC, "%s router: %s", rblock->name, addr->message);
+    log_write(0, LOG_PANIC, "%s router: %s", rblock->drinst.name, addr->message);
     return DEFER;
     }
   addr->transport = transport;
@@ -492,7 +492,7 @@ the last argument not being NULL. */
 else
   {
   if (!rf_get_transport(rblock->transport_name, &rblock->transport, addr,
-       rblock->name, US"transport"))
+       rblock->drinst.name, US"transport"))
     return DEFER;
   addr->transport = rblock->transport;
   }
@@ -512,7 +512,7 @@ if ((s = expand_getkeyed(US"hosts", rdata)) && *s)
       {
       addr->message = string_sprintf("bad lookup type \"%s\" yielded by "
         "command", ss);
-      log_write(0, LOG_PANIC, "%s router: %s", rblock->name, addr->message);
+      log_write(0, LOG_PANIC, "%s router: %s", rblock->drinst.name, addr->message);
       return DEFER;
       }
     }
@@ -534,5 +534,30 @@ addr->prop = addr_prop;
 return rf_queue_add(addr, addr_local, addr_remote, rblock, pw) ? OK : DEFER;
 }
 
-#endif   /*!MACRO_PREDEF*/
+
+
+# ifdef DYNLOOKUP
+#  define queryprogram_router_info _router_info
+# endif
+
+router_info queryprogram_router_info =
+{
+.drinfo = {
+  .driver_name =      US"queryprogram",
+  .options =          queryprogram_router_options,
+  .options_count =    &queryprogram_router_options_count,
+  .options_block =    &queryprogram_router_option_defaults,
+  .options_len =      sizeof(queryprogram_router_options_block),
+  .init =             queryprogram_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =	      ROUTER_MAGIC,
+# endif
+  },
+.code =               queryprogram_router_entry,
+.tidyup =             NULL,     /* no tidyup entry */
+.ri_flags =           0
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*ROUTER_QUERYPROGRAM*/
 /* End of routers/queryprogram.c */

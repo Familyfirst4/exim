@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This header file contains the definitions of the structures used in the
 various hints databases are also kept in this file, which is used by the
@@ -20,6 +21,7 @@ that relates to it. */
 typedef struct {
   void *	dbptr;
   int		lockfd;
+  BOOL		readonly;
 } open_db;
 
 
@@ -162,7 +164,7 @@ typedef struct {
   unsigned short cleartext_auths;
   unsigned short crypted_auths;
 
-# ifdef EXPERIMENTAL_ESMTP_LIMITS
+# ifndef DISABLE_ESMTP_LIMITS
   unsigned int limit_mail;
   unsigned int limit_rcpt;
   unsigned int limit_rcptdom;

@@ -1,5 +1,10 @@
 #! PERL_COMMAND
 
+# Copyright (c) The Exim Maintainers 2020 - 2023
+# Copyright (c) 2007-2017 University of Cambridge.
+# See the file NOTICE for conditions of use and distribution.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 use warnings;
 use strict;
 BEGIN { pop @INC if $INC[-1] eq '.' };
@@ -7,10 +12,6 @@ BEGIN { pop @INC if $INC[-1] eq '.' };
 use Pod::Usage;
 use Getopt::Long qw(:config no_ignore_case);
 use File::Basename;
-
-# Copyright (c) 2007-2017 University of Cambridge.
-# Copyright (c) The Exim Maintainers 2020 - 2021
-# See the file NOTICE for conditions of use and distribution.
 
 # Except when they appear in comments, the following placeholders in this
 # source are replaced when it is turned into a runnable script:
@@ -87,7 +88,7 @@ sub do_line
   if (!/^\d{4}-/o) { $_ =~ s/^.*? exim\b.*?: //o; }
 
   return unless
-    my($date,$id) = /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)? (?:[+-]\d{4} )?)(?:\[\d+\] )?(\w{6}\-\w{6}\-\w{2})?/o;
+    my($date,$id) = /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)? (?:[+-]\d{4} )?)(?:\[\d+\] )?(\w{6}\-\w{6}\-\w{2}|\w{6}-\w{11}-\w{4})?/o;
 
   # Handle the case when the log line belongs to a specific message. We save
   # lines for specific messages until the message is complete. Then either print
@@ -128,7 +129,7 @@ sub do_line
     if (index($_, 'Completed') != -1 ||
 	index($_, 'SMTP data timeout') != -1 ||
 	  (index($_, 'rejected') != -1 &&
-	    /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)? (?:[+-]\d{4} )?)(?:\[\d+\] )?\w{6}\-\w{6}\-\w{2} rejected/o))
+	    /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)? (?:[+-]\d{4} )?)(?:\[\d+\] )?(?:\w{6}\-\w{6}\-\w{2}|\w{6}-\w{11}-\w{4}) rejected/o))
       {
       if ($queue_time != -1 &&
 	  $saved{$id} =~ /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d ([+-]\d{4} )?)/o)
@@ -378,3 +379,5 @@ This  manual  page  was stitched together from spec.txt by Andreas Metzler L<ame
 and updated by Heiko Schlittermann L<hs@schlittermann.de>.
 
 =cut
+
+# vim:ft=perl:

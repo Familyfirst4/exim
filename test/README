@@ -132,6 +132,9 @@ In order to run this test suite, the following requirements must be met:
      assumes the simpler I/O model.
      Exim must *not* be built with HEADERS_CHARSET set to UTF-8.
 
+(11) If building any dynamically-loaded lookups, LOOKUP_MODULE_DIR should
+     be set to .../exim/test/eximdir.
+
 
 
 OPTIONAL EXTRAS
@@ -292,14 +295,23 @@ There are some options for the ./runtest script itself:
             testing that the test suite correctly skips tests that require
             a running IPv6 interface.
 
+  -PORTBASE <n>  Use ports starting at the given number for tests.
+
+  -SLOW     For very slow hosts that appear to have Heisenbugs, delay before
+            comparing output files from a testcase
+
+  -TEST <n> Run the specified testcase. May be given multiple times
+
+  -TLS <client>  For cross-library testing. Specify 'openssl" or 'gnutls'
+            as the client; the other is used as the server (assumes that
+	    both have been built: set up Local/Makefile for OpenSSL and
+	    "make exim_openssl", then for GnuTLS and "make exim_gnutls")
+
   -UPDATE   If this option is set, any detected changes in test output are
             automatically accepted and used to update the stored copies of the
             output. It is a dangerous option, but it useful for the test suite
             maintainer after making a change to the code that affects a lot of
             tests (for example, the wording of a message).
-
-  -SLOW     For very slow hosts that appear to have Heisenbugs, delay before
-            comparing output files from a testcase
 
 The options for ./runtest must be given first (but after the name of the
 binary, if present). Any further options, that is, items on the command line
@@ -566,7 +578,9 @@ here:
   V4NET          is replaced by an IPv4 network number for testing
   V6NET          is replaced by an IPv6 network number for testing
 
-PORT_D is currently hard-wired to 1225, PORT_N to 1223, and PORT_S to 1224.
+PORT_D is defaults to 1225, PORT_N to 1223, and PORT_S to 1224.
+Also PORT_D2,D3,D4 to 1226,7,8.
+These can all be changed by a command-line option.
 V4NET is hardwired to 224 and V6NET to ff00. These networks are used for DNS
 testing purposes, and for testing Exim with -bh. The only requirement is that
 they are networks that can never be used for an IP address of a real host. I've
@@ -676,7 +690,12 @@ script. For example:
   # -bS Use of HELO/RSET
 
 A line consisting just of digits is interpreted as the expected return code
-for the command that follows. The default expectation when no such line exists
+for the command that follows.
+
+A line consisting of a tilde (~) followed by digits indicates a non-expected
+return code for the command that follows.
+
+The default expectation when neither such line exists
 is a zero return code. For example, here is a complete test script, containing
 just one command:
 
@@ -695,6 +714,17 @@ standard substitutions applied to them. Thus, HOSTNAME in the example above will
 be replaced by the local host's name. Long commands can be continued over
 several lines by using \ as a continuation character. This does *not* apply to
 data lines.
+
+A line with a leading number followed by a space and then an uppercase
+word, equals character, value sets an expected return code as above
+plus an environment variable.  Example:
+
+  255 TZ=GB
+  exim_msgdate -l -u -z -localhost_number=20 000000 1PANS3 ZZZZZZ
+  ****
+
+
+
 
 Here follows a list of supported commands. They can be divided into two groups:
 
@@ -818,6 +848,14 @@ delivered when the script runs are not compared with saved versions.
 If this command is encountered anywhere in the script, message log files that
 are still in existence at the end of the run (for messages that were not
 delivered) are not compared with saved versions.
+
+
+  no_munge
+
+If this command is encountered anywhere in the script, the output is not
+munged before it is compared with a saved version.
+This option allows meaningful tests of the exim_msgdate utility;
+without it all date comparison checks would succeed.
 
 
   no_stderr_check
@@ -1053,6 +1091,7 @@ Lines in client scripts are of several kinds:
 (1) "??? ": If a line begins with three question marks and a space, the rest of the
     line defines the start of expected output from the server. If what is
     received does not match, the client bombs out with an error message.
+    Escape sequences described below in (7) are usable in the expected text.
 
 (2) "???*": If a line begins with three question marks and an asterisk, the server
     is expected to close the connection.
@@ -1126,7 +1165,7 @@ are of the following kinds:
     before proceeding.
 
 (3) A line containing "*data" and a number specifies that the client is
-    expected to send that many byte; the server discards them
+    expected to send that many bytes; the server discards them
 
 (4) A line containing "*eof" specifies that the client is expected to close
     the connection at this point.
@@ -1179,7 +1218,7 @@ whose content is fixed, and those whose content needs to be varied according to
 the current environment. The former are kept in the directory aux-fixed. The
 latter are distributed in the directory aux-var-src, and copied with the
 standard substitutions into the directory aux-var at the start of each test
-run.
+run (with TESTNUM from the numeric prefix of the filename is there is one).
 
 Most of the auxiliary files have names that start with a test number,
 indicating that they are specific to that one test. A few fixed files (for

@@ -10,9 +10,12 @@ primary_hostname = myhost.test.ex
 
 acl_smtp_rcpt = accept
 
-tls_advertise_hosts = *
-tls_certificate = DIR/aux-fixed/cert1
-tls_dhparam = ${if eq {SERVER}{server}{DATA}fail}
+tls_advertise_hosts =	*
+tls_certificate =	DIR/aux-fixed/cert1
+
+.ifdef DATA
+tls_eccurve =		DATA
+.endif
 
 
 # ----- Routers -----
@@ -20,35 +23,28 @@ tls_dhparam = ${if eq {SERVER}{server}{DATA}fail}
 begin routers
 
 client:
-  driver = accept
-  condition = ${if eq {SERVER}{server}{no}{yes}}
+  driver =	accept
+  condition =	${if eq {SERVER}{server}{no}{yes}}
   retry_use_local_part
-  transport = send_to_server
+  transport =	send_to_server
+  errors_to =	""
 
 server:
-  driver = accept
-  retry_use_local_part
-  transport = local_delivery
-
+  driver =	redirect
+  data =	:blackhole:
 
 # ----- Transports -----
 
 begin transports
 
-local_delivery:
-  driver = appendfile
-  file = DIR/test-mail/$local_part
-  create_file = DIR/test-mail
-  headers_add = TLS: cipher=$tls_cipher peerdn=$tls_peerdn
-  user = CALLER
-
 send_to_server:
-  driver = smtp
+  driver =	smtp
   allow_localhost
-  hosts = 127.0.0.1
-  port = PORT_D
-  hosts_try_fastopen =	:
+  hosts =	127.0.0.1
+  port =	PORT_D
+  hosts_try_fastopen =		:
   tls_verify_certificates =	DIR/aux-fixed/cert1
   tls_verify_cert_hostnames =	:
+  hosts_require_tls =		*
 
 # End

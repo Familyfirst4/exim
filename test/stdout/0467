@@ -18,7 +18,7 @@ x@srv03.test.ex
   host ten-4.test.ex [V4NET.0.0.4] MX=0 port=88
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -32,10 +32,10 @@ DATA
 354 OK
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaZ-0005vi-00
+	id 10HmaZ-000000005vi-0000
 	for x@srv27.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaZ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaZ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 

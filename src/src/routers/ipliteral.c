@@ -2,12 +2,15 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
+
+#ifdef ROUTER_IPLITERAL		/* Remainder of file */
 #include "rf_functions.h"
 #include "ipliteral.h"
 
@@ -34,7 +37,7 @@ ipliteral_router_options_block ipliteral_router_option_defaults = { 0 };
 #ifdef MACRO_PREDEF
 
 /* Dummy entries */
-void ipliteral_router_init(router_instance *rblock) {}
+void ipliteral_router_init(driver_instance *rblock) {}
 int ipliteral_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -51,7 +54,7 @@ int ipliteral_router_entry(router_instance *rblock, address_item *addr,
 consistency checks to be done, or anything else that needs to be set up. */
 
 void
-ipliteral_router_init(router_instance *rblock)
+ipliteral_router_init(driver_instance * rblock)
 {
 /*
 ipliteral_router_options_block *ob =
@@ -109,14 +112,14 @@ ipliteral_router_entry(
 ipliteral_router_options_block *ob =
   (ipliteral_router_options_block *)(rblock->options_block);
 */
-host_item *h;
-const uschar *domain = addr->domain;
-const uschar *ip;
+host_item * h;
+const uschar * domain = addr->domain;
+const uschar * ip;
 int len = Ustrlen(domain);
 int rc, ipv;
 
 DEBUG(D_route) debug_printf("%s router called for %s: domain = %s\n",
-  rblock->name, addr->address, addr->domain);
+  rblock->drinst.name, addr->address, addr->domain);
 
 /* Check that the domain is an IP address enclosed in square brackets. Remember
 to allow for the "official" form of IPv6 addresses. If not, the router
@@ -188,8 +191,8 @@ just verifying, there need not be a transport, in which case it doesn't matter
 which queue we put the address on. This is all now handled by the route_queue()
 function. */
 
-if (!rf_get_transport(rblock->transport_name, &(rblock->transport),
-      addr, rblock->name, NULL))
+if (!rf_get_transport(rblock->transport_name, &rblock->transport,
+      addr, rblock->drinst.name, NULL))
   return DEFER;
 
 addr->transport = rblock->transport;
@@ -198,5 +201,30 @@ return rf_queue_add(addr, addr_local, addr_remote, rblock, pw)?
   OK : DEFER;
 }
 
-#endif   /*!MACRO_PREDEF*/
+
+
+# ifdef DYNLOOKUP
+#  define ipliteral_router_info _router_info
+# endif
+
+router_info ipliteral_router_info =
+{
+.drinfo = {
+  .driver_name =	US"ipliteral",
+  .options =		ipliteral_router_options,
+  .options_count =	&ipliteral_router_options_count,
+  .options_block =	&ipliteral_router_option_defaults,
+  .options_len =	sizeof(ipliteral_router_options_block),
+  .init =		ipliteral_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		ROUTER_MAGIC,
+# endif
+  },
+.code =			ipliteral_router_entry,
+.tidyup =		NULL,     /* no tidyup entry */
+.ri_flags =		ri_yestransport
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*ROUTER_IPLITERAL*/
 /* End of routers/ipliteral.c */

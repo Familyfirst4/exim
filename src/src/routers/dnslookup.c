@@ -2,11 +2,14 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
+
+#ifdef ROUTER_DNSLOOKUP		/* Remainder of file */
 #include "rf_functions.h"
 #include "dnslookup.h"
 
@@ -42,7 +45,7 @@ int dnslookup_router_options_count =
 
 /* Dummy entries */
 dnslookup_router_options_block dnslookup_router_option_defaults = {0};
-void dnslookup_router_init(router_instance *rblock) {}
+void dnslookup_router_init(driver_instance *rblock) {}
 int dnslookup_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -53,21 +56,12 @@ int dnslookup_router_entry(router_instance *rblock, address_item *addr,
 
 
 
-/* Default private options block for the dnslookup router. */
+/* Default private options block for the dnslookup router.
+All non-mentioned are NULL/0/FALSE. */
 
 dnslookup_router_options_block dnslookup_router_option_defaults = {
-  .check_secondary_mx =	FALSE,
   .qualify_single =	TRUE,
-  .search_parents =	FALSE,
   .rewrite_headers =	TRUE,
-  .widen_domains =	NULL,
-  .mx_domains =		NULL,
-  .mx_fail_domains =	NULL,
-  .srv_fail_domains =	NULL,
-  .check_srv =		NULL,
-  .fail_defer_domains =	NULL,
-  .ipv4_only =		NULL,
-  .ipv4_prefer =	NULL,
 };
 
 
@@ -80,7 +74,7 @@ dnslookup_router_options_block dnslookup_router_option_defaults = {
 consistency checks to be done, or anything else that needs to be set up. */
 
 void
-dnslookup_router_init(router_instance *rblock)
+dnslookup_router_init(driver_instance *rblock)
 {
 /*
 dnslookup_router_options_block *ob =
@@ -150,33 +144,31 @@ host_item h;
 int rc;
 int widen_sep = 0;
 int whichrrs = HOST_FIND_BY_MX | HOST_FIND_BY_A | HOST_FIND_BY_AAAA;
-dnslookup_router_options_block *ob =
-  (dnslookup_router_options_block *)(rblock->options_block);
-uschar *srv_service = NULL;
-uschar *widen = NULL;
-const uschar *pre_widen = addr->domain;
-const uschar *post_widen = NULL;
-const uschar *fully_qualified_name;
-const uschar *listptr;
+dnslookup_router_options_block * ob =
+  (dnslookup_router_options_block *)(rblock->drinst.options_block);
+const uschar * srv_service = NULL;
+uschar * widen = NULL;
+const uschar * pre_widen = addr->domain, * post_widen = NULL;
+const uschar * fully_qualified_name, * listptr;
 uschar widen_buffer[256];
 
 DEBUG(D_route)
   debug_printf("%s router called for %s\n  domain = %s\n",
-    rblock->name, addr->address, addr->domain);
+    rblock->drinst.name, addr->address, addr->domain);
 
 /* If an SRV check is required, expand the service name */
 
+GET_OPTION("check_srv");
 if (ob->check_srv)
-  {
   if (  !(srv_service = expand_string(ob->check_srv))
      && !f.expand_string_forcedfail)
     {
     addr->message = string_sprintf("%s router: failed to expand \"%s\": %s",
-      rblock->name, ob->check_srv, expand_string_message);
+      rblock->drinst.name, ob->check_srv, expand_string_message);
     return DEFER;
     }
-  else whichrrs |= HOST_FIND_BY_SRV;
-  }
+  else
+    whichrrs |= HOST_FIND_BY_SRV;
 
 /* Set up the first of any widening domains. The code further down copes with
 either pre- or post-widening, but at present there is no way to turn on
@@ -237,27 +229,27 @@ for (;;)
     /* not expanded so should never be tainted */
     widen = string_nextinlist(&listptr, &widen_sep, widen_buffer,
       sizeof(widen_buffer));
-    DEBUG(D_route) debug_printf("%s router widened %s to %s\n", rblock->name,
-      addr->domain, h.name);
+    DEBUG(D_route) debug_printf("%s router widened %s to %s\n",
+      rblock->drinst.name, addr->domain, h.name);
     }
   else if (post_widen)
     {
     h.name = post_widen;
     post_widen = NULL;
     DEBUG(D_route) debug_printf("%s router trying %s after widening failed\n",
-      rblock->name, h.name);
+      rblock->drinst.name, h.name);
     }
   else return DECLINE;
 
   /* Check if we must request only. or prefer, ipv4 */
 
   if (  ob->ipv4_only
-     && expand_check_condition(ob->ipv4_only, rblock->name, US"router"))
+     && expand_check_condition(ob->ipv4_only, rblock->drinst.name, US"router"))
     flags = flags & ~HOST_FIND_BY_AAAA | HOST_FIND_IPV4_ONLY;
   else if (f.search_find_defer)
     return DEFER;
   if (  ob->ipv4_prefer
-     && expand_check_condition(ob->ipv4_prefer, rblock->name, US"router"))
+     && expand_check_condition(ob->ipv4_prefer, rblock->drinst.name, US"router"))
     flags |= HOST_FIND_IPV4_FIRST;
   else if (f.search_find_defer)
     return DEFER;
@@ -286,10 +278,14 @@ for (;;)
     if (ob->search_parents) flags |= HOST_FIND_SEARCH_PARENTS;
     }
 
-  rc = host_find_bydns(&h, CUS rblock->ignore_target_hosts, flags,
-    srv_service, ob->srv_fail_domains, ob->mx_fail_domains,
-    &rblock->dnssec,
-    &fully_qualified_name, &removed);
+  DEBUG(D_route) debug_printf_indent("main lookup for domain\n");
+   {
+    expand_level++;
+    rc = host_find_bydns(&h, CUS rblock->ignore_target_hosts, flags,
+      srv_service, ob->srv_fail_domains, ob->mx_fail_domains,
+      &rblock->dnssec, &fully_qualified_name, &removed);
+    expand_level--;
+   }
 
   if (removed) setflag(addr, af_local_host_removed);
 
@@ -309,7 +305,7 @@ for (;;)
 
       case OK:
       DEBUG(D_route) debug_printf("%s router rejected %s: no MX record(s)\n",
-        rblock->name, fully_qualified_name);
+        rblock->drinst.name, fully_qualified_name);
       continue;
       }
 
@@ -326,7 +322,7 @@ for (;;)
     if (rblock->pass_on_timeout)
       {
       DEBUG(D_route) debug_printf("%s router timed out, and pass_on_timeout is set\n",
-        rblock->name);
+        rblock->drinst.name);
       return PASS;
       }
     addr->message = US"host lookup did not complete";
@@ -346,7 +342,7 @@ for (;;)
 
       case OK:
 	DEBUG(D_route) debug_printf("%s router: matched fail_defer_domains\n",
-	  rblock->name);
+	  rblock->drinst.name);
 	addr->message = US"missing MX, or all MXs point to missing A records,"
 	  " and defer requested";
 	return DEFER;
@@ -362,7 +358,7 @@ for (;;)
   As a common cause of this problem is MX records with IP addresses on the
   RHS, give a special message in this case. */
 
-  if (h.mx >= 0 && h.address == NULL)
+  if (h.mx >= 0 && !h.address)
     {
     setflag(addr, af_pass_message);   /* This is not a security risk */
     if (h.name[0] == 0)
@@ -462,16 +458,41 @@ addr->host_list[0] = h;
 /* Fill in the transport and queue the address for delivery. */
 
 if (!rf_get_transport(rblock->transport_name, &(rblock->transport),
-      addr, rblock->name, NULL))
+      addr, rblock->drinst.name, NULL))
   return DEFER;
 
 addr->transport = rblock->transport;
 
-return rf_queue_add(addr, addr_local, addr_remote, rblock, pw)?
-  OK : DEFER;
+return rf_queue_add(addr, addr_local, addr_remote, rblock, pw) ?  OK : DEFER;
 }
 
-#endif   /*!MACRO_PREDEF*/
+
+
+
+# ifdef DYNLOOKUP
+#  define dnslookup_router_info _router_info
+# endif
+
+router_info dnslookup_router_info =
+{
+.drinfo = {
+  .driver_name =	US"dnslookup",
+  .options =		dnslookup_router_options,
+  .options_count =	&dnslookup_router_options_count,
+  .options_block =	&dnslookup_router_option_defaults,
+  .options_len =	sizeof(dnslookup_router_options_block),
+  .init =		dnslookup_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		ROUTER_MAGIC,
+# endif
+  },
+.code =			dnslookup_router_entry,
+.tidyup =		NULL,     /* no tidyup entry */
+.ri_flags =		ri_yestransport
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*ROUTER_DNSLOOKUP*/
 /* End of routers/dnslookup.c */
 /* vi: aw ai sw=2
 */

@@ -6,21 +6,34 @@
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> a.b.c.d in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> a.b.c.d in helo_lookup_domains? no (end of list)
+>>>  list element: *
+>>>  host in limits_advertise_hosts? yes (matched "*")
 >>> host in dsn_advertise_hosts? no (option unset)
->>> host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in pipelining_advertise_hosts?
+>>>  list element: *
+>>>  host in pipelining_advertise_hosts? yes (matched "*")
+>>> host in chunking_advertise_hosts?
 >>> host in chunking_advertise_hosts? no (end of list)
 >>> using ACL "check_rcpt"
->>> processing "defer" (TESTSUITE/test-config 19)
+>>> processing ACL check_rcpt "defer" (TESTSUITE/test-config 19)
 >>> check !verify = recipient
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing x@mxt2.test.ex
 >>> calling r1 router
->>> mxt2.test.ex in "*"? yes (matched "*")
+>>>  check dnssec require list
+>>>   mxt2.test.ex in dnssec_require_domains? no (option unset)
+>>>  check dnssec request list
+>>>   mxt2.test.ex in dnssec_request_domains?
+>>>    list element: *
+>>>    mxt2.test.ex in dnssec_request_domains? yes (matched "*")
 >>> r1 router declined for x@mxt2.test.ex
 >>> no more routers
 >>> ----------- end verify ------------
 >>>   message: >$acl_verify_message< ++++
->>> defer: condition test succeeded in ACL "check_rcpt"
->>> end of ACL "check_rcpt": DEFER
+>>> defer: condition test succeeded in ACL check_rcpt
+>>> end of ACL check_rcpt: DEFER
 LOG: H=(a.b.c.d) [1.2.3.4] F=<> temporarily rejected RCPT <x@mxt2.test.ex>: all relevant MX records point to non-existent hosts

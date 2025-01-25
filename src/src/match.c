@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for matching strings */
 
@@ -34,6 +35,16 @@ typedef struct check_address_block {
 } check_address_block;
 
 
+
+static BOOL
+is_tainted_metadata(const uschar * s)
+{
+/* Not enforcing for now, only logging; will enforce in a future release */
+if (is_tainted(s))
+  log_write(0, LOG_MAIN|LOG_PANIC,
+	    "attempt to use tainted list metadata %s", s);
+return FALSE;
+}
 
 /*************************************************
 *           Generalized string match             *
@@ -95,7 +106,8 @@ check_string(void * arg, const uschar * pattern, const uschar ** valueptr,
   uschar ** error)
 {
 const check_string_block * cb = arg;
-int search_type, partial, affixlen, starflags;
+int partial, affixlen, starflags;
+const lookup_info * li;
 int expand_setup = cb->expand_setup;
 const uschar * affix, * opts;
 uschar *s;
@@ -168,6 +180,9 @@ just fall through - the match will fail. */
 
 if (cb->flags & MCS_AT_SPECIAL && pattern[0] == '@')
   {
+  if (is_tainted_metadata(pattern))
+    return DEFER;
+
   if (pattern[1] == 0)
     {
     pattern = primary_hostname;
@@ -193,27 +208,23 @@ if (cb->flags & MCS_AT_SPECIAL && pattern[0] == '@')
     {
     int rc;
     host_item h;
-    BOOL prim = FALSE;
-    BOOL secy = FALSE;
-    BOOL removed = FALSE;
+    BOOL prim = FALSE, secy = FALSE, removed = FALSE;
     const uschar *ss = pattern + 4;
     const uschar *ignore_target_hosts = NULL;
 
-    if (strncmpic(ss, US"any", 3) == 0) ss += 3;
+    if (strncmpic(ss, US"any", 3) == 0)
+      ss += 3;
     else if (strncmpic(ss, US"primary", 7) == 0)
-      {
-      ss += 7;
-      prim = TRUE;
-      }
+      { ss += 7; prim = TRUE; }
     else if (strncmpic(ss, US"secondary", 9) == 0)
-      {
-      ss += 9;
-      secy = TRUE;
-      }
-    else goto NOT_AT_SPECIAL;
+      { ss += 9; secy = TRUE; }
+    else
+      goto NOT_AT_SPECIAL;
 
-    if (strncmpic(ss, US"/ignore=", 8) == 0) ignore_target_hosts = ss + 8;
-    else if (*ss) goto NOT_AT_SPECIAL;
+    if (strncmpic(ss, US"/ignore=", 8) == 0)
+      ignore_target_hosts = ss + 8;
+    else if (*ss)
+      goto NOT_AT_SPECIAL;
 
     h.next = NULL;
     h.name = s;
@@ -271,11 +282,11 @@ if ((semicolon = Ustrchr(pattern, ';')) == NULL)
 the part of the string preceding the semicolon. */
 
 *semicolon = 0;
-search_type = search_findtype_partial(pattern, &partial, &affix, &affixlen,
+li = search_findtype_partial(pattern, &partial, &affix, &affixlen,
   &starflags, &opts);
 *semicolon = ';';
-if (search_type < 0) log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s",
-  search_error_message);
+if (!li)
+  log_write_die(0, LOG_MAIN, "%s", search_error_message);
 
 /* Partial matching is not appropriate for certain lookups (e.g. when looking
 up user@domain for sender rejection). There's a flag to disable it. */
@@ -284,14 +295,14 @@ if (!(cb->flags & MCS_PARTIAL)) partial = -1;
 
 /* Set the parameters for the three different kinds of lookup. */
 
-keyquery = search_args(search_type, s, semicolon+1, &filename, opts);
+keyquery = search_args(li, s, semicolon+1, &filename, opts);
 
 /* Now do the actual lookup; throw away the data returned unless it was asked
 for; partial matching is all handled inside search_find(). Note that there is
 no search_close() because of the caching arrangements. */
 
-if (!(handle = search_open(filename, search_type, 0, NULL, NULL)))
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s", search_error_message);
+if (!(handle = search_open(filename, li, 0, NULL, NULL)))
+  log_write_die(0, LOG_MAIN, "%s", search_error_message);
 result = search_find(handle, filename, keyquery, partial, affix, affixlen,
   starflags, &expand_setup, opts);
 
@@ -372,6 +383,37 @@ return US"";  /* In practice, should never happen */
 
 
 
+/* Check for a change-of-separator specification on the head of a list.
+Handle interpretation of backslash-char, in the same way that expansion would.
+
+Argument:	listp	pointer to list-pointer, updated on return to
+			next char after the spec if there is one; else unchaged
+
+Return:		separator char, or zero for no spec
+*/
+
+uschar
+matchlist_parse_sep(const uschar ** listp)
+{
+const uschar * list = *listp;
+if (Uskip_whitespace(&list) == '<')
+  {
+  const uschar * s = list+1;
+  uschar c = *s == '\\' ? string_interpret_escape(&s) : *s;
+  if (ispunct(c) || iscntrl(c))
+    {
+    DEBUG(D_lists)
+      {
+      uschar s[2] = {0}; *s = c;
+      debug_printf_indent("list separator: '%W'\n", s);
+      }
+    *listp = s+1;	/* next char after the change-of-separator */
+    return c;
+    }
+  }
+return 0;
+}
+
 /*************************************************
 *       Scan list and run matching function      *
 *************************************************/
@@ -421,7 +463,7 @@ Returns:       OK    if matched a non-negated item
 */
 
 int
-match_check_list(const uschar **listptr, int sep, tree_node **anchorptr,
+match_check_list(const uschar * const * listptr, int sep, tree_node **anchorptr,
   unsigned int **cache_ptr, int (*func)(void *,const uschar *,const uschar **,uschar **),
   void *arg, int type, const uschar *name, const uschar **valueptr)
 {
@@ -429,25 +471,25 @@ int yield = OK;
 unsigned int * original_cache_bits = *cache_ptr;
 BOOL include_unknown = FALSE, ignore_unknown = FALSE,
       include_defer = FALSE, ignore_defer = FALSE;
-const uschar *list;
-uschar *sss;
-uschar *ot = NULL;
+const uschar * list;
+uschar * ot = NULL, * sss;
 BOOL textonly_re;
 
 /* Save time by not scanning for the option name when we don't need it. */
 
 HDEBUG(D_any)
   {
-  uschar * listname = readconf_find_option(listptr);
+  const uschar * listname = readconf_find_option(listptr);
   if (*listname) ot = string_sprintf("%s in %s?", name, listname);
   }
 
-/* If the list is empty, the answer is no. Skip the debugging output for
-an unnamed list. */
+/* If the list is empty, the answer is no. */
 
 if (!*listptr)
   {
-  HDEBUG(D_lists) if (ot) debug_printf_indent("%s no (option unset)\n", ot);
+  HDEBUG(D_lists)
+    if (ot) debug_printf_indent("%s no (option unset)\n", ot);
+    else    debug_printf_indent("%s not in empty list (option unset? cannot trace name)\n", name);
   return FAIL;
   }
 
@@ -456,14 +498,17 @@ if (!*listptr)
 if the type value is greater than or equal to than MCL_NOEXPAND, do not expand
 the list. */
 
+list = *listptr;
 if (type >= MCL_NOEXPAND)
   {
-  list = *listptr;
   type -= MCL_NOEXPAND;       /* Remove the "no expand" flag */
   textonly_re = TRUE;
   }
 else
   {
+  if (sep <= 0)
+    sep = matchlist_parse_sep(&list);
+
   /* If we are searching a domain list, and $domain is not set, set it to the
   subject that is being sought for the duration of the expansion. */
 
@@ -471,11 +516,11 @@ else
     {
     check_string_block *cb = (check_string_block *)arg;
     deliver_domain = string_copy(cb->subject);
-    list = expand_string_2(*listptr, &textonly_re);
+    list = expand_string_2(list, &textonly_re);
     deliver_domain = NULL;
     }
   else
-    list = expand_string_2(*listptr, &textonly_re);
+    list = expand_string_2(list, &textonly_re);
 
   if (!list)
     {
@@ -491,6 +536,9 @@ else
     }
   }
 
+/* If expansion had no effect on the list text, the list-test result can
+be cached */
+
 if (textonly_re) switch (type)
   {
   case MCL_STRING:
@@ -504,7 +552,7 @@ if (textonly_re) switch (type)
 #define LIST_LIMIT_PR 2048
 
 HDEBUG(D_any) if (!ot)
-  {
+  {	/* We failed to identify an option name, so give the list text */
   int n, m;
   gstring * g = string_fmt_append(NULL, "%s in \"%n%.*s%n\"",
     name, &n, LIST_LIMIT_PR, list, &m);
@@ -513,6 +561,11 @@ HDEBUG(D_any) if (!ot)
   gstring_release_unused(g);
   ot = string_from_gstring(g);
   }
+HDEBUG(D_lists)
+  {
+  debug_printf_indent("%s\n", ot);
+  expand_level++;
+  }
 
 /* Now scan the list and process each item in turn, until one of them matches,
 or we hit an error. */
@@ -520,6 +573,8 @@ or we hit an error. */
 while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
   {
   uschar * ss = sss;
+
+  HDEBUG(D_lists) debug_printf_indent("list element: %W\n", ss);
 
   /* Address lists may contain +caseful, to restore caseful matching of the
   local part. We have to know the layout of the control block, unfortunately.
@@ -530,10 +585,12 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
     {
     if (Ustrcmp(ss, "+caseful") == 0)
       {
-      check_address_block *cb = (check_address_block *)arg;
-      uschar *at = Ustrrchr(cb->origaddress, '@');
+      check_address_block * cb = (check_address_block *)arg;
+      uschar * at;
 
-      if (at)
+      if (is_tainted_metadata(ss)) goto BAD_TAINT;
+
+      if ((at = Ustrrchr(cb->origaddress, '@')))
         Ustrncpy(cb->address, cb->origaddress, at - cb->origaddress);
       cb->flags &= ~MCS_CASELESS;
       continue;
@@ -546,7 +603,8 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
     {
     if (Ustrcmp(ss, "+caseful") == 0)
       {
-      check_string_block *cb = (check_string_block *)arg;
+      check_string_block * cb = (check_string_block *)arg;
+      if (is_tainted_metadata(ss)) goto BAD_TAINT;
       Ustrcpy(US cb->subject, cb->origsubject);
       cb->flags &= ~MCS_CASELESS;
       continue;
@@ -559,6 +617,7 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
 
   else if (type == MCL_HOST && *ss == '+')
     {
+    if (is_tainted_metadata(ss)) goto BAD_TAINT;
     if (Ustrcmp(ss, "+include_unknown") == 0)
       {
       include_unknown = TRUE;
@@ -586,204 +645,29 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
     }
 
   /* Starting with ! specifies a negative item. It is theoretically possible
-  for a local part to start with !. In that case, a regex has to be used. */
+  for a local part to start with !. In that case, a regex has to be used.
+
+  XXX It would be good to disallow a tainted ! here, but the sequence
+  "! $tainted_var" is liable to be frequently used, and requiring a
+  named-list as a workaround would mean a lot of churn. Unfortunately,
+  some attacker can feed "!badthing" into a variable that some overworked
+  admin has used in a list...
+  Maybe we could intro another meta prefix char, which does not negate the
+  element match result (but still protects against a ! in $tainted_var) ?
+  Of course, this would still require churn in configs. */
 
   if (*ss == '!')
     {
     yield = FAIL;
-    while (isspace((*(++ss))));
+    while (isspace(*++ss)) ;
     }
   else
     yield = OK;
 
-  /* If the item does not begin with '/', it might be a + item for a named
-  list. Otherwise, it is just a single list entry that has to be matched.
-  We recognize '+' only when supplied with a tree of named lists. */
-
-  if (*ss != '/')
-    {
-    if (*ss == '+' && anchorptr)
-      {
-      int bits = 0;
-      int offset = 0;
-      int shift = 0;
-      unsigned int *use_cache_bits = original_cache_bits;
-      uschar *cached = US"";
-      namedlist_block *nb;
-      tree_node * t;
-
-      if (!(t = tree_search(*anchorptr, ss+1)))
-	{
-        log_write(0, LOG_MAIN|LOG_PANIC, "unknown named%s list \"%s\"",
-          type == MCL_DOMAIN ?    " domain" :
-          type == MCL_HOST ?      " host" :
-          type == MCL_ADDRESS ?   " address" :
-          type == MCL_LOCALPART ? " local part" : "",
-          ss);
-	return DEFER;
-	}
-      nb = t->data.ptr;
-
-      /* If the list number is negative, it means that this list is not
-      cacheable because it contains expansion items. */
-
-      if (nb->number < 0) use_cache_bits = NULL;
-
-      /* If we have got a cache pointer, get the bits. This is not an "else"
-      because the pointer may be NULL from the start if caching is not
-      required. */
-
-      if (use_cache_bits)
-        {
-        offset = (nb->number)/16;
-        shift = ((nb->number)%16)*2;
-        bits = use_cache_bits[offset] & (3 << shift);
-        }
-
-      /* Not previously tested or no cache - run the full test */
-
-      if (bits == 0)
-        {
-        switch (match_check_list(&(nb->string), 0, anchorptr, &use_cache_bits,
-                func, arg, type, name, valueptr))
-          {
-          case OK:   bits = 1; break;
-          case FAIL: bits = 3; break;
-          case DEFER: goto DEFER_RETURN;
-          }
-
-        /* If this list was uncacheable, or a sublist turned out to be
-        uncacheable, the value of use_cache_bits will now be NULL, even if it
-        wasn't before. Ensure that this is passed up to the next level.
-        Otherwise, remember the result of the search in the cache. */
-
-        if (!use_cache_bits)
-          *cache_ptr = NULL;
-        else
-          {
-          use_cache_bits[offset] |= bits << shift;
-
-          if (valueptr)
-            {
-            int old_pool = store_pool;
-            namedlist_cacheblock *p;
-
-            /* Cached data for hosts persists over more than one message,
-            so we use the permanent store pool */
-
-            store_pool = POOL_PERM;
-            p = store_get(sizeof(namedlist_cacheblock), GET_UNTAINTED);
-            p->key = string_copy(get_check_key(arg, type));
-
-
-            p->data = *valueptr ? string_copy(*valueptr) : NULL;
-            store_pool = old_pool;
-
-            p->next = nb->cache_data;
-            nb->cache_data = p;
-            if (*valueptr)
-              DEBUG(D_lists) debug_printf_indent("data from lookup saved for "
-                "cache for %s: key '%s' value '%s'\n", ss, p->key, *valueptr);
-            }
-          }
-        }
-
-       /* Previously cached; to find a lookup value, search a chain of values
-       and compare keys. Typically, there is only one such, but it is possible
-       for different keys to have matched the same named list. */
-
-      else
-        {
-        DEBUG(D_lists) debug_printf_indent("cached %s match for %s\n",
-          (bits & (-bits)) == bits ? "yes" : "no", ss);
-
-        cached = US" - cached";
-        if (valueptr)
-          {
-          const uschar *key = get_check_key(arg, type);
-
-          for (namedlist_cacheblock * p = nb->cache_data; p; p = p->next)
-            if (Ustrcmp(key, p->key) == 0)
-              {
-              *valueptr = p->data;
-              break;
-              }
-          DEBUG(D_lists) debug_printf_indent("cached lookup data = %s\n", *valueptr);
-          }
-        }
-
-      /* Result of test is indicated by value in bits. For each test, we
-      have 00 => untested, 01 => tested yes, 11 => tested no. */
-
-      if ((bits & (-bits)) == bits)    /* Only one of the two bits is set */
-        {
-        HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\"%s)\n", ot,
-          yield == OK ? "yes" : "no", sss, cached);
-        return yield;
-        }
-      }
-
-    /* Run the provided function to do the individual test. */
-
-    else
-      {
-      uschar * error = NULL;
-      switch ((func)(arg, ss, valueptr, &error))
-        {
-        case OK:
-	  HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\")\n", ot,
-	    (yield == OK)? "yes" : "no", sss);
-	  return yield;
-
-        case DEFER:
-	  if (!error)
-	    error = string_sprintf("DNS lookup of \"%s\" deferred", ss);
-	  if (ignore_defer)
-	    {
-	    HDEBUG(D_lists) debug_printf_indent("%s: item ignored by +ignore_defer\n",
-	      error);
-	    break;
-	    }
-	  if (include_defer)
-	    {
-	    log_write(0, LOG_MAIN, "%s: accepted by +include_defer", error);
-	    return OK;
-	    }
-	  if (!search_error_message) search_error_message = error;
-	  goto DEFER_RETURN;
-
-        /* The ERROR return occurs when checking hosts, when either a forward
-        or reverse lookup has failed. It can also occur in a match_ip list if a
-        non-IP address item is encountered. The error string gives details of
-        which it was. */
-
-        case ERROR:
-	  if (ignore_unknown)
-	    {
-	    HDEBUG(D_lists) debug_printf_indent("%s: item ignored by +ignore_unknown\n",
-	      error);
-	    }
-	  else
-	    {
-	    HDEBUG(D_lists) debug_printf_indent("%s %s (%s)\n", ot,
-	      include_unknown? "yes":"no", error);
-	    if (!include_unknown)
-	      {
-	      if (LOGGING(unknown_in_list))
-		log_write(0, LOG_MAIN, "list matching forced to fail: %s", error);
-	      return FAIL;
-	      }
-	    log_write(0, LOG_MAIN, "%s: accepted by +include_unknown", error);
-	    return OK;
-	    }
-        }
-      }
-    }
-
   /* If the item is a file name, we read the file and do a match attempt
   on each line in the file, including possibly more negation processing. */
 
-  else
+  if (*ss == '/')
     {
     int file_yield = yield;       /* In case empty file */
     uschar * filename = ss;
@@ -795,11 +679,12 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
 
     if (!f)
       {
-      uschar * listname = readconf_find_option(listptr);
-      if (listname[0] == 0)
+      const uschar * listname = readconf_find_option(listptr);
+      if (!*listname)
         listname = string_sprintf("\"%s\"", *listptr);
-      log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s",
+      log_write_die(0, LOG_MAIN, "%s",
         string_open_failed("%s when checking %s", sss, listname));
+      goto cppcheck_silencing;
       }
 
     /* Trailing comments are introduced by #, but in an address list or local
@@ -808,15 +693,14 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
 
     while (Ufgets(filebuffer, sizeof(filebuffer), f) != NULL)
       {
-      uschar *error;
-      uschar *sss = filebuffer;
+      uschar * error, * sss = filebuffer;
 
       while ((ss = Ustrchr(sss, '#')) != NULL)
         {
         if ((type != MCL_ADDRESS && type != MCL_LOCALPART) ||
               ss == filebuffer || isspace(ss[-1]))
           {
-          *ss = 0;
+          *ss = '\0';
           break;
           }
         sss = ss + 1;
@@ -824,71 +708,74 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
 
       ss = filebuffer + Ustrlen(filebuffer);		/* trailing space */
       while (ss > filebuffer && isspace(ss[-1])) ss--;
-      *ss = 0;
+      *ss = '\0';
 
       ss = filebuffer;
-      while (isspace(*ss)) ss++;			/* leading space */
-
-      if (!*ss) continue;				/* ignore empty */
+      if (!Uskip_whitespace(&ss))			/* leading space */
+	continue;					/* ignore empty */
 
       file_yield = yield;				/* positive yield */
       sss = ss;						/* for debugging */
 
       if (*ss == '!')					/* negation */
         {
-        file_yield = (file_yield == OK)? FAIL : OK;
-        while (isspace((*(++ss))));
+        file_yield = file_yield == OK ? FAIL : OK;
+        while (isspace(*++ss)) ;
         }
 
       switch ((func)(arg, ss, valueptr, &error))
         {
         case OK:
 	  (void)fclose(f);
-	  HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\" in %s)\n", ot,
-	    yield == OK ? "yes" : "no", sss, filename);
+	  HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\" in %s)\n",
+	    ot, yield == OK ? "yes" : "no", sss, filename);
 
 	  /* The "pattern" being matched came from the file; we use a stack-local.
 	  Copy it to allocated memory now we know it matched. */
 
 	  if (valueptr) *valueptr = string_copy(ss);
-	  return file_yield;
+	  yield = file_yield;
+	  goto YIELD_RETURN;
 
         case DEFER:
 	  if (!error)
 	    error = string_sprintf("DNS lookup of %s deferred", ss);
 	  if (ignore_defer)
 	    {
-	    HDEBUG(D_lists) debug_printf_indent("%s: item ignored by +ignore_defer\n",
-	      error);
+	    HDEBUG(D_lists)
+	      debug_printf_indent("%s: item ignored by +ignore_defer\n", error);
 	    break;
 	    }
 	  (void)fclose(f);
-	  if (include_defer)
-	    {
-	    log_write(0, LOG_MAIN, "%s: accepted by +include_defer", error);
-	    return OK;
-	    }
-	  goto DEFER_RETURN;
+	  if (!include_defer)
+	    goto DEFER_RETURN;
+	  log_write(0, LOG_MAIN, "%s: accepted by +include_defer", error);
+	  goto OK_RETURN;
 
-        case ERROR:		/* host name lookup failed - this can only */
-	  if (ignore_unknown)	/* be for an incoming host (not outgoing) */
+        /* The ERROR return occurs when checking hosts, when either a forward
+        or reverse lookup has failed. It can also occur in a match_ip list if a
+        non-IP address item is encountered. The error string gives details of
+        which it was. */
+
+        case ERROR:
+	  if (ignore_unknown)
 	    {
-	    HDEBUG(D_lists) debug_printf_indent("%s: item ignored by +ignore_unknown\n",
-	      error);
+	    HDEBUG(D_lists) debug_printf_indent(
+	      "%s: item ignored by +ignore_unknown\n", error);
 	    }
 	  else
-	   {
+	    {
 	    HDEBUG(D_lists) debug_printf_indent("%s %s (%s)\n", ot,
-	      include_unknown? "yes":"no", error);
+	      include_unknown ? "yes":"no", error);
 	    (void)fclose(f);
 	    if (!include_unknown)
 	      {
 	      if (LOGGING(unknown_in_list))
 		log_write(0, LOG_MAIN, "list matching forced to fail: %s", error);
-	      return FAIL;
+	      goto FAIL_RETURN;
 	      }
 	    log_write(0, LOG_MAIN, "%s: accepted by +include_unknown", error);
-	    return OK;
+	    goto OK_RETURN;
 	    }
         }
       }
@@ -898,20 +785,233 @@ while ((sss = string_nextinlist(&list, &sep, NULL, 0)))
 
     yield = file_yield;
     (void)fclose(f);
+
+    cppcheck_silencing: ;
     }
+
+  /* If the item does not begin with '/', it might be a + item for a named
+  list. Otherwise, it is just a single list entry that has to be matched.
+  We recognize '+' only when supplied with a tree of named lists. */
+
+  else if (*ss == '+' && anchorptr)
+    {
+    int bits = 0, offset = 0, shift = 0;
+    unsigned int * use_cache_bits = original_cache_bits;
+    uschar * cached = US"";
+    namedlist_block * nb;
+    tree_node * t;
+
+    HDEBUG(D_lists)
+      { debug_printf_indent(" start sublist %s\n", ss+1); expand_level += 2; }
+
+    if (is_tainted_metadata(ss)) goto BAD_TAINT;
+    if (!(t = tree_search(*anchorptr, ss+1)))
+      {
+      log_write(0, LOG_MAIN|LOG_PANIC, "unknown named%s list \"%s\"",
+	type == MCL_DOMAIN ?    " domain" :
+	type == MCL_HOST ?      " host" :
+	type == MCL_ADDRESS ?   " address" :
+	type == MCL_LOCALPART ? " local part" : "",
+	ss);
+      goto DEFER_RETURN;
+      }
+    nb = t->data.ptr;
+
+    /* If the list number is negative, it means that this list is not
+    cacheable because it contains expansion items. */
+
+    if (nb->number < 0) use_cache_bits = NULL;
+
+    /* If we have got a cache pointer, get the bits. This is not an "else"
+    because the pointer may be NULL from the start if caching is not
+    required. */
+
+    if (use_cache_bits)
+      {
+      offset = (nb->number)/16;
+      shift = ((nb->number)%16)*2;
+      bits = use_cache_bits[offset] & (3 << shift);
+      }
+
+    /* Not previously tested or no cache - run the full test */
+
+    if (bits == 0)
+      {
+      int res = match_check_list(&(nb->string), 0, anchorptr, &use_cache_bits,
+	      func, arg, type, name, valueptr);
+      HDEBUG(D_lists)
+	{ expand_level -= 2; debug_printf_indent(" end sublist %s\n", ss+1); }
+
+      switch (res)
+	{
+	case OK:   bits = 1; break;
+	case FAIL: bits = 3; break;
+	case DEFER: goto DEFER_RETURN;
+	}
+
+      /* If this list was uncacheable, or a sublist turned out to be
+      uncacheable, the value of use_cache_bits will now be NULL, even if it
+      wasn't before. Ensure that this is passed up to the next level.
+      Otherwise, remember the result of the search in the cache. */
+
+      if (!use_cache_bits)
+	*cache_ptr = NULL;
+      else
+	{
+	use_cache_bits[offset] |= bits << shift;
+
+	if (valueptr)
+	  {
+	  int old_pool = store_pool;
+	  namedlist_cacheblock *p;
+
+	  /* Cached data for hosts persists over more than one message,
+	  so we use the permanent store pool */
+
+	  store_pool = POOL_PERM;
+	  p = store_get(sizeof(namedlist_cacheblock), GET_UNTAINTED);
+	  p->key = string_copy(get_check_key(arg, type));
+
+
+	  p->data = *valueptr ? string_copy(*valueptr) : NULL;
+	  store_pool = old_pool;
+
+	  p->next = nb->cache_data;
+	  nb->cache_data = p;
+	  if (*valueptr)
+	    HDEBUG(D_lists) debug_printf_indent("data from lookup saved for "
+	      "cache for %s: key '%s' value '%s'\n", ss, p->key, *valueptr);
+	  }
+	}
+      }
+
+     /* Previously cached; to find a lookup value, search a chain of values
+     and compare keys. Typically, there is only one such, but it is possible
+     for different keys to have matched the same named list. */
+
+    else
+      {
+      HDEBUG(D_lists)
+	{
+	expand_level -= 2;
+	debug_printf_indent("cached %s match for %s\n",
+	  (bits & (-bits)) == bits ? "yes" : "no", ss);
+	}
+
+      cached = US" - cached";
+      if (valueptr)
+	{
+	const uschar *key = get_check_key(arg, type);
+
+	for (namedlist_cacheblock * p = nb->cache_data; p; p = p->next)
+	  if (Ustrcmp(key, p->key) == 0)
+	    {
+	    *valueptr = p->data;
+	    break;
+	    }
+	HDEBUG(D_lists) debug_printf_indent("cached lookup data = %s\n", *valueptr);
+	}
+      }
+
+    /* Result of test is indicated by value in bits. For each test, we
+    have 00 => untested, 01 => tested yes, 11 => tested no. */
+
+    if ((bits & (-bits)) == bits)    /* Only one of the two bits is set */
+      {
+      HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\"%s)\n", ot,
+	yield == OK ? "yes" : "no", sss, cached);
+      goto YIELD_RETURN;
+      }
+    }
+
+  /* Run the provided function to do the individual test. */
+
+  else
+    {
+    uschar * error = NULL;
+    switch ((func)(arg, ss, valueptr, &error))
+      {
+      case OK:
+	HDEBUG(D_lists) debug_printf_indent("%s %s (matched \"%s\")\n", ot,
+	  yield == OK ? "yes" : "no", sss);
+	goto YIELD_RETURN;
+
+      case DEFER:
+	if (!error)
+	  error = string_sprintf("DNS lookup of \"%s\" deferred", ss);
+	if (ignore_defer)
+	  {
+	  HDEBUG(D_lists)
+	    debug_printf_indent("%s: item ignored by +ignore_defer\n", error);
+	  break;
+	  }
+	if (include_defer)
+	  {
+	  log_write(0, LOG_MAIN, "%s: accepted by +include_defer", error);
+	  return OK;
+	  }
+	if (!search_error_message) search_error_message = error;
+	goto DEFER_RETURN;
+
+      /* The ERROR return occurs when checking hosts, when either a forward
+      or reverse lookup has failed. It can also occur in a match_ip list if a
+      non-IP address item is encountered. The error string gives details of
+      which it was. */
+
+      case ERROR:
+	if (ignore_unknown)
+	  {
+	  HDEBUG(D_lists) debug_printf_indent(
+	    "%s: item ignored by +ignore_unknown\n", error);
+	  }
+	else
+	  {
+	  HDEBUG(D_lists) debug_printf_indent("%s %s (%s)\n", ot,
+	    include_unknown? "yes":"no", error);
+	  if (!include_unknown)
+	    {
+	    if (LOGGING(unknown_in_list))
+	      log_write(0, LOG_MAIN, "list matching forced to fail: %s", error);
+	    return FAIL;
+	    }
+	  log_write(0, LOG_MAIN, "%s: accepted by +include_unknown", error);
+	  return OK;
+	  }
+      }
+    }
+
   }    /* Loop for the next item on the top-level list */
 
 /* End of list reached: if the last item was negated yield OK, else FAIL. */
 
-HDEBUG(D_lists)
+HDEBUG(D_any)
+  {
+  HDEBUG(D_lists) expand_level--;
   debug_printf_indent("%s %s (end of list)\n", ot, yield == OK ? "no":"yes");
+  }
 return yield == OK ? FAIL : OK;
-
+ 
 /* Something deferred */
 
+BAD_TAINT:
 DEFER_RETURN:
-HDEBUG(D_lists) debug_printf("%s list match deferred for %s\n", ot, sss);
-return DEFER;
+  HDEBUG(D_any)
+    {
+    HDEBUG(D_lists) expand_level--;
+    debug_printf_indent("%s list match deferred for %s\n", ot, sss);
+    }
+  return DEFER;
+
+FAIL_RETURN:
+  yield = FAIL;
+  goto YIELD_RETURN;
+
+OK_RETURN:
+  yield = OK;
+
+YIELD_RETURN:
+  HDEBUG(D_lists) expand_level--;
+  return yield;
 }
 
 
@@ -931,8 +1031,9 @@ recursion.
 
 Arguments:
   s              string to search for
-  listptr        ptr to ptr to colon separated list of patterns, or NULL
+  listptr        ptr to ptr to (default colon sep) list of patterns, or NULL
   sep            a separator value for the list (see string_nextinlist())
+		 or zero for auto
   anchorptr      ptr to tree for named items, or NULL if no named items
   cache_bits     ptr to cache_bits for ditto, or NULL if not caching
   type           MCL_DOMAIN when matching a domain list
@@ -955,7 +1056,7 @@ Returns:         OK    if matched a non-negated item
 */
 
 int
-match_isinlist(const uschar *s, const uschar **listptr, int sep,
+match_isinlist(const uschar * s, const uschar * const * listptr, int sep,
    tree_node **anchorptr,
   unsigned int *cache_bits, int type, BOOL caseless, const uschar **valueptr)
 {
@@ -1097,8 +1198,7 @@ if (pattern[0] == '@' && pattern[1] == '@')
 
     ss = Ustrrchr(list, ':');
     if (!ss) ss = list; else ss++;
-    Uskip_whitespace(&ss);
-    if (*ss == '>')
+    if (Uskip_whitespace(&ss) == '>')
       {
       *ss++ = 0;
       Uskip_whitespace(&ss);
@@ -1116,7 +1216,7 @@ if (pattern[0] == '@' && pattern[1] == '@')
       if (*ss == '!')
         {
         local_yield = FAIL;
-        while (isspace((*(++ss))));
+        while (isspace(*++ss)) ;
         }
       else local_yield = OK;
 
@@ -1138,7 +1238,7 @@ if (pattern[0] == '@' && pattern[1] == '@')
   /* End of chain loop; panic if too many times */
 
   if (watchdog <= 0)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "Loop detected in lookup of "
+    log_write_die(0, LOG_MAIN, "Loop detected in lookup of "
       "local part of %s in %s", subject, pattern);
 
   /* Otherwise the local part check has failed, so the whole match
@@ -1162,12 +1262,12 @@ if ((pdomain = Ustrrchr(pattern, '@')))
   automatically interpreted in match_check_string. We just need to arrange that
   the leading @ is included in the domain. */
 
-  if (pdomain > pattern && pdomain[-1] == '@' &&
-       (pdomain[1] == 0 ||
-        Ustrcmp(pdomain+1, "[]") == 0 ||
-        Ustrcmp(pdomain+1, "mx_any") == 0 ||
-        Ustrcmp(pdomain+1, "mx_primary") == 0 ||
-        Ustrcmp(pdomain+1, "mx_secondary") == 0))
+  if (pdomain > pattern && pdomain[-1] == '@'
+     && (pdomain[1] == 0
+        || Ustrcmp(pdomain+1, "[]") == 0
+        || Ustrcmp(pdomain+1, "mx_any") == 0
+        || Ustrcmp(pdomain+1, "mx_primary") == 0
+        || Ustrcmp(pdomain+1, "mx_secondary") == 0))
     pdomain--;
 
   pllen = pdomain - pattern;
@@ -1351,3 +1451,5 @@ return match_address_list(address, TRUE, TRUE, listptr, NULL, -1, sep, NULL);
 }
 
 /* End of match.c */
+/* vi: aw ai sw=2
+*/

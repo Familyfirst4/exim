@@ -1,28 +1,31 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaX-0005vi-00
+250 OK id=10HmaX-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaY-0005vi-00
+250 OK id=10HmaY-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -30,22 +33,24 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaZ-0005vi-00
+250 OK id=10HmaZ-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbA-0005vi-00
+250 OK id=10HmbA-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -53,11 +58,12 @@
 550 Administrative prohibition
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbB-0005vi-00
+250 OK id=10HmbB-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -65,11 +71,12 @@
 250 Accepted
 550 Administrative prohibition
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbC-0005vi-00
+250 OK id=10HmbC-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -77,11 +84,12 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbD-0005vi-00
+250 OK id=10HmbD-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -89,11 +97,12 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbE-0005vi-00
+250 OK id=10HmbE-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -101,11 +110,12 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbF-0005vi-00
+250 OK id=10HmbF-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -113,22 +123,35 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbG-0005vi-00
+250 OK id=10HmbG-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at myhost.test.ex
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbH-0005vi-00
+250 OK id=10HmbH-000000005vi-0000
+221 myhost.test.ex closing connection
+220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+250-myhost.test.ex Hello CALLER at myhost.test.ex
+250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
+250-8BITMIME
+250-PIPELINING
+250 HELP
+250 OK
+250 Accepted
+354 Enter message, ending with "." on a line by itself
+250 OK id=10HmbI-000000005vi-0000
 221 myhost.test.ex closing connection
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -142,10 +165,10 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -155,7 +178,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 SMTP only spoken here
 EHLO myhost.test.ex
@@ -171,10 +194,10 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for userz@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaY-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaY-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -184,7 +207,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -200,9 +223,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaZ-0005vi-00;
+	id 10HmaZ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaZ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaZ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -212,7 +235,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -226,11 +249,11 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbA-0005vi-00
+	id 10HmbA-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-tpt: zzz
-Message-Id: <E10HmbA-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbA-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -242,7 +265,7 @@ body
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -254,7 +277,7 @@ RCPT TO:<no@domain.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -268,10 +291,10 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbB-0005vi-00
+	id 10HmbB-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbB-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbB-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -281,7 +304,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -295,7 +318,7 @@ RCPT TO:<no@domain.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -309,10 +332,10 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbC-0005vi-00
+	id 10HmbC-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbC-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbC-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -322,7 +345,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -334,7 +357,7 @@ RCPT TO:<userx@domain.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -346,7 +369,7 @@ RCPT TO:<special_tpt@domain.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -360,9 +383,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbD-0005vi-00;
+	id 10HmbD-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbD-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbD-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -372,7 +395,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -386,9 +409,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbD-0005vi-00;
+	id 10HmbD-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbD-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbD-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -398,7 +421,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -414,9 +437,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbE-0005vi-00;
+	id 10HmbE-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbE-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbE-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -426,7 +449,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -438,7 +461,7 @@ RCPT TO:<userx@domain.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -450,7 +473,7 @@ RCPT TO:<usery@special.com>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -464,9 +487,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbF-0005vi-00;
+	id 10HmbF-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbF-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbF-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -476,7 +499,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -490,9 +513,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbF-0005vi-00;
+	id 10HmbF-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbF-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbF-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -502,7 +525,7 @@ X-hdr-rtr-new: +++
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -518,9 +541,9 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbG-0005vi-00;
+	id 10HmbG-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbG-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbG-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -529,7 +552,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 ESMTP
 EHLO myhost.test.ex
@@ -543,11 +566,11 @@ DATA
 Received: from CALLER (helo=myhost.test.ex)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbH-0005vi-00
+	id 10HmbH-000000005vi-0000
 	for userx@domain.com;
 	Tue, 2 Mar 1999 09:44:33 +0000
 Subject: singledot test
-Message-Id: <E10HmbH-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbH-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 X-hdr-rtr-new: +++
@@ -558,6 +581,33 @@ and this is the line right after.
 Next we have a line with a leading dot:
 ..test
 and this is the next line.
+
+.
+250 OK
+QUIT
+250 OK
+End of script
+Listening on port PORT_S ... 
+Connection request from [ip4.ip4.ip4.ip4]
+220 ESMTP
+EHLO myhost.test.ex
+250 OK
+MAIL FROM:<return_path_changed@myhost.test.ex>
+250 Sender OK
+RCPT TO:<userx@domain.com>
+250 Recipient OK
+DATA
+354 Send data
+Received: from CALLER (helo=myhost.test.ex)
+	by myhost.test.ex with local-esmtp (Exim x.yz)
+	(envelope-from <CALLER@myhost.test.ex>)
+	id 10HmbI-000000005vi-0000
+	for userx@domain.com;
+	Tue, 2 Mar 1999 09:44:33 +0000
+Message-Id: <E10HmbI-000000005vi-0000@myhost.test.ex>
+From: CALLER_NAME <CALLER@myhost.test.ex>
+Date: Tue, 2 Mar 1999 09:44:33 +0000
+X-hdr-rtr-new: +++
 
 .
 250 OK

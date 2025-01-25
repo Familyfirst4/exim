@@ -19,6 +19,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -53,6 +54,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello test.host [10.0.0.3]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -70,6 +72,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at testclient.ex [10.0.0.3]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -80,30 +83,31 @@
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaX-0005vi-00
+250 OK id=10HmaX-000000005vi-0000
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaY-0005vi-00
+250 OK id=10HmaY-000000005vi-0000
 235 Authentication succeeded
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmaZ-0005vi-00
+250 OK id=10HmaZ-000000005vi-0000
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbA-0005vi-00
+250 OK id=10HmbA-000000005vi-0000
 501 invalid data for AUTH
 250 Reset OK
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbB-0005vi-00
+250 OK id=10HmbB-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -116,6 +120,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -128,6 +133,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -141,6 +147,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -154,11 +161,12 @@
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbC-0005vi-00
+250 OK id=10HmbC-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -172,6 +180,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -184,6 +193,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -197,6 +207,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -216,6 +227,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello test.host [10.0.0.4]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -226,6 +238,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -238,6 +251,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -251,6 +265,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -260,10 +275,15 @@
 250 HELP
 334 bXlob3N0LnRlc3QuZXg=
 235 Authentication succeeded
+250 OK
+250 Accepted
+354 Enter message, ending with "." on a line by itself
+250 OK id=10HmbD-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -277,6 +297,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.2]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -289,6 +310,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -321,6 +343,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at testing.testing [10.0.0.5]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -331,21 +354,22 @@
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbD-0005vi-00
+250 OK id=10HmbE-000000005vi-0000
 235 Authentication succeeded
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbE-0005vi-00
+250 OK id=10HmbF-000000005vi-0000
 503 already authenticated
 250 OK
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbF-0005vi-00
+250 OK id=10HmbG-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.1]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -360,6 +384,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at testing.testing [10.0.0.5]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY
@@ -372,6 +397,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at test.host [10.0.0.6]
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-ETRN
 250-VRFY

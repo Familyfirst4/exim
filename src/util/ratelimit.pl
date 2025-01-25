@@ -1,4 +1,6 @@
 #!/usr/bin/perl -wT
+# Copyright (c) The Exim Maintainers 2022
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 use strict;
 

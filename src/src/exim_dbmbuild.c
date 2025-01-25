@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* A small freestanding program to build dbm databases from serial input. For
@@ -41,6 +42,8 @@ millisleep(int msec)
 uschar *
 readconf_printtime(int t)
 { return NULL; }
+const uschar * expand_string_2(const uschar * string, BOOL * textonly_p)
+{return NULL; }
 void *
 store_get_3(int size, const void * proto_mem, const char *filename, int linenumber)
 { return NULL; }
@@ -50,6 +53,9 @@ store_reset_3(void **ptr, const char *filename, int linenumber)
 void
 store_release_above_3(void *ptr, const char *func, int linenumber)
 { }
+gstring *
+string_catn(gstring * g, const uschar * s, int count)
+{ return NULL; }
 gstring *
 string_vformat_trc(gstring * g, const uschar * func, unsigned line,
   unsigned size_limit, unsigned flags, const char *format, va_list ap)
@@ -72,14 +78,6 @@ uschar *		queue_name;
 BOOL			split_spool_directory;
 
 
-/* These introduced by the taintwarn handling */
-rmark
-store_mark_3(const char *func, int linenumber)
-{ return NULL; }
-#ifdef ALLOW_INSECURE_TAINTED_DATA
-BOOL    allow_insecure_tainted_data;
-#endif
-
 /******************************************************************************/
 
 
@@ -90,6 +88,27 @@ BOOL    allow_insecure_tainted_data;
 if it is made static. */
 
 const uschar *hex_digits = CUS"0123456789abcdef";
+
+
+/*******************
+*   Debug output   *
+*******************/
+
+unsigned int debug_selector = 0;	/* set -1 for debugging */
+
+void
+debug_printf(const char * fmt, ...)
+{
+va_list ap;
+va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap);
+}
+void
+debug_printf_indent(const char * fmt, ...)
+{
+va_list ap;
+va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap);
+}
+
 
 
 #ifdef STRERROR_FROM_ERRLIST
@@ -173,7 +192,7 @@ BOOL lowercase = TRUE;
 BOOL warn = TRUE;
 BOOL duperr = TRUE;
 BOOL lastdup = FALSE;
-#if !defined (USE_DB) && !defined(USE_TDB) && !defined(USE_GDBM)
+#if !defined (USE_DB) && !defined(USE_TDB) && !defined(USE_GDBM) && !defined(USE_SQLITE)
 int is_db = 0;
 struct stat statbuf;
 #endif
@@ -203,7 +222,7 @@ while (argc > 1)
 if (argc != 3)
   {
   printf("usage: exim_dbmbuild [-nolc] <source file> <dbm base name>\n");
-  exit(1);
+  exit(EXIT_FAILURE);
   }
 
 if (Ustrcmp(argv[arg], "-") == 0)
@@ -211,17 +230,17 @@ if (Ustrcmp(argv[arg], "-") == 0)
 else if (!(f = fopen(argv[arg], "rb")))
   {
   printf("exim_dbmbuild: unable to open %s: %s\n", argv[arg], strerror(errno));
-  exit(1);
+  exit(EXIT_FAILURE);
   }
 
 /* By default Berkeley db does not put extensions on... which
 can be painful! */
 
-#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM)
+#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM) && !defined(USE_SQLITE)
 if (Ustrcmp(argv[arg], argv[arg+1]) == 0)
   {
   printf("exim_dbmbuild: input and output filenames are the same\n");
-  exit(1);
+  exit(EXIT_FAILURE);
   }
 #endif
 
@@ -231,7 +250,7 @@ if (Ustrcmp(argv[arg], argv[arg+1]) == 0)
 if (strlen(argv[arg+1]) > sizeof(temp_dbmname) - 20)
   {
   printf("exim_dbmbuild: output filename is ridiculously long\n");
-  exit(1);
+  exit(EXIT_FAILURE);
   }
 
 Ustrcpy(temp_dbmname, US argv[arg+1]);
@@ -251,13 +270,13 @@ if (!(d = exim_dbopen(temp_dbmname, dirname, O_RDWR|O_CREAT|O_EXCL, 0644)))
   printf("exim_dbmbuild: unable to create %s: %s\n", temp_dbmname,
     strerror(errno));
   (void)fclose(f);
-  exit(1);
+  exit(EXIT_FAILURE);
   }
 
 /* Unless using native db calls, see if we have created <name>.db; if not,
 assume .dir & .pag */
 
-#if !defined(USE_DB) && !defined(USE_TDB) && !defined(USE_GDBM)
+#if !defined(USE_DB) && !defined(USE_TDB) && !defined(USE_GDBM) && !defined(USE_SQLITE)
 sprintf(CS real_dbmname, "%s.db", temp_dbmname);
 is_db = Ustat(real_dbmname, &statbuf) == 0;
 #endif
@@ -320,8 +339,8 @@ while (Ufgets(line, max_insize, f) != NULL)
   else
     {
     int i, rc;
-    uschar *s = line;
-    uschar *keystart;
+    uschar * s = line;
+    const uschar * keystart;
 
     if (started)
       {
@@ -329,7 +348,8 @@ while (Ufgets(line, max_insize, f) != NULL)
       exim_datum_data_set(&content, buffer);
       exim_datum_size_set(&content, bptr - buffer + add_zero);
 
-      switch(rc = exim_dbputb(d, &key, &content))
+      rc = exim_dbputb(d, &key, &content);
+      switch(rc)
         {
         case EXIM_DBPUTB_OK:
 	  count++;
@@ -360,22 +380,22 @@ while (Ufgets(line, max_insize, f) != NULL)
 
     if (*s == '\"')
       {
-      uschar *t = s++;
+      uschar * t = s++;
       keystart = t;
-      while (*s != 0 && *s != '\"')
+      while (*s && *s != '\"')
         {
 	*t++ = *s == '\\'
 	? string_interpret_escape((const uschar **)&s)
 	: *s;
         s++;
         }
-      if (*s != 0) s++;               /* Past terminating " */
+      if (*s) s++;               /* Past terminating " */
       exim_datum_size_set(&key, t - keystart + add_zero);
       }
     else
       {
       keystart = s;
-      while (*s != 0 && *s != ':' && !isspace(*s)) s++;
+      while (*s && *s != ':' && !isspace(*s)) s++;
       exim_datum_size_set(&key, s - keystart + add_zero);
       }
 
@@ -397,13 +417,13 @@ while (Ufgets(line, max_insize, f) != NULL)
     keybuffer[i] = 0;
     started = 1;
 
-    while (isspace(*s))s++;
+    while (isspace(*s)) s++;
     if (*s == ':')
       {
       s++;
-      while (isspace(*s))s++;
+      while (isspace(*s)) s++;
       }
-    if (*s != 0)
+    if (*s)
       {
       Ustrcpy(bptr, s);
       bptr += p - s;
@@ -419,7 +439,8 @@ if (started)
   exim_datum_data_set(&content, buffer);
   exim_datum_size_set(&content, bptr - buffer + add_zero);
 
-  switch(rc = exim_dbputb(d, &key, &content))
+  rc = exim_dbputb(d, &key, &content);
+  switch(rc)
     {
     case EXIM_DBPUTB_OK:
     count++;
@@ -458,7 +479,7 @@ if (yield == 0 || yield == 1)
     printf("%d duplicate key%s \n", dupcount, (dupcount > 1)? "s" : "");
     }
 
-  #if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM)
+#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM) || defined(USE_SQLITE)
   Ustrcpy(real_dbmname, temp_dbmname);
   Ustrcpy(buffer, US argv[arg+1]);
   if (Urename(real_dbmname, buffer) != 0)
@@ -466,7 +487,7 @@ if (yield == 0 || yield == 1)
     printf("Unable to rename %s as %s\n", real_dbmname, buffer);
     return 1;
     }
-  #else
+#else
 
   /* Rename a single .db file */
 
@@ -502,7 +523,7 @@ if (yield == 0 || yield == 1)
       }
     }
 
-  #endif /* USE_DB || USE_TDB || USE_GDBM */
+#endif /* USE_DB || USE_TDB || USE_GDBM || USE_SQLITE */
   }
 
 /* Otherwise unlink the temporary files. */
@@ -510,7 +531,7 @@ if (yield == 0 || yield == 1)
 else
   {
   printf("dbmbuild abandoned\n");
-#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM)
+#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM) || defined(USE_SQLITE)
   /* We created it, so safe to delete despite the name coming from outside */
   /* coverity[tainted_string] */
   Uunlink(temp_dbmname);
@@ -527,10 +548,12 @@ else
     sprintf(CS real_dbmname, "%s.pag", temp_dbmname);
     Uunlink(real_dbmname);
     }
-#endif /* USE_DB || USE_TDB */
+#endif /* USE_DB || USE_TDB || USE_GDBM || USE_SQLITE */
   }
 
 return yield;
 }
 
 /* End of exim_dbmbuild.c */
+/* se aw ai sw=2
+*/

@@ -8,6 +8,7 @@
  *
  * Copyright (c) The Exim Maintainers 2020 - 2022
  * Copyright (c) 1998 Nigel Metheringham, Planet Online Ltd
+ * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -135,7 +136,7 @@ cdb_bread(int fd,
  * Internal function to parse 4 byte number (endian independent) */
 
 static uint32
-cdb_unpack(uschar *buf)
+cdb_unpack(const uschar * buf)
 {
 uint32 num;
 num =  buf[3]; num <<= 8;
@@ -242,7 +243,7 @@ static BOOL
 cdb_check(void * handle, const uschar * filename, int modemask,
   uid_t * owners, gid_t * owngroups, uschar ** errmsg)
 {
-struct cdb_state * cdbp = handle;
+const struct cdb_state * cdbp = handle;
 return lf_check_file(cdbp->fileno, filename, S_IFREG, modemask,
 		     owners, owngroups, "cdb", errmsg) == 0;
 }
@@ -305,8 +306,8 @@ end_offset = hash_offset + (hash_offlen * CDB_HASH_ENTRY);
 /* make sure the mmap was OK */
 if (cdbp->cdb_map != NULL)
   {
-  uschar * cur_pos = cur_offset + cdbp->cdb_map;
-  uschar * end_pos = end_offset + cdbp->cdb_map;
+  const uschar * cur_pos = cur_offset + cdbp->cdb_map;
+  const uschar * end_pos = end_offset + cdbp->cdb_map;
 
   for (int loop = 0; (loop < hash_offlen); ++loop)
     {
@@ -481,7 +482,7 @@ lookup_info cdb_lookup_info = {
 };
 
 #ifdef DYNLOOKUP
-#define cdb_lookup_module_info _lookup_module_info
+# define cdb_lookup_module_info _lookup_module_info
 #endif
 
 static lookup_info *_lookup_list[] = { &cdb_lookup_info };

@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Header for the manualroute router */
 
@@ -13,6 +15,7 @@ typedef struct {
   int   hai_code;
   int   hff_code;
   BOOL  hosts_randomize;
+  uschar *expand_hosts_randomize;
   uschar *host_all_ignored;
   uschar *host_find_failed;
   uschar *route_data;
@@ -34,6 +37,6 @@ extern int manualroute_router_entry(router_instance *, address_item *,
   struct passwd *, int, address_item **, address_item **,
   address_item **, address_item **);
 
-extern void manualroute_router_init(router_instance *);
+extern void manualroute_router_init(driver_instance *);
 
 /* End of routers/manualroute.h */

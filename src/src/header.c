@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2016 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "exim.h"
@@ -29,11 +30,12 @@ Returns:    TRUE or FALSE
 */
 
 BOOL
-header_testname(header_line *h, const uschar *name, int len, BOOL notdel)
+header_testname(const header_line * h, const uschar * name, int len,
+  BOOL notdel)
 {
 uschar *tt;
 if (h->type == '*' && notdel) return FALSE;
-if (h->text == NULL || strncmpic(h->text, name, len) != 0) return FALSE;
+if (!h->text || strncmpic(h->text, name, len) != 0) return FALSE;
 tt = h->text + len;
 while (*tt == ' ' || *tt == '\t') tt++;
 return *tt == ':';
@@ -45,11 +47,11 @@ return *tt == ':';
    header_testname() above. */
 
 BOOL
-header_testname_incomplete(header_line *h, const uschar *name,
+header_testname_incomplete(const header_line * h, const uschar * name,
     int len, BOOL notdel)
 {
 if (h->type == '*' && notdel) return FALSE;
-if (h->text == NULL || strncmpic(h->text, name, len) != 0) return FALSE;
+if (!h->text || strncmpic(h->text, name, len) != 0) return FALSE;
 return TRUE;
 }
 
@@ -107,8 +109,8 @@ gs.size = HEADER_ADD_BUFFER_SIZE;
 gs.ptr = 0;
 
 if (!string_vformat(&gs, SVFMT_REBUFFER, format, ap))
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "string too long in header_add: "
-    "%.100s ...", string_from_gstring(&gs));
+  log_write_die(0, LOG_MAIN, "string too long in header_add: "
+    "%.100Y ...", &gs);
 
 if (gs.s != buf) store_release_above(buf);
 gstring_release_unused(&gs);
@@ -464,5 +466,86 @@ va_end(ap);
 
 return !cond;
 }
+
+
+
+/* Wrap and truncate a string for use as a header.
+Convert either the sequence "\n" or a real newline into newline plus indent.
+If that still takes us past the column limit, look for the last space
+and split there too.
+Limit to the given max total char count.
+
+Return: string or NULL */
+
+uschar *
+wrap_header(const uschar * s, unsigned cols, unsigned maxchars,
+  const uschar * indent, unsigned indent_cols)
+{
+gstring * g = NULL;
+
+if (maxchars == 0) maxchars = INT_MAX;
+if (cols == 0) cols = INT_MAX;
+
+if (s && *s)
+  {
+  int sleft = Ustrlen(s);
+  for(unsigned llen = 0; ; llen = indent_cols)
+    {
+    const uschar * t;
+    unsigned ltail = 0, glen;
+
+    if ((t = Ustrchr(s, '\\')) && t[1] == 'n')
+      ltail = 2;
+    else if ((t = Ustrchr(s, '\n')))
+      ltail = 1;
+    else
+      t = s + sleft;
+
+    if ((llen + t - s) > cols)		/* more than a linesworth of s */
+      {					/* look backward for whitespace */
+      for (const uschar * u = s + cols - llen; u > s + 10; --u) if (isspace(*u))
+	{
+	llen = u - s;
+	while (u > s+1 && isspace(u[-1])) --u;	/* find start of whitespace */
+	g = string_catn(g, s, u - s);
+	s += ++llen;				/* skip the space */
+	while (*s && isspace(*s))		/* and any trailing */
+	  s++, llen++;
+	goto LDONE;
+	}
+					/* no whitespace */
+      if (llen < cols)
+	{					/* just linebreak at 80 */
+	llen = cols - llen;
+	g = string_catn(g, s, llen);
+	s += llen;
+	}
+      else
+        llen = 0;
+      LDONE: ;
+      }
+    else				/* rest of s fits in line */
+      {
+      llen = t - s;
+      g = string_catn(g, s, llen);
+      s = t + ltail;
+      }
+
+    if (!*s)
+      break;				/* no trailing linebreak */
+    if ((glen = gstring_length(g)) >= maxchars)
+      {
+      gstring_trim(g, glen - maxchars);
+      break;				/* no trailing linebreak */
+      }
+    sleft -= llen;
+    g = string_catn(g, US"\n", 1);
+    g = string_catn(g, indent, 1);
+    }
+  }
+gstring_release_unused(g);
+return string_from_gstring(g);
+}
+
 
 /* End of header.c */

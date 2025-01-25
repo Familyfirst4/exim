@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 seeking password data for user "CALLER": cache not available
@@ -29,11 +30,12 @@ SMTP>> 501 <abc@domain.>: domain missing or malformed
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 exim: bad -f address "abc@somewhere.": domain is malformed (trailing dot not allowed)
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 seeking password data for user "CALLER": cache not available
@@ -58,7 +60,7 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<abc@domain.>
-processing "accept" (TESTSUITE/test-config 22)
+processing inline ACL "accept"
 accept: condition test succeeded in inline ACL
 end of inline ACL: ACCEPT
 SMTP>> 250 Accepted
@@ -66,48 +68,50 @@ SMTP<< data
 SMTP>> 354 Enter message, ending with "." on a line by itself
 search_tidyup called
 >>Headers received:
-To: abc@domain.
+ To: abc@domain.
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
  rewrite_one_header: type=T:
    To: abc@domain.
 search_tidyup called
 >>Headers after rewriting and local additions:
-T To: abc@domain.
-I Message-Id: <E10HmaY-0005vi-00@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ T To: abc@domain.
+ I Message-Id: <E10HmaY-000000005vi-0000@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaY-0005vi-00-D
-Data file written for message 10HmaY-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaY-000000005vi-0000-D
+Data file written for message 10HmaY-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER (helo=test)
 	by myhost.test.ex with local-smtp (Exim x.yz)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for abc@domain;
 	Tue, 2 Mar 1999 09:44:33 +0000
 using ACL "check_data"
-processing "accept" (TESTSUITE/test-config 20)
+processing ACL check_data "accept" (TESTSUITE/test-config 20)
 check verify = header_syntax
-accept: condition test succeeded in ACL "check_data"
-end of ACL "check_data": ACCEPT
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-0005vi-00
+accept: condition test succeeded in ACL check_data
+end of ACL check_data: ACCEPT
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-000000005vi-0000
 DSN: **** SPOOL_OUT - address: <abc@domain> errorsto: <NULL> orcpt: <NULL> dsn_flags: 0x0
-Renaming spool header file: TESTSUITE/spool//input//10HmaY-0005vi-00-H
+Renaming spool header file: TESTSUITE/spool//input//10HmaY-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= <> U=CALLER P=local-smtp S=sss
 created log directory TESTSUITE/spool/log
-SMTP>> 250 OK id=10HmaY-0005vi-00
+receive_msg: tidyup
+SMTP>> 250 OK id=10HmaY-000000005vi-0000
 smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1236
 seeking password data for user "CALLER": cache not available
@@ -132,7 +136,7 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<abc@xyz>
-processing "accept" (TESTSUITE/test-config 22)
+processing inline ACL "accept"
 accept: condition test succeeded in inline ACL
 end of inline ACL: ACCEPT
 SMTP>> 250 Accepted
@@ -140,39 +144,42 @@ SMTP<< data
 SMTP>> 354 Enter message, ending with "." on a line by itself
 search_tidyup called
 >>Headers received:
-To: abc@xyz.
+ To: abc@xyz.
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
  rewrite_one_header: type=T:
    To: abc@xyz.
+LOG: MAIN
+  qualify/rewrite: domain missing or malformed
 search_tidyup called
 >>Headers after rewriting and local additions:
-T To: abc@xyz.
-I Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ T To: abc@xyz.
+ I Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER (helo=test)
 	by myhost.test.ex with local-smtp (Exim x.yz)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for abc@xyz;
 	Tue, 2 Mar 1999 09:44:33 +0000
 using ACL "check_data"
-processing "accept" (TESTSUITE/test-config 20)
+processing ACL check_data "accept" (TESTSUITE/test-config 20)
 check verify = header_syntax
-accept: condition test failed in ACL "check_data"
-end of ACL "check_data": implicit DENY
+accept: condition test failed in ACL check_data
+end of ACL check_data: implicit DENY
 SMTP>> 550 Administrative prohibition
 LOG: MAIN REJECT
   U=CALLER F=<> rejected after DATA: domain missing or malformed: failing address in "To:" header is: abc@xyz.
+receive_msg: tidyup
 smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

@@ -1,8 +1,9 @@
 /*
  *  Exim - an Internet mail transport agent
  *
- *  Copyright (c) The Exim Maintainers 2010 - 2022
+ *  Copyright (c) The Exim Maintainers 2010 - 2023
  *  Copyright (c) University of Cambridge 1995 - 2009
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *
  *  Hash interface functions
  */
@@ -226,49 +227,6 @@ memcpy(b->data, gcry_md_read(h->sha, 0), h->hashlen);
 
 
 
-#elif defined(SHA_POLARSSL)
-# define HAVE_PARTIAL_SHA
-/******************************************************************************/
-
-BOOL
-exim_sha_init(hctx * h, hashmethod m)
-{
-/*XXX extend for sha512 */
-switch (h->method = m)
-  {
-  case HASH_SHA1:   h->hashlen = 20; sha1_starts(&h->u.sha1);    break;
-  case HASH_SHA2_256: h->hashlen = 32; sha2_starts(&h->u.sha2, 0); break;
-  default:	    h->hashlen = 0; return FALSE;
-  }
-return TRUE;
-}
-
-
-void
-exim_sha_update(hctx * h, const uschar * data, int len)
-{
-switch (h->method)
-  {
-  case HASH_SHA1:   sha1_update(h->u.sha1, US data, len); break;
-  case HASH_SHA2_256: sha2_update(h->u.sha2, US data, len); break;
-  }
-}
-
-
-void
-exim_sha_finish(hctx * h, blob * b)
-{
-b->data = store_get(b->len = h->hashlen, GET_INTAINTED);
-switch (h->method)
-  {
-  case HASH_SHA1:   sha1_finish(h->u.sha1, b->data); break;
-  case HASH_SHA2_256: sha2_finish(h->u.sha2, b->data); break;
-  }
-}
-
-
-
-
 #elif defined(SHA_NATIVE)
 /******************************************************************************/
 /* Only sha-1 supported */
@@ -407,7 +365,7 @@ Returns:    nothing
 */
 
 static void
-native_sha1_end(sha1 *base, const uschar *text, int length, uschar *digest)
+native_sha1_end(sha1 * base, const uschar * text, int length, uschar * digest)
 {
 uschar work[64];
 
@@ -425,7 +383,7 @@ out to 64, process it, and then set up the final chunk as 56 bytes of
 padding. If it has less than 56 bytes, we pad it out to 56 bytes as the
 final chunk. */
 
-memcpy(work, text, length);
+if (length) memcpy(work, text, length);
 work[length] = 0x80;
 
 if (length > 55)

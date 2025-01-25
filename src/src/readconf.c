@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2025 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for reading the configuration file, and for displaying
 overall configuration values. Thanks to Brian Candler for the original
@@ -40,6 +41,7 @@ static optionlist optionlist_config[] = {
   { "acl_not_smtp_mime",        opt_stringptr,   {&acl_not_smtp_mime} },
 #endif
   { "acl_not_smtp_start",       opt_stringptr,   {&acl_not_smtp_start} },
+  { "acl_smtp_atrn",            opt_stringptr,   {&acl_smtp_atrn} },
   { "acl_smtp_auth",            opt_stringptr,   {&acl_smtp_auth} },
   { "acl_smtp_connect",         opt_stringptr,   {&acl_smtp_connect} },
   { "acl_smtp_data",            opt_stringptr,   {&acl_smtp_data} },
@@ -47,7 +49,7 @@ static optionlist optionlist_config[] = {
   { "acl_smtp_data_prdr",       opt_stringptr,   {&acl_smtp_data_prdr} },
 #endif
 #ifndef DISABLE_DKIM
-  { "acl_smtp_dkim",            opt_stringptr,   {&acl_smtp_dkim} },
+  { "acl_smtp_dkim",            opt_module,	 {US"dkim"} },
 #endif
   { "acl_smtp_etrn",            opt_stringptr,   {&acl_smtp_etrn} },
   { "acl_smtp_expn",            opt_stringptr,   {&acl_smtp_expn} },
@@ -65,6 +67,9 @@ static optionlist optionlist_config[] = {
   { "acl_smtp_starttls",        opt_stringptr,   {&acl_smtp_starttls} },
 #endif
   { "acl_smtp_vrfy",            opt_stringptr,   {&acl_smtp_vrfy} },
+#ifndef DISABLE_WELLKNOWN
+  { "acl_smtp_wellknown",       opt_stringptr,   {&acl_smtp_wellknown} },
+#endif
   { "add_environment",          opt_stringptr,   {&add_environment} },
   { "admin_groups",             opt_gidlist,     {&admin_groups} },
   { "allow_domain_literals",    opt_bool,        {&allow_domain_literals} },
@@ -118,16 +123,16 @@ static optionlist optionlist_config[] = {
 #endif
   { "disable_ipv6",             opt_bool,        {&disable_ipv6} },
 #ifndef DISABLE_DKIM
-  { "dkim_verify_hashes",       opt_stringptr,   {&dkim_verify_hashes} },
-  { "dkim_verify_keytypes",     opt_stringptr,   {&dkim_verify_keytypes} },
-  { "dkim_verify_min_keysizes", opt_stringptr,   {&dkim_verify_min_keysizes} },
-  { "dkim_verify_minimal",      opt_bool,        {&dkim_verify_minimal} },
-  { "dkim_verify_signers",      opt_stringptr,   {&dkim_verify_signers} },
+  { "dkim_verify_hashes",       opt_module,	 {US"dkim"} },
+  { "dkim_verify_keytypes",     opt_module,	 {US"dkim"} },
+  { "dkim_verify_min_keysizes", opt_module,	 {US"dkim"} },
+  { "dkim_verify_minimal",      opt_module,	 {US"dkim"} },
+  { "dkim_verify_signers",      opt_module,	 {US"dkim"} },
 #endif
 #ifdef SUPPORT_DMARC
-  { "dmarc_forensic_sender",    opt_stringptr,   {&dmarc_forensic_sender} },
-  { "dmarc_history_file",       opt_stringptr,   {&dmarc_history_file} },
-  { "dmarc_tld_file",           opt_stringptr,   {&dmarc_tld_file} },
+  { "dmarc_forensic_sender",    opt_module,	 {US"dmarc"} },
+  { "dmarc_history_file",       opt_module,	 {US"dmarc"} },
+  { "dmarc_tld_file",           opt_module,	 {US"dmarc"} },
 #endif
   { "dns_again_means_nonexist", opt_stringptr,   {&dns_again_means_nonexist} },
   { "dns_check_names_pattern",  opt_stringptr,   {&check_dns_names_pattern} },
@@ -186,6 +191,9 @@ static optionlist optionlist_config[] = {
 #endif
   { "hosts_require_helo",       opt_stringptr,   {&hosts_require_helo} },
   { "hosts_treat_as_local",     opt_stringptr,   {&hosts_treat_as_local} },
+#ifdef EXPERIMENTAL_XCLIENT
+  { "hosts_xclient",		opt_stringptr,	 {&hosts_xclient} },
+#endif
 #ifdef LOOKUP_IBASE
   { "ibase_servers",            opt_stringptr,   {&ibase_servers} },
 #endif
@@ -205,7 +213,7 @@ static optionlist optionlist_config[] = {
   { "ldap_start_tls",           opt_bool,        {&eldap_start_tls} },
   { "ldap_version",             opt_int,         {&eldap_version} },
 #endif
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+#ifndef DISABLE_ESMTP_LIMITS
   { "limits_advertise_hosts", opt_stringptr, {&limits_advertise_hosts} },
 #endif
   { "local_from_check",         opt_bool,        {&local_from_check} },
@@ -218,6 +226,7 @@ static optionlist optionlist_config[] = {
   { "local_sender_retain",      opt_bool,        {&local_sender_retain} },
   { "localhost_number",         opt_stringptr,   {&host_number_string} },
   { "log_file_path",            opt_stringptr,   {&log_file_path} },
+  { "log_ports",		opt_stringptr,	 {&log_ports} },
   { "log_selector",             opt_stringptr,   {&log_selector_string} },
   { "log_timezone",             opt_bool,        {&log_timezone} },
   { "lookup_open_max",          opt_int,         {&lookup_open_max} },
@@ -289,7 +298,7 @@ static optionlist optionlist_config[] = {
   { "received_header_text",     opt_stringptr,   {&received_header_text} },
   { "received_headers_max",     opt_int,         {&received_headers_max} },
   { "recipient_unqualified_hosts", opt_stringptr, {&recipient_unqualified_hosts} },
-  { "recipients_max",           opt_int,         {&recipients_max} },
+  { "recipients_max",           opt_stringptr,   {&recipients_max} },
   { "recipients_max_reject",    opt_bool,        {&recipients_max_reject} },
 #ifdef LOOKUP_REDIS
   { "redis_servers",            opt_stringptr,   {&redis_servers} },
@@ -301,6 +310,7 @@ static optionlist optionlist_config[] = {
   { "return_path_remove",       opt_bool,        {&return_path_remove} },
   { "return_size_limit",        opt_mkint|opt_hidden, {&bounce_return_size_limit} },
   { "rfc1413_hosts",            opt_stringptr,   {&rfc1413_hosts} },
+  { "rfc1413_port",		opt_int|opt_hidden, {&test_harness_identd_port} },
   { "rfc1413_query_timeout",    opt_time,        {&rfc1413_query_timeout} },
   { "sender_unqualified_hosts", opt_stringptr,   {&sender_unqualified_hosts} },
   { "slow_lookup_log",          opt_int,         {&slow_lookup_log} },
@@ -337,8 +347,8 @@ static optionlist optionlist_config[] = {
   { "spamd_address",            opt_stringptr,   {&spamd_address} },
 #endif
 #ifdef SUPPORT_SPF
-  { "spf_guess",                opt_stringptr,   {&spf_guess} },
-  { "spf_smtp_comment_template",opt_stringptr,   {&spf_smtp_comment_template} },
+  { "spf_guess",                opt_module,	 {US"spf"} },
+  { "spf_smtp_comment_template",opt_module,	 {US"spf"} },
 #endif
   { "split_spool_directory",    opt_bool,        {&split_spool_directory} },
   { "spool_directory",          opt_stringptr,   {&spool_directory} },
@@ -375,11 +385,14 @@ static optionlist optionlist_config[] = {
   { "tls_crl",                  opt_stringptr,   {&tls_crl} },
   { "tls_dh_max_bits",          opt_int,         {&tls_dh_max_bits} },
   { "tls_dhparam",              opt_stringptr,   {&tls_dhparam} },
+# ifdef EXPERIMENTAL_TLS_EARLY_BANNER
+  { "tls_early_banner_hosts",   opt_stringptr,   {&tls_early_banner_hosts} },
+# endif
   { "tls_eccurve",              opt_stringptr,   {&tls_eccurve} },
 # ifndef DISABLE_OCSP
   { "tls_ocsp_file",            opt_stringptr,   {&tls_ocsp_file} },
 # endif
-  { "tls_on_connect_ports",     opt_stringptr,   {&tls_in.on_connect_ports} },
+  { "tls_on_connect_ports",     opt_stringptr,   {&tls_on_connect_ports} },
   { "tls_privatekey",           opt_stringptr,   {&tls_privatekey} },
   { "tls_remember_esmtp",       opt_bool,        {&tls_remember_esmtp} },
   { "tls_require_ciphers",      opt_stringptr,   {&tls_require_ciphers} },
@@ -398,7 +411,10 @@ static optionlist optionlist_config[] = {
   { "uucp_from_pattern",        opt_stringptr,   {&uucp_from_pattern} },
   { "uucp_from_sender",         opt_stringptr,   {&uucp_from_sender} },
   { "warn_message_file",        opt_stringptr,   {&warn_message_file} },
-  { "write_rejectlog",          opt_bool,        {&write_rejectlog} }
+#ifndef DISABLE_WELLKNOWN
+  { "wellknown_advertise_hosts",opt_stringptr,	 {&wellknown_advertise_hosts} },
+#endif
+  { "write_rejectlog",          opt_bool,        {&write_rejectlog} },
 };
 
 #ifndef MACRO_PREDEF
@@ -422,13 +438,17 @@ options_auths(void)
 {
 uschar buf[EXIM_DRIVERNAME_MAX];
 
-options_from_list(optionlist_auths, optionlist_auths_size, US"AUTHENTICATORS", NULL);
+options_from_list(optionlist_auths, optionlist_auths_size,
+  US"AUTHENTICATORS", NULL);
 
-for (struct auth_info * ai = auths_available; ai->driver_name[0]; ai++)
+for (driver_info * di = (driver_info *)auths_available; di; di = di->next)
   {
-  spf(buf, sizeof(buf), US"_DRIVER_AUTHENTICATOR_%T", ai->driver_name);
+  auth_info * ai = (auth_info *)di;
+
+  spf(buf, sizeof(buf), US"_DRIVER_AUTHENTICATOR_%T", di->driver_name);
   builtin_macro_create(buf);
-  options_from_list(ai->options, (unsigned)*ai->options_count, US"AUTHENTICATOR", ai->driver_name);
+  options_from_list(di->options, (unsigned)*di->options_count,
+    US"AUTHENTICATOR", di->driver_name);
 
   if (ai->macros_create) (ai->macros_create)();
   }
@@ -588,46 +608,115 @@ static int syslog_list_size = sizeof(syslog_list)/sizeof(syslog_fac_item);
 pointer variables in the options table or in option tables for various drivers.
 For debugging output, it is useful to be able to find the name of the option
 which is currently being processed. This function finds it, if it exists, by
-searching the table(s).
+searching the table(s) for a value with the given content.
 
 Arguments:   a value that is presumed to be in the table above
 Returns:     the option name, or an empty string
 */
 
-uschar *
-readconf_find_option(void *p)
+const uschar *
+readconf_find_option(const void * listptr)
 {
-for (int i = 0; i < nelem(optionlist_config); i++)
-  if (p == optionlist_config[i].v.value) return US optionlist_config[i].name;
+uschar * list = * USS listptr;
+const uschar * name = NULL, * drname = NULL;
 
-for (router_instance * r = routers; r; r = r->next)
-  {
-  router_info *ri = r->info;
-  for (int i = 0; i < *ri->options_count; i++)
+for (optionlist * o = optionlist_config;	       /* main-config options */
+     o < optionlist_config + optionlist_config_size; o++)
+  if (listptr == o->v.value)
+    return US o->name;
+
+if (router_name)
+  for (const driver_instance * rd = (driver_instance *)routers;
+	rd; rd = rd->next) if (Ustrcmp(rd->name, router_name) == 0)
     {
-    if ((ri->options[i].type & opt_mask) != opt_stringptr) continue;
-    if (p == CS (r->options_block) + ri->options[i].v.offset)
-      return US ri->options[i].name;
-    }
-  }
+    const router_instance * r = (router_instance *)rd;
+    const router_info * ri = (router_info *)rd->info;
 
-for (transport_instance * t = transports; t; t = t->next)
-  {
-  transport_info *ti = t->info;
-  for (int i = 0; i < *ti->options_count; i++)
-    {
-    optionlist * op = &ti->options[i];
-    if ((op->type & opt_mask) != opt_stringptr) continue;
-    if (p == (  op->type & opt_public
-	     ? CS t
-	     : CS t->options_block
-	     )
-	     + op->v.offset)
-	return US op->name;
-    }
-  }
+    /* Check for a listptr match first */
 
-return US"";
+    for (optionlist * o = optionlist_routers;		/* generic options */
+	o < optionlist_routers + optionlist_routers_size; o++)
+      if (  (o->type & opt_mask) == opt_stringptr
+	 && listptr == CS r + o->v.offset)
+	return US o->name;
+
+    for (optionlist * o = ri->drinfo.options;		/* private options */
+	o < ri->drinfo.options + *ri->drinfo.options_count; o++)
+      if (  (o->type & opt_mask) == opt_stringptr
+	 && listptr == CS rd->options_block + o->v.offset)
+	return US o->name;
+
+    /* Check for a list addr match, unless null */
+
+    if (!list) continue;
+
+    for (optionlist * o = optionlist_routers;		/* generic options */
+	o < optionlist_routers + optionlist_routers_size; o++)
+      if (  (o->type & opt_mask) == opt_stringptr
+	 && list == * USS(CS r + o->v.offset))
+	if (name)
+	  return string_sprintf("DUP: %s %s vs. %s %s",
+				drname, name, rd->name, o->name);
+	else
+	  { name = US o->name; drname = rd->name; }
+
+    for (optionlist * o = ri->drinfo.options;		/* private options */
+	o < ri->drinfo.options + *ri->drinfo.options_count; o++)
+      if (  (o->type & opt_mask) == opt_stringptr
+	 && list == * USS(CS rd->options_block + o->v.offset))
+	if (name)
+	  return string_sprintf("DUP: %s %s vs. %s %s",
+				drname, name, rd->name, o->name);
+	else
+	  { name = US o->name; drname = rd->name; }
+    }
+
+if (transport_name)
+  for (transport_instance * t = transports; t; t = t->drinst.next)
+    if (Ustrcmp(t->drinst.name, transport_name) == 0)
+      {
+      const transport_info * ti = t->drinst.info;
+
+      /* Check for a listptr match first */
+
+      for (optionlist * o = optionlist_transports;	/* generic options */
+	  o < optionlist_transports + optionlist_transports_size; o++)
+	if (  (o->type & opt_mask) == opt_stringptr
+	   && listptr == CS t + o->v.offset)
+	  return US o->name;
+
+      for (optionlist * o = ti->drinfo.options;		/* private options */
+	  o < ti->drinfo.options + *ti->drinfo.options_count; o++)
+	if (  (o->type & opt_mask) == opt_stringptr
+	   && listptr == CS t->drinst.options_block + o->v.offset)
+	  return US o->name;
+
+      /* Check for a list addr match, unless null */
+
+      if (!list) continue;
+
+      for (optionlist * o = optionlist_transports;	/* generic options */
+	  o < optionlist_transports + optionlist_transports_size; o++)
+	if (  (o->type & opt_mask) == opt_stringptr
+	   && list == * USS(CS t + o->v.offset))
+	  if (name)
+	    return string_sprintf("DUP: %s %s vs. %s %s",
+				  drname, name, t->drinst.name, o->name);
+	  else
+	    { name = US o->name; drname = t->drinst.name; }
+
+      for (optionlist * o = ti->drinfo.options;		/* private options */
+	  o < ti->drinfo.options + *ti->drinfo.options_count; o++)
+	if (  (o->type & opt_mask) == opt_stringptr
+	   && list == * USS(CS t->drinst.options_block + o->v.offset))
+	  if (name)
+	    return string_sprintf("DUP: %s %s vs. %s %s",
+				  drname, name, t->drinst.name, o->name);
+	  else
+	    { name = US o->name; drname = t->drinst.name; }
+      }
+
+return name ? name : US"";
 }
 
 
@@ -747,7 +836,7 @@ for (m = macros; m; m = m->next)
   macro is permitted (there is even an example).
   *
   * if (m->namelen > namelen && Ustrstr(m->name, name) != NULL)
-  *   log_write(0, LOG_CONFIG|LOG_PANIC_DIE, "\"%s\" cannot be defined as "
+  *   log_write_die(0, LOG_CONFIG|"\"%s\" cannot be defined as "
   *     "a macro because it is a substring of previously defined macro \"%s\"",
   *     name, m->name);
   */
@@ -936,7 +1025,7 @@ for (;;)
     /* EOF at top level */
 
     if (cstate_stack_ptr >= 0)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+      log_write_die(0, LOG_CONFIG_IN,
         "Unexpected end of configuration file: .endif missing");
 
     if (len != 0) break;        /* EOF after continuation */
@@ -1005,7 +1094,7 @@ for (;;)
       if (c->pushpop > 0)
         {
         if (cstate_stack_ptr >= CSTATE_STACK_SIZE - 1)
-          log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+          log_write_die(0, LOG_CONFIG_IN,
             ".%s nested too deeply", c->name);
         cstate_stack[++cstate_stack_ptr] = cstate;
         cstate = next_cstate[cstate][macro_found? c->action1 : c->action2];
@@ -1017,7 +1106,7 @@ for (;;)
       else
         {
         if (cstate_stack_ptr < 0)
-          log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+          log_write_die(0, LOG_CONFIG_IN,
             ".%s without matching .ifdef", c->name);
         cstate = (c->pushpop < 0)? cstate_stack[cstate_stack_ptr--] :
           next_cstate[cstate][macro_found? c->action1 : c->action2];
@@ -1046,7 +1135,7 @@ for (;;)
          (Ustrncmp(ss+8, "_if_exists", 10) == 0 && isspace(ss[18]))))
     {
     uschar *t;
-    int include_if_exists = isspace(ss[8])? 0 : 10;
+    int include_if_exists = isspace(ss[8]) ? 0 : 10;
     config_file_item *save;
     struct stat statbuf;
 
@@ -1065,13 +1154,11 @@ for (;;)
     relative names not allowed with .include_if_exists. For .include_if_exists
     we need to check the permissions/ownership of the containing folder */
     if (*ss != '/')
-      if (include_if_exists) log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, ".include specifies a non-"
-          "absolute path \"%s\"", ss);
+      if (include_if_exists)
+	log_write_die(0, LOG_CONFIG_IN,
+			".include specifies a non-absolute path \"%s\"", ss);
       else
-        {
-	gstring * g = string_append(NULL, 3, config_directory, "/", ss);
-	ss = string_from_gstring(g);
-        }
+	ss = string_sprintf("%s/%s", config_directory, ss);
 
     if (include_if_exists != 0 && (Ustat(ss, &statbuf) != 0)) continue;
 
@@ -1086,7 +1173,7 @@ for (;;)
     save->lineno = config_lineno;
 
     if (!(config_file = Ufopen(ss, "rb")))
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "failed to open included "
+      log_write_die(0, LOG_CONFIG_IN, "failed to open included "
         "configuration file %s", ss);
 
     config_filename = string_copy(ss);
@@ -1149,6 +1236,12 @@ if (strncmpic(s, US"begin ", 6) == 0)
   return NULL;
   }
 
+#ifdef LOOKUP_MODULE_DIR
+/* Check for any required module load operations */
+
+//mod_load_check(s);
+#endif
+
 /* Return the first non-blank character. */
 
 return s;
@@ -1160,9 +1253,9 @@ return s;
 *             Read a name                        *
 *************************************************/
 
-/* The yield is the pointer to the next uschar. Names longer than the
-output space are silently truncated. This function is also used from acl.c when
-parsing ACLs.
+/* The yield is the pointer to the next uschar after the name plus
+and whitespace. Names longer than the output space are silently truncated.
+This function is also used from acl.c when parsing ACLs.
 
 Arguments:
   name      where to put the name
@@ -1191,7 +1284,7 @@ if (isalpha(Uskip_whitespace(&s)))
 
 name[p] = 0;
 if (broken) {
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
             "exim item name too long (>%d), unable to use \"%s\" (truncated)",
             len, name);
 }
@@ -1364,7 +1457,7 @@ optionlist *ol;
 uschar name2[EXIM_DRIVERNAME_MAX];
 sprintf(CS name2, "*set_%.50s", name);
 if (!(ol = find_option(name2, oltop, last)))
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
     "Exim internal error: missing set flag for %s", name);
 return data_block
   ? (BOOL *)(US data_block + ol->v.offset) : (BOOL *)ol->v.value;
@@ -1392,7 +1485,7 @@ extra_chars_error(const uschar *s, const uschar *t1, const uschar *t2, const usc
 {
 uschar *comment = US"";
 if (*s == '#') comment = US" (# is comment only at line start)";
-log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+log_write_die(0, LOG_CONFIG_IN,
   "extra characters follow %s%s%s%s", t1, t2, t3, comment);
 }
 
@@ -1433,7 +1526,7 @@ next->key = string_dequote(&p);
 
 Uskip_whitespace(&p);
 if (!*p)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
     "missing rewrite replacement string");
 
 next->flags = 0;
@@ -1464,12 +1557,12 @@ while (*p) switch (*p++)
   case 'S':
   next->flags |= rewrite_smtp;
   if (next->key[0] != '^' && Ustrncmp(next->key, "\\N^", 3) != 0)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "rewrite rule has the S flag but is not a regular expression");
   break;
 
   default:
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
     "unknown rewrite flag character '%c' "
     "(could be missing quotes round replacement item)", p[-1]);
   break;
@@ -1541,7 +1634,7 @@ ss = s;
 yield = string_dequote(&s);
 
 if (s == ss+1 || s[-1] != '\"')
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
     "missing quote at end of string value for %s", name);
 
 if (*s != 0) extra_chars_error(s, US"string value for ", name, US"");
@@ -1570,7 +1663,7 @@ else
   /* "smtp_receive_timeout",     opt_time,        &smtp_receive_timeout */
   smtp_receive_timeout = readconf_readtime(str, 0, FALSE);
   if (smtp_receive_timeout < 0)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "invalid time value for %s",
+    log_write_die(0, LOG_CONFIG_IN, "invalid time value for %s",
       name);
   }
 }
@@ -1618,7 +1711,7 @@ static BOOL
 readconf_handle_option(uschar *buffer, optionlist *oltop, int last,
   void *data_block, uschar *unknown_txt)
 {
-int ptr = 0;
+int ptr;
 int offset = 0;
 int count, type, value;
 int issecure = 0;
@@ -1632,17 +1725,21 @@ rmark reset_point;
 int intbase = 0;
 uschar *inttype = US"";
 uschar *sptr;
-const uschar * s = buffer;
+const uschar * s;
 uschar **str_target;
 uschar name[EXIM_DRIVERNAME_MAX];
 uschar name2[EXIM_DRIVERNAME_MAX];
 
+sublist:
+
+s = buffer;
+ptr = 0;
+
 /* There may be leading spaces; thereafter, we expect an option name starting
 with a letter. */
 
-while (isspace(*s)) s++;
-if (!isalpha(*s))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "option setting expected: %s", s);
+if (!isalpha( Uskip_whitespace(&s) ))
+  log_write_die(0, LOG_CONFIG_IN, "option setting expected: %s", s);
 
 /* Read the name of the option, and skip any subsequent white space. If
 it turns out that what we read was "hide", set the flag indicating that
@@ -1656,7 +1753,7 @@ for (int n = 0; n < 2; n++)
     s++;
     }
   name[ptr] = 0;
-  while (isspace(*s)) s++;
+  Uskip_whitespace(&s);
   if (Ustrcmp(name, "hide") != 0) break;
   issecure = opt_secure;
   ptr = 0;
@@ -1682,11 +1779,11 @@ is set twice, is a disaster. */
 if (!(ol = find_option(name + offset, oltop, last)))
   {
   if (!unknown_txt) return FALSE;
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, CS unknown_txt, name);
+  log_write_die(0, LOG_CONFIG_IN, CS unknown_txt, name);
   }
 
 if ((ol->type & opt_set)  && !(ol->type & (opt_rep_con | opt_rep_str)))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
     "\"%s\" option set for the second time", name);
 
 ol->type |= opt_set | issecure;
@@ -1698,13 +1795,13 @@ applies only to boolean values. */
 if (type < opt_bool || type > opt_bool_last)
   {
   if (offset != 0)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "negation prefix applied to a non-boolean option");
   if (!*s)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "unexpected end of line (data missing) after %s", name);
   if (*s != '=')
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "missing \"=\" after %s", name);
+    log_write_die(0, LOG_CONFIG_IN, "missing \"=\" after %s", name);
   }
 
 /* If a boolean wasn't preceded by "no[t]_" it can be followed by = and
@@ -1716,7 +1813,7 @@ else if (*s && (offset != 0 || *s != '='))
 
 /* Skip white space after = */
 
-if (*s == '=') while (isspace((*(++s))));
+if (*s == '=') while (isspace(*++s));
 
 /* If there is a data block and the opt_public flag is not set, change
 the data block pointer to the private options block. */
@@ -1845,7 +1942,7 @@ switch (type)
 	  ol3 = find_option(name2, oltop, last);
 
 	  if (!ol2 || !ol3)
-	    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+	    log_write_die(0, LOG_CONFIG_IN,
 	      "rewrite rules not available for driver");
 
 	  if (data_block)
@@ -1868,7 +1965,7 @@ switch (type)
 	    }
 
 	  if ((*flagptr & (rewrite_all_envelope | rewrite_smtp)) != 0)
-	    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "rewrite rule specifies a "
+	    log_write_die(0, LOG_CONFIG_IN, "rewrite rule specifies a "
 	      "non-header rewrite - not allowed at transport time -");
 	  }
 	break;
@@ -1903,7 +2000,7 @@ switch (type)
 
       case opt_uid:
 	if (!route_finduser(sptr, &pw, &uid))
-	  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "user %s was not found", sptr);
+	  log_write_die(0, LOG_CONFIG_IN, "user %s was not found", sptr);
 	if (data_block)
 	  *(uid_t *)(US data_block + ol->v.offset) = uid;
 	else
@@ -1964,7 +2061,7 @@ switch (type)
 
       case opt_gid:
 	if (!route_findgroup(sptr, &gid))
-	  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "group %s was not found", sptr);
+	  log_write_die(0, LOG_CONFIG_IN, "group %s was not found", sptr);
 	if (data_block)
 	  *((gid_t *)(US data_block + ol->v.offset)) = gid;
 	else
@@ -1986,7 +2083,7 @@ switch (type)
 	const uschar *op = expand_string (sptr);
 
 	if (op == NULL)
-	  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "failed to expand %s: %s",
+	  log_write_die(0, LOG_CONFIG_IN, "failed to expand %s: %s",
 	    name, expand_string_message);
 
 	p = op;
@@ -2007,7 +2104,7 @@ switch (type)
 	  /* If p is tainted we trap.  Not sure that can happen */
 	  (void)string_nextinlist(&p, &sep, big_buffer, BIG_BUFFER_SIZE);
 	  if (!route_finduser(big_buffer, NULL, &uid))
-	    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "user %s was not found",
+	    log_write_die(0, LOG_CONFIG_IN, "user %s was not found",
 	      big_buffer);
 	  list[ptr++] = uid;
 	  }
@@ -2028,7 +2125,7 @@ switch (type)
 	const uschar *op = expand_string (sptr);
 
 	if (!op)
-	  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "failed to expand %s: %s",
+	  log_write_die(0, LOG_CONFIG_IN, "failed to expand %s: %s",
 	    name, expand_string_message);
 
 	p = op;
@@ -2049,7 +2146,7 @@ switch (type)
 	  /* If p is tainted we trap.  Not sure that can happen */
 	  (void)string_nextinlist(&p, &sep, big_buffer, BIG_BUFFER_SIZE);
 	  if (!route_findgroup(big_buffer, &gid))
-	    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "group %s was not found",
+	    log_write_die(0, LOG_CONFIG_IN, "group %s was not found",
 	      big_buffer);
 	  list[ptr++] = gid;
 	  }
@@ -2102,7 +2199,7 @@ switch (type)
 	boolvalue = TRUE;
       else if (strcmpic(name2, US"false") == 0 || strcmpic(name2, US"no") == 0)
 	boolvalue = FALSE;
-      else log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+      else log_write_die(0, LOG_CONFIG_IN,
 	"\"%s\" is not a valid value for the \"%s\" option", name2, name);
       if (*s != 0) extra_chars_error(s, string_sprintf("\"%s\" ", name2),
 	US"for boolean option ", name);
@@ -2171,7 +2268,7 @@ switch (type)
       lvalue = strtol(CS s, CSS &endptr, intbase);
 
       if (endptr == s)
-	log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "%sinteger expected for %s",
+	log_write_die(0, LOG_CONFIG_IN, "%sinteger expected for %s",
 	  inttype, name);
 
       if (errno != ERANGE && *endptr)
@@ -2195,11 +2292,10 @@ switch (type)
 	}
 
       if (errno == ERANGE || lvalue > INT_MAX || lvalue < INT_MIN)
-	log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+	log_write_die(0, LOG_CONFIG_IN,
 	  "absolute value of integer \"%s\" is too large (overflow)", s);
 
-      while (isspace(*endptr)) endptr++;
-      if (*endptr)
+      if (Uskip_whitespace(&endptr))
 	extra_chars_error(endptr, inttype, US"integer value for ", name);
 
       value = (int)lvalue;
@@ -2220,7 +2316,7 @@ switch (type)
     int_eximarith_t lvalue = strtol(CS s, CSS &endptr, intbase);
 
     if (endptr == s)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "%sinteger expected for %s",
+      log_write_die(0, LOG_CONFIG_IN, "%sinteger expected for %s",
         inttype, name);
 
     if (errno != ERANGE && *endptr)
@@ -2244,11 +2340,10 @@ switch (type)
 	lvalue = (lvalue + 512)/1024;
       }
 
-    if (errno == ERANGE) log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    if (errno == ERANGE) log_write_die(0, LOG_CONFIG_IN,
       "absolute value of integer \"%s\" is too large (overflow)", s);
 
-    while (isspace(*endptr)) endptr++;
-    if (*endptr != 0)
+    if (Uskip_whitespace(&endptr))
       extra_chars_error(endptr, inttype, US"integer value for ", name);
 
     if (data_block)
@@ -2262,15 +2357,15 @@ switch (type)
 
   case opt_fixed:
     if (sscanf(CS s, "%d%n", &value, &count) != 1)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+      log_write_die(0, LOG_CONFIG_IN,
 	"fixed-point number expected for %s", name);
 
-    if (value < 0) log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    if (value < 0) log_write_die(0, LOG_CONFIG_IN,
       "integer \"%s\" is too large (overflow)", s);
 
     value *= 1000;
 
-    if (value < 0) log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    if (value < 0) log_write_die(0, LOG_CONFIG_IN,
       "integer \"%s\" is too large (overflow)", s);
 
     /* We get a coverity error here for using count, as it derived
@@ -2304,7 +2399,7 @@ switch (type)
   case opt_time:
     value = readconf_readtime(s, 0, FALSE);
     if (value < 0)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "invalid time value for %s",
+      log_write_die(0, LOG_CONFIG_IN, "invalid time value for %s",
 	name);
     if (data_block)
       *((int *)(US data_block + ol->v.offset)) = value;
@@ -2335,19 +2430,19 @@ switch (type)
         }
       value = readconf_readtime(s, terminator, FALSE);
       if (value < 0)
-        log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "invalid time value for %s",
+        log_write_die(0, LOG_CONFIG_IN, "invalid time value for %s",
           name);
       if (count > 1 && value <= list[count])
-        log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+        log_write_die(0, LOG_CONFIG_IN,
           "time value out of order for %s", name);
       list[count+1] = value;
       if (snext == NULL) break;
       s = snext + 1;
-      while (isspace(*s)) s++;
+      Uskip_whitespace(&s);
       }
 
     if (count > list[0] - 2)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "too many time values for %s",
+      log_write_die(0, LOG_CONFIG_IN, "too many time values for %s",
         name);
     if (count > 0 && list[2] == 0) count = 0;
     list[1] = count;
@@ -2355,10 +2450,20 @@ switch (type)
     }
 
   case opt_func:
-    {
-    void (*fn)() = ol->v.fn;
-    fn(name, s, 0);
+    ol->v.fn(name, s, 0);
     break;
+
+  case opt_module:
+    {
+    uschar * errstr;
+    misc_module_info * mi = misc_mod_find(US ol->v.value, &errstr);
+    if (!mi)
+      log_write_die(0, LOG_CONFIG_IN,
+	"failed to find %s module for %s: %s", US ol->v.value, name, errstr);
+
+    oltop = mi->options;
+    last = mi->options_count;
+    goto sublist;
     }
   }
 
@@ -2383,11 +2488,7 @@ readconf_printtime(int t)
 int s, m, h, d, w;
 uschar *p = time_buffer;
 
-if (t < 0)
-  {
-  *p++ = '-';
-  t = -t;
-  }
+if (t < 0) *p++ = '-', t = -t;
 
 s = t % 60;
 t /= 60;
@@ -2744,7 +2845,7 @@ Returns:      Boolean success
 */
 
 BOOL
-readconf_print(const uschar *name, uschar *type, BOOL no_labels)
+readconf_print(const uschar * name, const uschar * type, BOOL no_labels)
 {
 BOOL names_only = FALSE;
 optionlist *ol2 = NULL;
@@ -2918,7 +3019,7 @@ else if (Ustrcmp(type, "macro") == 0)
   for printing.  So we have an admin_users restriction. */
   if (!f.admin_user)
     {
-    fprintf(stderr, "exim: permission denied\n");
+    fprintf(stderr, "exim: permission denied; not admin\n");
     return FALSE;
     }
   for (macro_item * m = macros; m; m = m->next)
@@ -2950,6 +3051,8 @@ if (names_only)
 for (; d; d = d->next)
   {
   BOOL rc = FALSE;
+  driver_info * di = d->info;
+
   if (!name)
     printf("\n%s %s:\n", d->name, type);
   else if (Ustrcmp(d->name, name) != 0) continue;
@@ -2958,11 +3061,11 @@ for (; d; d = d->next)
     if (!(ol->type & opt_hidden))
       rc |= print_ol(ol, US ol->name, d, ol2, size, no_labels);
 
-  for (optionlist * ol = d->info->options;
-       ol < d->info->options + *(d->info->options_count); ol++)
+  for (optionlist * ol = di->options;
+       ol < di->options + *di->options_count; ol++)
     if (!(ol->type & opt_hidden))
-      rc |= print_ol(ol, US ol->name, d, d->info->options,
-		    *d->info->options_count, no_labels);
+      rc |= print_ol(ol, US ol->name, d, di->options,
+		    *di->options_count, no_labels);
 
   if (name) return rc;
   }
@@ -3004,7 +3107,7 @@ read_named_list(tree_node **anchorp, int *numberp, int max, uschar *s,
 BOOL forcecache = FALSE;
 uschar *ss;
 tree_node *t;
-namedlist_block * nb = store_get_perm(sizeof(namedlist_block), FALSE);
+namedlist_block * nb = store_get_perm(sizeof(namedlist_block), GET_UNTAINTED);
 
 if (Ustrncmp(s, "_cache", 6) == 0)
   {
@@ -3013,10 +3116,10 @@ if (Ustrncmp(s, "_cache", 6) == 0)
   }
 
 if (!isspace(*s))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "unrecognized configuration line");
+  log_write_die(0, LOG_CONFIG_IN, "unrecognized configuration line");
 
 if (*numberp >= max)
- log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "too many named %ss (max is %d)\n",
+ log_write_die(0, LOG_CONFIG_IN, "too many named %ss (max is %d)\n",
    tname, max);
 
 Uskip_whitespace(&s);
@@ -3028,7 +3131,7 @@ t->name[s-ss] = 0;
 Uskip_whitespace(&s);
 
 if (!tree_insertnode(anchorp, t))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  log_write_die(0, LOG_CONFIG_IN,
     "duplicate name \"%s\" for a named %s", t->name, tname);
 
 t->data.ptr = nb;
@@ -3036,7 +3139,7 @@ nb->number = *numberp;
 *numberp += 1;
 nb->hide = hide;
 
-if (*s++ != '=') log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+if (*s++ != '=') log_write_die(0, LOG_CONFIG_IN,
   "missing '=' after \"%s\"", t->name);
 Uskip_whitespace(&s);
 nb->string = read_string(s, t->name);
@@ -3085,7 +3188,7 @@ if (sscanf(CS s, "%d, %15[0123456789smhdw.], %lf, %15s", threshold, bstring,
   *limit = readconf_readtime(lstring, 0, TRUE);
   if (*base >= 0 && *limit >= 0) return;
   }
-log_write(0, LOG_MAIN|LOG_PANIC_DIE, "malformed ratelimit data: %s", s);
+log_write_die(0, LOG_MAIN, "malformed ratelimit data: %s", s);
 }
 
 
@@ -3124,8 +3227,8 @@ readconf_main(BOOL nowarn)
 {
 int sep = 0;
 struct stat statbuf;
-uschar *s, *filename;
-const uschar *list = config_main_filelist;
+uschar * s, * filename;
+const uschar * list = config_main_filelist;
 
 /* Loop through the possible file names */
 
@@ -3213,12 +3316,12 @@ if (config_file)
     if (os_getcwd(buf, PATH_MAX) == NULL)
       {
       perror("exim: getcwd");
-      exit(EXIT_FAILURE);
+      exim_exit(EXIT_FAILURE);
       }
     g = string_cat(NULL, buf);
 
     /* If the dir does not end with a "/", append one */
-    if (g->s[g->ptr-1] != '/')
+    if (gstring_last_char(g) != '/')
       g = string_catn(g, US"/", 1);
 
     /* If the config file contains a "/", extract the directory part */
@@ -3231,10 +3334,10 @@ if (config_file)
   }
 else
   if (!filename)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "non-existent configuration file(s): "
+    log_write_die(0, LOG_MAIN, "non-existent configuration file(s): "
       "%s", config_main_filelist);
   else
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s",
+    log_write_die(0, LOG_MAIN, "%s",
       string_open_failed("configuration file %s", filename));
 
 /* Now, once we found and opened our configuration file, we change the directory
@@ -3243,7 +3346,7 @@ to a safe place. Later we change to $spool_directory. */
 if (Uchdir("/") < 0)
   {
   perror("exim: chdir `/': ");
-  exit(EXIT_FAILURE);
+  exim_exit(EXIT_FAILURE);
   }
 
 /* Check the status of the file we have opened, if we have retained root
@@ -3252,7 +3355,7 @@ privileges and the file isn't /dev/null (which *should* be 0666). */
 if (f.trusted_config && Ustrcmp(filename, US"/dev/null"))
   {
   if (fstat(fileno(config_file), &statbuf) != 0)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to stat configuration file %s",
+    log_write_die(0, LOG_MAIN, "failed to stat configuration file %s",
       big_buffer);
 
   if (    statbuf.st_uid != root_uid		/* owner not root */
@@ -3268,7 +3371,7 @@ if (f.trusted_config && Ustrcmp(filename, US"/dev/null"))
      ||						/* or */
        (statbuf.st_mode & 2) != 0		/* world writeable  */
      )
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "Exim configuration file %s has the "
+    log_write_die(0, LOG_MAIN, "Exim configuration file %s has the "
       "wrong owner, group, or mode", big_buffer);
 
   /* Do a dummy store-allocation of a size related to the (toplevel) file size.
@@ -3281,6 +3384,7 @@ if (f.trusted_config && Ustrcmp(filename, US"/dev/null"))
     {
     rmark r = store_mark();
     void * dummy = store_get((int)statbuf.st_size, GET_UNTAINTED);
+    dummy = dummy;	/* stupid compiler quietening */
     store_reset(r);
     }
   }
@@ -3295,7 +3399,7 @@ while ((s = get_config_line()))
   uschar * t;
 
   if (config_lineno == 1 && Ustrstr(s, "\xef\xbb\xbf") == s)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "found unexpected BOM (Byte Order Mark)");
 
   if (isupper(*s))
@@ -3331,7 +3435,7 @@ while ((s = get_config_line()))
 /* If local_sender_retain is set, local_from_check must be unset. */
 
 if (local_sender_retain && local_from_check)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "both local_from_check and "
+  log_write_die(0, LOG_MAIN, "both local_from_check and "
     "local_sender_retain are set; this combination is not allowed");
 
 /* If the timezone string is empty, set it to NULL, implying no TZ variable
@@ -3364,7 +3468,7 @@ if (!primary_hostname)
   struct utsname uts;
 
   if (uname(&uts) < 0)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "uname() failed to yield host name");
+    log_write_die(0, LOG_MAIN, "uname() failed to yield host name");
   hostname = US uts.nodename;
 
   if (Ustrchr(hostname, '.') == NULL)
@@ -3413,14 +3517,17 @@ got set above. Of course, writing to the log may not work if log_file_path is
 not set, but it will at least get to syslog or somewhere, with any luck. */
 
 if (!*spool_directory)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "spool_directory undefined: cannot "
+  log_write_die(0, LOG_MAIN, "spool_directory undefined: cannot "
     "proceed");
 
 /* Expand the spool directory name; it may, for example, contain the primary
 host name. Same comment about failure. */
 
+DEBUG(D_any) if (Ustrchr(spool_directory, '$'))
+  debug_printf("Expanding spool_directory option\n");
+
 if (!(s = expand_string(spool_directory)))
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to expand spool_directory "
+  log_write_die(0, LOG_MAIN, "failed to expand spool_directory "
     "\"%s\": %s", spool_directory, expand_string_message);
 spool_directory = s;
 
@@ -3433,7 +3540,7 @@ if (*log_file_path)
   const uschar *ss, *sss;
   int sep = ':';                       /* Fixed for log file path */
   if (!(s = expand_string(log_file_path)))
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to expand log_file_path "
+    log_write_die(0, LOG_MAIN, "failed to expand log_file_path "
       "\"%s\": %s", log_file_path, expand_string_message);
 
   ss = s;
@@ -3443,12 +3550,12 @@ if (*log_file_path)
     uschar *t;
     if (sss[0] == 0 || Ustrcmp(sss, "syslog") == 0) continue;
     if (!(t = Ustrstr(sss, "%s")))
-      log_write(0, LOG_MAIN|LOG_PANIC_DIE, "log_file_path \"%s\" does not "
+      log_write_die(0, LOG_MAIN, "log_file_path \"%s\" does not "
         "contain \"%%s\"", sss);
     *t = 'X';
     if ((t = Ustrchr(sss, '%')))
       if ((t[1] != 'D' && t[1] != 'M') || Ustrchr(t+2, '%') != NULL)
-        log_write(0, LOG_MAIN|LOG_PANIC_DIE, "log_file_path \"%s\" contains "
+        log_write_die(0, LOG_MAIN, "log_file_path \"%s\" contains "
           "unexpected \"%%\" character", s);
     }
 
@@ -3462,7 +3569,7 @@ leading "log_". */
 if (syslog_facility_str)
   {
   int i;
-  uschar *s = syslog_facility_str;
+  uschar * s = syslog_facility_str;
 
   if ((Ustrlen(syslog_facility_str) >= 4) &&
         (strncmpic(syslog_facility_str, US"log_", 4) == 0))
@@ -3476,7 +3583,7 @@ if (syslog_facility_str)
       }
 
   if (i >= syslog_list_size)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "failed to interpret syslog_facility \"%s\"", syslog_facility_str);
   }
 
@@ -3484,10 +3591,11 @@ if (syslog_facility_str)
 
 if (*pid_file_path)
   {
-  if (!(s = expand_string(pid_file_path)))
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to expand pid_file_path "
+  const uschar * t = expand_string(pid_file_path);
+  if (!t)
+    log_write_die(0, LOG_MAIN, "failed to expand pid_file_path "
       "\"%s\": %s", pid_file_path, expand_string_message);
-  pid_file_path = s;
+  pid_file_path = t;
   }
 
 /* Set default value of process_log_path */
@@ -3524,7 +3632,7 @@ if (system_filter_uid_set && !system_filter_gid_set)
   {
   struct passwd *pw = getpwuid(system_filter_uid);
   if (!pw)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "Failed to look up uid %ld",
+    log_write_die(0, LOG_MAIN, "Failed to look up uid %ld",
       (long int)system_filter_uid);
   system_filter_gid = pw->pw_gid;
   system_filter_gid_set = TRUE;
@@ -3541,11 +3649,11 @@ if (errors_reply_to)
     &start, &end, &domain, FALSE);
 
   if (!recipient)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "error in errors_reply_to (%s): %s", errors_reply_to, errmess);
 
   if (!domain)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "errors_reply_to (%s) does not contain a domain", errors_reply_to);
   }
 
@@ -3553,7 +3661,7 @@ if (errors_reply_to)
 smtp_accept_max must also be set. */
 
 if (smtp_accept_max == 0 && (smtp_accept_queue > 0 || smtp_accept_max_per_host))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  log_write_die(0, LOG_CONFIG,
     "smtp_accept_max must be set if smtp_accept_queue or "
     "smtp_accept_max_per_host is set");
 
@@ -3568,16 +3676,15 @@ if (host_number_string)
   uschar *s = expand_string(host_number_string);
 
   if (!s)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+    log_write_die(0, LOG_MAIN,
         "failed to expand localhost_number \"%s\": %s",
         host_number_string, expand_string_message);
   n = Ustrtol(s, &end, 0);
-  while (isspace(*end)) end++;
-  if (*end)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  if (Uskip_whitespace(&end))
+    log_write_die(0, LOG_CONFIG,
       "localhost_number value is not a number: %s", s);
   if (n > LOCALHOST_MAX)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "localhost_number is greater than the maximum allowed value (%d)",
         LOCALHOST_MAX);
   host_number = n;
@@ -3587,7 +3694,7 @@ if (host_number_string)
 /* If tls_verify_hosts is set, tls_verify_certificates must also be set */
 
 if ((tls_verify_hosts || tls_try_verify_hosts) && !tls_verify_certificates)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  log_write_die(0, LOG_CONFIG,
     "tls_%sverify_hosts is set, but tls_verify_certificates is not set",
     tls_verify_hosts ? "" : "try_");
 
@@ -3595,19 +3702,19 @@ if ((tls_verify_hosts || tls_try_verify_hosts) && !tls_verify_certificates)
 used by so many clients, and what Exim used to use always, that it makes
 sense to just min-clamp this max-clamp at that. */
 if (tls_dh_max_bits < 1024)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  log_write_die(0, LOG_CONFIG,
       "tls_dh_max_bits is too small, must be at least 1024 for interop");
 
 /* If openssl_options is set, validate it */
 if (openssl_options)
   {
 # ifdef USE_GNUTLS
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  log_write_die(0, LOG_CONFIG,
     "openssl_options is set but we're using GnuTLS");
 # else
   long dummy;
   if (!tls_openssl_options_parse(openssl_options, &dummy))
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
       "openssl_options parse error: %s", openssl_options);
 # endif
   }
@@ -3621,6 +3728,18 @@ if (!nowarn && !keep_environment && environ && *environ)
 
 
 
+/* Add a driver info struct to a list. */
+
+void
+add_driver_info(driver_info ** drlist_p, const driver_info * newent,
+  size_t size)
+{
+driver_info * listent = store_get(size, newent);
+memcpy(listent, newent, size);
+listent->next = *drlist_p;
+*drlist_p= listent;
+}
+
 /*************************************************
 *          Initialize one driver                 *
 *************************************************/
@@ -3633,34 +3752,105 @@ set by another incarnation of the same driver).
 Arguments:
   d                   pointer to driver instance block, with generic
                         options filled in
-  drivers_available   vector of available drivers
+  info_anchor	      list of available drivers
   size_of_info        size of each block in drivers_available
-  class               class of driver, for error message
+  class               class of driver
 
 Returns:              pointer to the driver info block
 */
 
 static driver_info *
-init_driver(driver_instance *d, driver_info *drivers_available,
-  int size_of_info, uschar *class)
+init_driver(driver_instance * d, driver_info ** info_anchor,
+  int size_of_info, const uschar * class)
 {
-for (driver_info * dd = drivers_available; dd->driver_name[0] != 0;
-     dd = (driver_info *)((US dd) + size_of_info))
-  if (Ustrcmp(d->driver_name, dd->driver_name) == 0)
-    {
-    int len = dd->options_len;
-    d->info = dd;
-    d->options_block = store_get_perm(len, FALSE);
-    memcpy(d->options_block, dd->options_block, len);
-    for (int i = 0; i < *(dd->options_count); i++)
-      dd->options[i].type &= ~opt_set;
-    return dd;
-    }
+driver_info * di;
+int len;
+#ifdef LOOKUP_MODULE_DIR
+DIR * dd;
+#endif
 
-log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+/* First scan the list of driver seen so far. */
+
+for (di = *info_anchor; di; di = di->next)
+  if (Ustrcmp(d->driver_name, di->driver_name) == 0)
+    goto found;
+
+#ifdef LOOKUP_MODULE_DIR
+/* Potentially a loadable module. Look for a file with the right name. */
+
+if (!(dd = exim_opendir(CUS LOOKUP_MODULE_DIR)))
+  {
+  log_write(0, LOG_MAIN|LOG_PANIC,
+	    "Couldn't open %s: not loading driver modules\n", LOOKUP_MODULE_DIR);
+  }
+else
+  {
+  uschar * fname = string_sprintf("%s_%s." DYNLIB_FN_EXT, d->driver_name, class), * sname;
+  const char * errormsg;
+
+  DEBUG(D_any) debug_printf("Loading %s %s driver from %s\n",
+			    d->driver_name, class, LOOKUP_MODULE_DIR);
+
+  for(struct dirent * ent; ent = readdir(dd); ) if (Ustrcmp(ent->d_name, fname) == 0)
+    {
+    void * dl = dlopen(CS string_sprintf(LOOKUP_MODULE_DIR "/%s", fname), RTLD_NOW);
+    static driver_magics dm[] = {
+      { ROUTER_MAGIC,	US"router" },
+      { TRANSPORT_MAGIC, US"transport" },
+      { AUTH_MAGIC,	US"auth" },
+    };
+
+    if (!dl)
+      {
+      errormsg = dlerror();
+      log_write(0, LOG_MAIN|LOG_PANIC, "Error loading %s %s driver: %s\n",
+		d->driver_name, class, errormsg);
+      break;
+      }
+    (void) dlerror();		/* cf. comment in init_lookup_list() */
+
+    di = (driver_info *) dlsym(dl, CS string_sprintf("_%s_info", class));
+    if ((errormsg = dlerror()))
+      {
+      log_write(0, LOG_MAIN|LOG_PANIC,
+		"%s does not appear to be a %s module (%s)\n", fname, class, errormsg);
+      dlclose(dl);
+      break;
+      }
+    for(driver_magics * dmp = dm; dmp < dm + nelem(dm); dmp++)
+      if(Ustrcmp(dmp->class, class) == 0 && dmp->magic == di->dyn_magic)
+	{
+	int old_pool = store_pool;
+	store_pool = POOL_PERM;
+	add_driver_info(info_anchor, di, size_of_info);
+	store_pool = old_pool;
+	DEBUG(D_any) debug_printf("Loaded %s %s\n", d->driver_name, class);
+	closedir(dd);
+	goto found;
+	}
+
+    log_write(0, LOG_MAIN|LOG_PANIC,
+	      "%s module %s is not compatible with this version of Exim\n",
+	      class, d->driver_name);
+    dlclose(dl);
+    break;
+    }
+  closedir(dd);
+  }
+#endif	/* LOOKUP_MODULE_DIR */
+
+log_write_die(0, LOG_CONFIG_IN,
   "%s %s: cannot find %s driver \"%s\"", class, d->name, class, d->driver_name);
 
-return NULL;   /* never obeyed */
+found:
+
+len = di->options_len;
+d->info = di;
+d->options_block = store_get_perm(len, GET_UNTAINTED);
+memcpy(d->options_block, di->options_block, len);
+for (int i = 0; i < *di->options_count; i++)
+  di->options[i].type &= ~opt_set;
+return di;
 }
 
 
@@ -3669,10 +3859,12 @@ return NULL;   /* never obeyed */
 static void
 driver_init_fini(driver_instance * d, const uschar * class)
 {
+driver_info * di = d->info;
+
 if (!d->driver_name)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+  log_write_die(0, LOG_CONFIG,
     "no driver defined for %s \"%s\"", class, d->name);
-(d->info->init)(d);
+(di->init)(d);
 }
 
 
@@ -3691,28 +3883,29 @@ driver_instance must map the first portions of all the _info and _instance
 blocks for this shared code to work.
 
 Arguments:
-  class                      "router", "transport", or "authenticator"
   anchor                     &routers, &transports, &auths
-  drivers_available          available drivers
+  info_anchor		     available drivers
   size_of_info               size of each info block
   instance_default           points to default data for an instance
   instance_size              size of instance block
   driver_optionlist          generic option list
   driver_optionlist_count    count of generic option list
+  class                      "router", "transport", or "auth"
+			      for filename component (and error message)
 
 Returns:                     nothing
 */
 
 void
 readconf_driver_init(
-  uschar *class,
-  driver_instance **anchor,
-  driver_info *drivers_available,
+  driver_instance ** anchor,
+  driver_info ** info_anchor,
   int size_of_info,
-  void *instance_default,
+  void * instance_default,
   int  instance_size,
-  optionlist *driver_optionlist,
-  int  driver_optionlist_count)
+  optionlist * driver_optionlist,
+  int  driver_optionlist_count,
+  const uschar * class)
 {
 driver_instance ** p = anchor;
 driver_instance * d = NULL;
@@ -3759,16 +3952,16 @@ while ((buffer = get_config_line()))
 
     for (d = *anchor; d; d = d->next)
       if (Ustrcmp(name, d->name) == 0)
-        log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+        log_write_die(0, LOG_CONFIG,
           "there are two %ss called \"%s\"", class, name);
 
     /* Set up a new driver instance data block on the chain, with
     its default values installed. */
 
-    d = store_get_perm(instance_size, FALSE);
+    d = store_get_perm(instance_size, GET_UNTAINTED);
     memcpy(d, instance_default, instance_size);
     *p = d;
-    p = &d->next;
+    p = (driver_instance **)&d->next;
     d->name = string_copy(name);
     d->srcfile = config_filename;
     d->srcline = config_lineno; 
@@ -3789,7 +3982,7 @@ while ((buffer = get_config_line()))
   current driver yet. */
 
   if (!d)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "%s name missing", class);
+    log_write_die(0, LOG_CONFIG_IN, "%s name missing", class);
 
   /* First look to see if this is a generic option; if it is "driver",
   initialize the driver. If is it not a generic option, we can look for a
@@ -3799,7 +3992,7 @@ while ((buffer = get_config_line()))
         driver_optionlist_count, d, NULL))
     {
     if (!d->info && d->driver_name)
-      init_driver(d, drivers_available, size_of_info, class);
+      init_driver(d, info_anchor, size_of_info, class);
     }
 
   /* Handle private options - pass the generic block because some may
@@ -3807,12 +4000,15 @@ while ((buffer = get_config_line()))
   block. */
 
   else if (d->info)
-    readconf_handle_option(buffer, d->info->options,
-      *(d->info->options_count), d, US"option \"%s\" unknown");
+    {
+    driver_info * di = d->info;
+    readconf_handle_option(buffer, di->options,
+      *di->options_count, d, US"option \"%s\" unknown");
+    }
 
   /* The option is not generic and the driver name has not yet been given. */
 
-  else log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "option \"%s\" unknown "
+  else log_write_die(0, LOG_CONFIG_IN, "option \"%s\" unknown "
     "(\"driver\" must be specified before any private options)", name);
   }
 
@@ -3840,12 +4036,13 @@ Returns:   TRUE if a dependency is found
 */
 
 BOOL
-readconf_depends(driver_instance *d, uschar *s)
+readconf_depends(driver_instance * d, uschar * s)
 {
-int count = *(d->info->options_count);
-uschar *ss;
+driver_info * di = d->info;
+int count = *di->options_count;
+uschar * ss;
 
-for (optionlist * ol = d->info->options; ol < d->info->options + count; ol++)
+for (optionlist * ol = di->options; ol < di->options + count; ol++)
   if ((ol->type & opt_mask) == opt_stringptr)
     {
     void * options_block = ol->type & opt_public ? (void *)d : d->options_block;
@@ -4021,19 +4218,18 @@ Returns:    time in seconds or fixed point number * 1000
 */
 
 static int
-retry_arg(const uschar **paddr, int type)
+retry_arg(const uschar ** paddr, int type)
 {
-const uschar *p = *paddr;
-const uschar *pp;
+const uschar * p = *paddr, * pp;
 
-if (*p++ != ',') log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "comma expected");
+if (*p++ != ',') log_write_die(0, LOG_CONFIG_IN, "comma expected");
 
 Uskip_whitespace(&p);
 pp = p;
 while (isalnum(*p) || (type == 1 && *p == '.')) p++;
 
-if (*p != 0 && !isspace(*p) && *p != ',' && *p != ';')
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "comma or semicolon expected");
+if (*p && !isspace(*p) && *p != ',' && *p != ';')
+  log_write_die(0, LOG_CONFIG_IN, "comma or semicolon expected");
 
 *paddr = p;
 switch (type)
@@ -4072,14 +4268,14 @@ while ((p = get_config_line()))
   Uskip_whitespace(&p);
   pp = p;
   while (mac_isgraph(*p)) p++;
-  if (p - pp <= 0) log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+  if (p - pp <= 0) log_write_die(0, LOG_CONFIG_IN,
     "missing error type in retry rule");
 
   /* Test error names for things we understand. */
 
   if ((error = readconf_retry_error(pp, p, &next->basic_errno,
        &next->more_errno)))
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "%s", error);
+    log_write_die(0, LOG_CONFIG_IN, "%s", error);
 
   /* There may be an optional address list of senders to be used as another
   constraint on the rule. This was added later, so the syntax is a bit of a
@@ -4091,7 +4287,7 @@ while ((p = get_config_line()))
     {
     p += 7;
     Uskip_whitespace(&p);
-    if (*p++ != '=') log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    if (*p++ != '=') log_write_die(0, LOG_CONFIG_IN,
       "\"=\" expected after \"senders\" in retry rule");
     Uskip_whitespace(&p);
     next->senders = string_dequote(&p);
@@ -4125,13 +4321,13 @@ while ((p = get_config_line()))
 	break;
 
       default:
-	log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "unknown retry rule letter");
+	log_write_die(0, LOG_CONFIG_IN, "unknown retry rule letter");
 	break;
       }
 
     if (rule->timeout <= 0 || rule->p1 <= 0 ||
           (rule->rule != 'F' && rule->p2 < 1000))
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+      log_write_die(0, LOG_CONFIG_IN,
         "bad parameters for retry rule");
 
     if (Uskip_whitespace(&p) == ';')
@@ -4140,7 +4336,7 @@ while ((p = get_config_line()))
       Uskip_whitespace(&p);
       }
     else if (*p)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "semicolon expected");
+      log_write_die(0, LOG_CONFIG_IN, "semicolon expected");
     }
   }
 }
@@ -4163,36 +4359,86 @@ auths_init(void)
 #ifndef DISABLE_PIPE_CONNECT
 int nauths = 0;
 #endif
+int old_pool = store_pool;
+store_pool = POOL_PERM;
+  {
+  driver_info ** anchor = (driver_info **) &auths_available;
 
-readconf_driver_init(US"authenticator",
-  (driver_instance **)(&auths),      /* chain anchor */
-  (driver_info *)auths_available,    /* available drivers */
+  /* Add the transport drivers that are built for static linkage to the
+  list of availables. */
+
+#if defined(AUTH_CRAM_MD5) && AUTH_CRAM_MD5!=2
+  extern auth_info cram_md5_auth_info;
+  add_driver_info(anchor, &cram_md5_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_CYRUS_SASL) && AUTH_CYRUS_SASL!=2
+  extern auth_info cyrus_sasl_auth_info;
+  add_driver_info(anchor, &cyrus_sasl_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_DOVECOT) && AUTH_DOVECOT!=2
+  extern auth_info dovecot_auth_info;
+  add_driver_info(anchor, &dovecot_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_EXTERNAL) && AUTH_EXTERNAL!=2
+  extern auth_info external_auth_info;
+  add_driver_info(anchor, &external_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_GSASL) && AUTH_GSASL!=2
+  extern auth_info gsasl_auth_info;
+  add_driver_info(anchor, &gsasl_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_HEIMDAL_GSSAPI) && AUTH_HEIMDAL_GSSAPI!=2
+  extern auth_info heimdal_gssapi_auth_info;
+  add_driver_info(anchor, &heimdal_gssapi_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_PLAINTEXT) && AUTH_PLAINTEXT!=2
+  extern auth_info plaintext_auth_info;
+  add_driver_info(anchor, &plaintext_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_SPA) && AUTH_SPA!=2
+  extern auth_info spa_auth_info;
+  add_driver_info(anchor, &spa_auth_info.drinfo, sizeof(auth_info));
+#endif
+#if defined(AUTH_TLS) && AUTH_TLS!=2
+  extern auth_info tls_auth_info;
+  add_driver_info(anchor, &tls_auth_info.drinfo, sizeof(auth_info));
+#endif
+  }
+store_pool = old_pool;
+
+/* Read the config file "authenticators" section, creating an auth instance list.
+For any yet-undiscovered driver, check for a loadable module and add it to
+those available. */
+
+readconf_driver_init((driver_instance **)&auths,      /* chain anchor */
+  (driver_info **)&auths_available,  /* available drivers */
   sizeof(auth_info),                 /* size of info block */
   &auth_defaults,                    /* default values for generic options */
   sizeof(auth_instance),             /* size of instance block */
   optionlist_auths,                  /* generic options */
-  optionlist_auths_size);
+  optionlist_auths_size,
+  US"auth");
 
-for (auth_instance * au = auths; au; au = au->next)
+for (auth_instance * au = auths; au; au = au->drinst.next)
   {
   if (!au->public_name)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG, "no public name specified for "
-      "the %s authenticator", au->name);
+    log_write_die(0, LOG_CONFIG, "no public name specified for "
+      "the %s authenticator", au->drinst.name);
 
-  for (auth_instance * bu = au->next; bu; bu = bu->next)
+  for (auth_instance * bu = au->drinst.next; bu; bu = bu->drinst.next)
     if (strcmpic(au->public_name, bu->public_name) == 0)
       if (  au->client && bu->client
 	 || au->server && bu->server)
-        log_write(0, LOG_PANIC_DIE|LOG_CONFIG, "two %s authenticators "
+        log_write_die(0, LOG_CONFIG, "two %s authenticators "
           "(%s and %s) have the same public name (%s)",
           au->client && bu->client ? US"client" : US"server",
-	  au->name, bu->name, au->public_name);
+	  au->drinst.name, bu->drinst.name, au->public_name);
 #ifndef DISABLE_PIPE_CONNECT
   nauths++;
 #endif
   }
 #ifndef DISABLE_PIPE_CONNECT
-f.smtp_in_early_pipe_no_auth = nauths > 16;
+f.smtp_in_early_pipe_no_auth = nauths > 16;	/* bits in bitmap limit */
 #endif
 }
 
@@ -4261,18 +4507,18 @@ while(acl_line)
     }
 
   if (*p != ':' || name[0] == 0)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "missing or malformed ACL name");
+    log_write_die(0, LOG_CONFIG_IN, "missing or malformed ACL name");
 
   node = store_get_perm(sizeof(tree_node) + Ustrlen(name), name);
   Ustrcpy(node->name, name);
   if (!tree_insertnode(&acl_anchor, node))
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "there are two ACLs called \"%s\"", name);
 
   node->data.ptr = acl_read(acl_callback, &error);
 
   if (node->data.ptr == NULL && error != NULL)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "error in ACL: %s", error);
+    log_write_die(0, LOG_CONFIG_IN, "error in ACL: %s", error);
   }
 }
 
@@ -4294,7 +4540,7 @@ static void
 local_scan_init(void)
 {
 #ifndef LOCAL_SCAN_HAS_OPTIONS
-log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN, "local_scan() options not supported: "
+log_write_die(0, LOG_CONFIG_IN, "local_scan() options not supported: "
   "(LOCAL_SCAN_HAS_OPTIONS not defined in Local/Makefile)");
 #else
 
@@ -4349,6 +4595,7 @@ while(next_section[0] != 0)
   int mid = last/2;
   int n = Ustrlen(next_section);
 
+  READCONF_DEBUG fprintf(stderr, "%s: %s\n", __FUNCTION__, next_section);
   if (tolower(next_section[n-1]) != 's') Ustrcpy(next_section+n, US"s");
 
   for (;;)
@@ -4357,14 +4604,14 @@ while(next_section[0] != 0)
     if (c == 0) break;
     if (c > 0) first = mid + 1; else last = mid;
     if (first >= last)
-      log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+      log_write_die(0, LOG_CONFIG_IN,
         "\"%.*s\" is not a known configuration section name", n, next_section);
     mid = (last + first)/2;
     }
 
   bit = 1 << mid;
   if (((had ^= bit) & bit) == 0)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_IN,
+    log_write_die(0, LOG_CONFIG_IN,
       "\"%.*s\" section is repeated in the configuration file", n,
         next_section);
 
@@ -4381,6 +4628,7 @@ while(next_section[0] != 0)
   }
 
 (void)fclose(config_file);
+config_lineno = 0;		/* Ensure we don't log a spurious position */
 }
 
 /* Init the storage for the pre-parsed config lines */
@@ -4435,10 +4683,8 @@ for (const config_line_item * i = config_lines; i; i = i->next)
   r = store_mark();
 
   /* skip over to the first non-space */
-  for (current = string_copy(i->line); *current && isspace(*current); ++current)
-    ;
-
-  if (!*current)
+  current = string_copy(i->line);
+  if (!Uskip_whitespace(&current))
     continue;
 
   /* Collapse runs of spaces. We stop this if we encounter one of the
@@ -4446,11 +4692,10 @@ for (const config_line_item * i = config_lines; i; i = i->next)
 
   for (p = current; *p; p++) if (isspace(*p))
     {
-    uschar *next;
+    uschar * next = p;
     if (*p != ' ') *p = ' ';
 
-    for (next = p; isspace(*next); ++next)
-      ;
+    Uskip_whitespace(&p);
 
     if (next - p > 1)
       memmove(p+1, next, Ustrlen(next)+1);

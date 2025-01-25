@@ -4,6 +4,7 @@
 
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "rf_functions.h"
@@ -24,7 +25,7 @@ Returns:      nothing
 */
 
 void
-rf_set_ugid(address_item *addr, ugid_block *ugid)
+rf_set_ugid(address_item * addr, const ugid_block * ugid)
 {
 if (ugid->uid_set)
   {

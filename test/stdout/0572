@@ -48,7 +48,6 @@ fallback_hosts =
 final_timeout = 10m
 no_gethostbyname
 helo_data = $primary_hostname
-host_name_extract = ${if and {{match{$host}{.outlook.com\$}} {match{$item}{\N^250-([\w.]+)\s\N}}} {$1}}
 hosts = 
 hosts_avoid_esmtp = 
 hosts_avoid_pipelining = 
@@ -61,14 +60,13 @@ hosts_require_auth =
 hosts_try_auth = 
 hosts_try_chunking = *
 hosts_try_fastopen = :
-hosts_try_prdr = *
 interface = ip4.ip4.ip4.ip4
 keepalive
 no_lmtp_ignore_quota
 max_rcpt = 100
 message_linelength_limit = 998
 multi_domain
-port = 1224
+port = PORT_S
 protocol = smtp
 retry_include_ip_address
 serialize_hosts = 
@@ -114,7 +112,7 @@ begin transports
   my_smtp:
     driver = smtp
     interface = ip4.ip4.ip4.ip4
-    port = 1224
+    port = PORT_S
     hosts_try_fastopen = :
     debug_print = transport_name <$transport_name>
 
@@ -154,6 +152,6 @@ begin transports
 my_smtp:
 driver = smtp
 interface = ip4.ip4.ip4.ip4
-port = 1224
+port = PORT_S
 hosts_try_fastopen = :
 debug_print = transport_name <$transport_name>

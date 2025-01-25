@@ -1,12 +1,12 @@
 # This file is the basis of the main makefile for Exim and friends. The
-#
 # makefile at the top level arranges to build the main makefile by calling
 # scripts/Configure-Makefile from within the build directory. This
 # concatenates the configuration settings from Local/Makefile and other,
 # optional, Local/* files at the front of this file, to create Makefile in the
 # build directory.
 #
-# Copyright (c) The Exim Maintainers 1995 - 2022
+# Copyright (c) The Exim Maintainers 1995 - 2024
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 SHELL      = $(MAKE_SHELL)
 SCRIPTS    = ../scripts
@@ -36,8 +36,11 @@ FE       = $(FULLECHO)
 # up-to-date. Then the os-specific source files and the C configuration file
 # are set up, and finally it goes to the main Exim target.
 
-all:       utils exim
+all:       utils exim dynmodules
 config:    $(EDITME) checklocalmake Makefile os.c config.h version.h version.sh macro.c
+
+exim_openssl exim_gnutls: clean exim
+	cp exim $@
 
 checklocalmake:
 	@if $(SHELL) $(SCRIPTS)/newer $(EDITME)-$(OSTYPE) $(EDITME) || \
@@ -105,18 +108,18 @@ config.h: Makefile buildconfig ../src/config.h.defaults $(EDITME)
 
 # Build the builtin-macros data struct
 
-MACRO_HSRC = macro_predef.h os.h globals.h config.h macros.h \
+MACRO_HSRC = macro_predef.h os.h globals.h config.h macros.h path_max.h \
 	routers/accept.h routers/dnslookup.h routers/ipliteral.h \
 	routers/iplookup.h routers/manualroute.h routers/queryprogram.h \
 	routers/redirect.h
 
 OBJ_MACRO = macro_predef.o \
-	macro-globals.o macro-readconf.o macro-route.o macro-transport.o macro-drtables.o \
-	macro-acl.o macro-tls.o \
+	macro-globals.o macro-readconf.o macro-expand.o macro-route.o \
+	macro-transport.o macro-drtables.o macro-acl.o macro-tls.o \
 	macro-appendfile.o macro-autoreply.o macro-lmtp.o macro-pipe.o macro-queuefile.o \
 	macro-smtp.o macro-accept.o macro-dnslookup.o macro-ipliteral.o macro-iplookup.o \
 	macro-manualroute.o macro-queryprogram.o macro-redirect.o \
-	macro-auth-spa.o macro-cram_md5.o macro-cyrus_sasl.o macro-dovecot.o macro-gsasl_exim.o \
+	macro-auth-spa.o macro-cram_md5.o macro-cyrus_sasl.o macro-dovecot.o macro-gsasl.o \
 	macro-heimdal_gssapi.o macro-plaintext.o macro-spa.o macro-authtls.o macro-external.o \
 	macro-dkim.o macro-malware.o macro-signing.o
 
@@ -131,6 +134,9 @@ macro-globals.o :	globals.c
 macro-readconf.o :	readconf.c
 	@echo "$(CC) -DMACRO_PREDEF readconf.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ readconf.c
+macro-expand.o :	expand.c
+	@echo "$(CC) -DMACRO_PREDEF expand.c"
+	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ expand.c
 macro-route.o :		route.c
 	@echo "$(CC) -DMACRO_PREDEF route.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ route.c
@@ -200,9 +206,9 @@ macro-dovecot.o:	auths/dovecot.c
 macro-external.o:	auths/external.c
 	@echo "$(CC) -DMACRO_PREDEF auths/external.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ auths/external.c
-macro-gsasl_exim.o :	auths/gsasl_exim.c
-	@echo "$(CC) -DMACRO_PREDEF auths/gsasl_exim.c"
-	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ auths/gsasl_exim.c
+macro-gsasl.o :	auths/gsasl.c
+	@echo "$(CC) -DMACRO_PREDEF auths/gsasl.c"
+	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ auths/gsasl.c
 macro-heimdal_gssapi.o:	auths/heimdal_gssapi.c
 	@echo "$(CC) -DMACRO_PREDEF auths/heimdal_gssapi.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ auths/heimdal_gssapi.c
@@ -215,15 +221,15 @@ macro-spa.o :		auths/spa.c
 macro-authtls.o:	auths/tls.c
 	@echo "$(CC) -DMACRO_PREDEF auths/tls.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ auths/tls.c
-macro-dkim.o:		dkim.c
-	@echo "$(CC) -DMACRO_PREDEF dkim.c"
-	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ dkim.c
+macro-dkim.o:		miscmods/dkim.c
+	@echo "$(CC) -DMACRO_PREDEF miscmods/dkim.c"
+	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ miscmods/dkim.c
 macro-malware.o:	malware.c
 	@echo "$(CC) -DMACRO_PREDEF malware.c"
 	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ malware.c
-macro-signing.o:	pdkim/signing.c
-	@echo "$(CC) -DMACRO_PREDEF pdkim/signing.c"
-	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ pdkim/signing.c
+macro-signing.o:	miscmods/signing.c
+	@echo "$(CC) -DMACRO_PREDEF miscmods/signing.c"
+	$(FE)$(CC) -c $(CFLAGS) -DMACRO_PREDEF $(INCLUDE) -o $@ miscmods/signing.c
 
 macro_predef: $(OBJ_MACRO)
 	@echo "$(LNCC) -o $@"
@@ -238,15 +244,15 @@ macro.c: macro_predef
 # problem, but it does no harm. Other make programs will just ignore this.
 
 .PHONY: all config utils \
-	buildauths buildlookups buildpdkim buildrouters \
-        buildtransports checklocalmake clean
+	buildauths buildlookups buildrouters \
+        buildtransports buildmisc dynmodules checklocalmake clean
 
 
 utils: $(EXIM_MONITOR) exicyclog exinext exiwhat \
         exigrep eximstats exipick exiqgrep exiqsumm \
-        transport-filter.pl convert4r3 convert4r4 \
-        exim_checkaccess \
-        exim_dbmbuild exim_dumpdb exim_fixdb exim_tidydb exim_lock
+        transport-filter.pl exim_checkaccess \
+        exim_dbmbuild exim_dumpdb exim_fixdb exim_tidydb \
+	exim_lock exim_msgdate exim_id_update
 
 
 # Targets for special-purpose configuration header builders
@@ -280,6 +286,7 @@ exicyclog: config ../src/exicyclog.src
 	  ../src/exicyclog.src > exicyclog-t
 	@mv exicyclog-t exicyclog
 	@chmod a+x exicyclog
+	@./exicyclog -v 2>&1 >/dev/null
 	@echo ">>> exicyclog script built"
 
 # Target for the exinext utility script
@@ -297,6 +304,7 @@ exinext: config ../src/exinext.src
 	  ../src/exinext.src > exinext-t
 	@mv exinext-t exinext
 	@chmod a+x exinext
+	@./exinext -v 2>&1 >/dev/null
 	@echo ">>> exinext script built"
 
 # Target for the exiwhat utility script
@@ -321,6 +329,7 @@ exiwhat: config ../src/exiwhat.src
 	  ../src/exiwhat.src > exiwhat-t
 	@mv exiwhat-t exiwhat
 	@chmod a+x exiwhat
+	@./exiwhat -v 2>&1 >/dev/null
 	@echo ">>> exiwhat script built"
 
 # Target for the exim_checkaccess utility script
@@ -339,6 +348,7 @@ exim_checkaccess: config ../src/exim_checkaccess.src
 	  ../src/exim_checkaccess.src > exim_checkaccess-t
 	@mv exim_checkaccess-t exim_checkaccess
 	@chmod a+x exim_checkaccess
+	# @./exim_checkaccess -v 2>&1 >/dev/null
 	@echo ">>> exim_checkaccess script built"; echo ""
 
 # Target for the Exim monitor start-up script
@@ -359,6 +369,7 @@ eximon: config ../src/eximon.src ../OS/eximon.conf-Default \
 	  -e "s?EXIM_RELEASE_VERSION?$${EXIM_RELEASE_VERSION}?" \
 	  -e "s?EXIM_VARIANT_VERSION?$${EXIM_VARIANT_VERSION}?" \
 	  ../src/eximon.src >> eximon
+	@./eximon -v 2>&1 >/dev/null
 	@echo ">>> eximon script built"; echo ""
 
 # Targets for utilities; these are all Perl scripts that have to get the
@@ -378,7 +389,26 @@ exigrep: config ../src/exigrep.src
 	  ../src/exigrep.src > exigrep-t
 	@mv exigrep-t exigrep
 	@chmod a+x exigrep
+	@./exigrep --version 2>&1 >/dev/null
 	@echo ">>> exigrep script built"
+
+exim_msgdate: config ../src/exim_msgdate.src
+	@rm -f exim_msgdate
+	@. ./version.sh && sed \
+	  -e "s?PROCESSED_FLAG?This file has been so processed.?"\
+	  -e "/^[ \t]*# /p" \
+	  -e "/^[ \t]*# /d" \
+	  -e "s?BIN_DIRECTORY?$(BIN_DIRECTORY)?" \
+	  -e "s?PERL_COMMAND?$(PERL_COMMAND)?" \
+	  -e "s?BASE_62?$${BASE_62:-62}?" \
+	  -e "s?CONFIGURE_FILE\"?$(CONFIGURE_FILE)\"?" \
+	  -e "s?EXIM_RELEASE_VERSION?$${EXIM_RELEASE_VERSION}?" \
+	  -e "s?EXIM_VARIANT_VERSION?$${EXIM_VARIANT_VERSION}?" \
+	  ../src/exim_msgdate.src > exim_msgdate-t
+	@mv exim_msgdate-t exim_msgdate
+	@chmod a+x exim_msgdate
+	@./exim_msgdate -v 2>&1 >/dev/null
+	@echo ">>> exim_msgdate script built"
 
 eximstats: config ../src/eximstats.src
 	@rm -f eximstats
@@ -389,6 +419,7 @@ eximstats: config ../src/eximstats.src
 	  ../src/eximstats.src > eximstats-t
 	@mv eximstats-t eximstats
 	@chmod a+x eximstats
+	@./eximstats -v 2>&1 >/dev/null
 	@echo ">>> eximstats script built"
 
 exiqgrep: config ../src/exiqgrep.src
@@ -404,6 +435,7 @@ exiqgrep: config ../src/exiqgrep.src
 	  ../src/exiqgrep.src > exiqgrep-t
 	@mv exiqgrep-t exiqgrep
 	@chmod a+x exiqgrep
+	@./exiqgrep -v 2>&1 >/dev/null
 	@echo ">>> exiqgrep script built"
 
 exiqsumm: config ../src/exiqsumm.src
@@ -415,6 +447,7 @@ exiqsumm: config ../src/exiqsumm.src
 	  ../src/exiqsumm.src > exiqsumm-t
 	@mv exiqsumm-t exiqsumm
 	@chmod a+x exiqsumm
+	@./exiqsumm -v 2>&1 >/dev/null
 	@echo ">>> exiqsumm script built"
 
 exipick: config ../src/exipick.src
@@ -428,7 +461,22 @@ exipick: config ../src/exipick.src
 	  ../src/exipick.src > exipick-t
 	@mv exipick-t exipick
 	@chmod a+x exipick
+	@./exipick -v 2>&1 >/dev/null
 	@echo ">>> exipick script built"
+
+exim_id_update: config ../src/exim_id_update.src
+	@rm -f exim_id_update
+	@. ./version.sh && sed \
+	  -e "s?PERL_COMMAND?$(PERL_COMMAND)?" \
+	  -e "s?SPOOL_DIRECTORY?$(SPOOL_DIRECTORY)?" \
+	  -e "s?BIN_DIRECTORY?$(BIN_DIRECTORY)?" \
+	  -e "s?EXIM_RELEASE_VERSION?$${EXIM_RELEASE_VERSION}?" \
+	  -e "s?EXIM_VARIANT_VERSION?$${EXIM_VARIANT_VERSION}?" \
+	  ../src/exim_id_update.src > exim_id_update-t
+	@mv exim_id_update-t exim_id_update
+	@chmod a+x exim_id_update
+	@./exim_id_update -v 2>&1 >/dev/null
+	@echo ">>> exim_id_update script built"
 
 transport-filter.pl: config ../src/transport-filter.src
 	@rm -f transport-filter.pl
@@ -441,68 +489,49 @@ transport-filter.pl: config ../src/transport-filter.src
 	@chmod a+x transport-filter.pl
 	@echo ">>> transport-filter.pl script built"
 
-convert4r3: config ../src/convert4r3.src
-	@rm -f convert4r3
-	@. ./version.sh && sed \
-	  -e "s?PERL_COMMAND?$(PERL_COMMAND)?" \
-	  -e "s?EXIM_RELEASE_VERSION?$${EXIM_RELEASE_VERSION}?" \
-	  -e "s?EXIM_VARIANT_VERSION?$${EXIM_VARIANT_VERSION}?" \
-	  ../src/convert4r3.src > convert4r3-t
-	@mv convert4r3-t convert4r3
-	@chmod a+x convert4r3
-	@echo ">>> convert4r3 script built"
-
-convert4r4: config ../src/convert4r4.src
-	@rm -f convert4r4
-	@. ./version.sh && sed \
-	  -e "s?PERL_COMMAND?$(PERL_COMMAND)?" \
-	  -e "s?EXIM_RELEASE_VERSION?$${EXIM_RELEASE_VERSION}?" \
-	  -e "s?EXIM_VARIANT_VERSION?$${EXIM_VARIANT_VERSION}?" \
-	  ../src/convert4r4.src > convert4r4-t
-	@mv convert4r4-t convert4r4
-	@chmod a+x convert4r4
-	@echo ">>> convert4r4 script built"
-
 
 # These are objects of optional features. They are always compiled, but
 # if the corresponding #defines are not set, they wind up empty and
 # are thrown away by the linker.
 
 OBJ_WITH_CONTENT_SCAN = malware.o mime.o regex.o spam.o spool_mbox.o
-OBJ_EXPERIMENTAL =	arc.o \
-			bmi_spam.o \
+OBJ_EXPERIMENTAL =	bmi_spam.o \
 			dane.o \
 			dcc.o \
-			dmarc.o \
 			imap_utf7.o \
-			spf.o \
-			utf8.o
+			utf8.o \
+			xclient.o
 
 # Targets for final binaries; the main one has a build number which is
 # updated each time. We don't bother with that for the auxiliaries.
 
-OBJ_LOOKUPS = lookups/lf_quote.o lookups/lf_check_file.o lookups/lf_sqlperform.o
+OBJ_LOOKUPS = lf_quote.o lf_check_file.o lf_sqlperform.o
+OBJ_ROUTERS = rf_change_domain.o rf_expand_data.o rf_get_errors_address.o \
+	rf_get_munge_headers.o rf_get_transport.o rf_get_ugid.o \
+	rf_lookup_hostlist.o rf_queue_add.o rf_self_action.o rf_set_ugid.o
+OBJ_AUTHS = call_pwcheck.o check_serv_cond.o \
+	get_data.o get_no64_data.o pwcheck.o
 
-OBJ_EXIM = acl.o base64.o child.o crypt16.o daemon.o dbfn.o debug.o deliver.o \
-        directory.o dns.o drtables.o enq.o exim.o expand.o filter.o \
-        filtertest.o globals.o dkim.o dkim_transport.o dnsbl.o hash.o \
+OBJ_EXIM = acl.o atrn.o base64.o child.o crypt16.o daemon.o dbfn.o debug.o \
+	deliver.o directory.o dns.o drtables.o enq.o exim.o expand.o \
+        filtertest.o globals.o dnsbl.o hash.o \
         header.o host.o host_address.o ip.o log.o lss.o match.o md5.o moan.o \
-        os.o parse.o priv.o queue.o \
+        os.o parse.o priv.o proxy.o queue.o \
         rda.o readconf.o receive.o retry.o rewrite.o rfc2047.o regex_cache.o \
-        route.o search.o sieve.o smtp_in.o smtp_out.o spool_in.o spool_out.o \
+        route.o search.o smtp_in.o smtp_out.o spool_in.o spool_out.o \
         std-crypto.o store.o string.o tls.o tod.o transport.o tree.o verify.o \
-        environment.o macro.o \
-        $(OBJ_LOOKUPS) \
-        local_scan.o $(EXIM_PERL) $(OBJ_WITH_CONTENT_SCAN) \
+        xtextencode.o environment.o macro.o \
+        $(OBJ_LOOKUPS) $(OBJ_ROUTERS) $(OBJ_AUTHS) \
+        local_scan.o $(OBJ_WITH_CONTENT_SCAN) \
         $(OBJ_EXPERIMENTAL)
 
-exim:   buildlookups buildauths pdkim/pdkim.a \
-        buildrouters buildtransports \
+exim:   buildlookups buildauths \
+        buildrouters buildtransports buildmisc \
         $(OBJ_EXIM) version.o
 	@echo "$(LNCC) -o exim"
 	$(FE)$(PURIFY) $(LNCC) -o exim $(LFLAGS) $(OBJ_EXIM) version.o \
 	  routers/routers.a transports/transports.a lookups/lookups.a \
-	  auths/auths.a pdkim/pdkim.a \
+	  auths/auths.a miscmods/miscmods.a \
 	  $(LIBRESOLV) $(LIBS) $(LIBS_EXIM) $(IPV6_LIBS) $(EXTRALIBS) \
 	  $(EXTRALIBS_EXIM) $(DBMLIB) $(LOOKUP_LIBS) $(AUTH_LIBS) \
 	  $(PERL_LIBS) $(TLS_LIBS) $(PCRE_LIBS) $(LDFLAGS)
@@ -517,7 +546,7 @@ exim:   buildlookups buildauths pdkim/pdkim.a \
 
 # The utility for dumping the contents of an exim database
 
-OBJ_DUMPDB = exim_dumpdb.o util-os.o util-store.o
+OBJ_DUMPDB = exim_dumpdb.o util-os.o util-store.o util-xtextencode.o
 
 exim_dumpdb: $(OBJ_DUMPDB)
 	@echo "$(LNCC) -o exim_dumpdb"
@@ -532,7 +561,7 @@ exim_dumpdb: $(OBJ_DUMPDB)
 
 # The utility for interrogating/fixing the contents of an exim database
 
-OBJ_FIXDB = exim_fixdb.o util-os.o util-store.o util-md5.o
+OBJ_FIXDB = exim_fixdb.o util-os.o util-store.o util-md5.o util-xtextencode.o
 
 exim_fixdb:  $(OBJ_FIXDB)
 	@echo "$(LNCC) -o exim_fixdb"
@@ -547,11 +576,12 @@ exim_fixdb:  $(OBJ_FIXDB)
 
 # The utility for tidying the contents of an exim database
 
-OBJ_TIDYDB = exim_tidydb.o util-os.o util-store.o
+OBJ_TIDYDB = exim_tidydb.o util-os.o util-store.o util-xtextencode.o
 
 exim_tidydb: $(OBJ_TIDYDB)
 	@echo "$(LNCC) -o exim_tidydb"
-	$(FE)$(LNCC) $(CFLAGS) $(INCLUDE) -o exim_tidydb $(LFLAGS) $(OBJ_TIDYDB) \
+	$(FE)$(LNCC) $(CFLAGS) $(INCLUDE) -o exim_tidydb $(LFLAGS) \
+	  $(OBJ_TIDYDB) \
 	  $(LIBS) $(EXTRALIBS) $(DBMLIB)
 	@if [ x"$(STRIP_COMMAND)" != x"" ]; then \
 	  echo $(STRIP_COMMAND) exim_tidydb; \
@@ -562,9 +592,12 @@ exim_tidydb: $(OBJ_TIDYDB)
 
 # The utility for building dbm files
 
-exim_dbmbuild: exim_dbmbuild.o
+OBJ_DBMBUILD = exim_dbmbuild.o util-xtextencode.o
+
+exim_dbmbuild: $(OBJ_DBMBUILD)
 	@echo "$(LNCC) -o exim_dbmbuild"
-	$(FE)$(LNCC) $(CFLAGS) $(INCLUDE) -o exim_dbmbuild $(LFLAGS) exim_dbmbuild.o \
+	$(FE)$(LNCC) $(CFLAGS) $(INCLUDE) -o exim_dbmbuild $(LFLAGS) \
+	  $(OBJ_DBMBUILD) \
 	  $(LIBS) $(EXTRALIBS) $(DBMLIB)
 	@if [ x"$(STRIP_COMMAND)" != x"" ]; then \
 	  echo $(STRIP_COMMAND) exim_dbmbuild; \
@@ -609,10 +642,11 @@ OBJ_MONBIN = util-host_address.o \
 	     util-string.o \
 	     util-tod.o \
 	     util-tree.o \
+	     util-xtextencode.o \
 	     $(MONBIN)
 
 eximon.bin: $(EXIMON_EDITME) eximon $(OBJ_MONBIN) ../exim_monitor/em_version.c \
-		mytypes.h store.h macros.h
+		mytypes.h store.h path_max.h macros.h
 	@echo "$(CC) exim_monitor/em_version.c"
 	$(FE)$(CC) -o em_version.o -c \
 	  $(CFLAGS) $(XINCLUDE) -I. ../exim_monitor/em_version.c
@@ -643,9 +677,19 @@ HDRS  =	blob.h \
 	hash.h \
 	hintsdb.h \
 	hintsdb_structs.h \
+	hintsdb/hints_bdb.h \
+	hintsdb/hints_gdbm.h \
+	hintsdb/hints_ndbm.h \
+	hintsdb/hints_sqlite.h \
+	hintsdb/hints_tdb.h \
 	local_scan.h \
 	macros.h \
+	miscmods/arc_api.h \
+	miscmods/dkim_api.h \
+	miscmods/dmarc_api.h \
+	miscmods/spf_api.h \
 	mytypes.h \
+	path_max.h \
 	sha_ver.h \
 	structs.h \
 	os.h
@@ -656,9 +700,19 @@ PHDRS = ../config.h \
 	../globals.h \
 	../hintsdb.h \
 	../hintsdb_structs.h \
+	../hintsdb/hints_bdb.h \
+	../hintsdb/hints_gdbm.h \
+	../hintsdb/hints_ndbm.h \
+	../hintsdb/hints_sqlite.h \
+	../hintsdb/hints_tdb.h \
 	../local_scan.h \
 	../macros.h \
+	../miscmods/arc_api.h \
+	../miscmods/dkim_api.h \
+	../miscmods/dmarc_api.h \
+	../miscmods/spf_api.h \
 	../mytypes.h \
+	../path_max.h \
 	../structs.h \
 	../os.h
 
@@ -683,12 +737,6 @@ version.o: $(HDRS) cnumber.h version.h version.c
 # in the tested code.
 
 dummies.o:       dummies.c
-
-# Compile instructions for perl.o for when EXIM_PERL is set
-
-perl.o:          $(HDRS) perl.c
-	@echo "$(PERL_CC) perl.c"
-	$(FE)$(PERL_CC) $(PERL_CCOPTS) $(CFLAGS) $(INCLUDE) -c perl.c
 
 # Compile instructions for the database utility modules
 
@@ -755,6 +803,10 @@ util-tree.o:   $(HDRS) tree.c
 	@echo "$(CC) -DCOMPILE_UTILITY tree.c"
 	$(FE)$(CC) -c $(CFLAGS) $(INCLUDE) -DCOMPILE_UTILITY -o util-tree.o tree.c
 
+util-xtextencode.o:   $(HDRS) xtextencode.c
+	@echo "$(CC) -DCOMPILE_UTILITY xtextencode.c"
+	$(FE)$(CC) -c $(CFLAGS) $(INCLUDE) -DCOMPILE_UTILITY -o util-xtextencode.o xtextencode.c
+
 util-os.o:       $(HDRS) os.c
 	@echo "$(CC) -DCOMPILE_UTILITY os.c"
 	$(FE)$(CC) -c $(CFLAGS) $(INCLUDE) \
@@ -773,6 +825,7 @@ local_scan.o:    config local_scan.h ../$(LOCAL_SCAN_SOURCE)
 # Dependencies for the "ordinary" exim modules
 
 acl.o:           $(HDRS) acl.c
+atrn.o:          $(HDRS) atrn.c
 base64.o:        $(HDRS) mime.h base64.c
 child.o:         $(HDRS) child.c
 crypt16.o:       $(HDRS) crypt16.c
@@ -787,7 +840,6 @@ enq.o:           $(HDRS) enq.c
 exim.o:          $(HDRS) exim.c
 expand.o:        $(HDRS) expand.c
 environment.o:   $(HDRS) environment.c
-filter.o:        $(HDRS) filter.c
 filtertest.o:    $(HDRS) filtertest.c
 globals.o:       $(HDRS) globals.c
 hash.o:          $(HDRS) hash.c
@@ -803,6 +855,7 @@ moan.o:          $(HDRS) moan.c
 os.o:            $(HDRS) $(OS_C_INCLUDES) os.c
 parse.o:         $(HDRS) parse.c
 priv.o:          $(HDRS) priv.c
+proxy.o:         $(HDRS) proxy.c
 queue.o:         $(HDRS) queue.c
 rda.o:           $(HDRS) rda.c
 readconf.o:      $(HDRS) readconf.c
@@ -813,7 +866,6 @@ regex_cache.o:   $(HDRS) regex_cache.c
 rfc2047.o:       $(HDRS) rfc2047.c
 route.o:         $(HDRS) route.c
 search.o:        $(HDRS) search.c
-sieve.o:         $(HDRS) sieve.c
 smtp_in.o:       $(HDRS) smtp_in.c
 smtp_out.o:      $(HDRS) smtp_out.c
 spool_in.o:      $(HDRS) spool_in.c
@@ -829,8 +881,7 @@ tod.o:           $(HDRS) tod.c
 transport.o:     $(HDRS) transport.c
 tree.o:          $(HDRS) tree.c
 verify.o:        $(HDRS) transports/smtp.h verify.c
-dkim.o:          $(HDRS) pdkim/pdkim.h dkim.c
-dkim_transport.o: $(HDRS) dkim_transport.c
+xtextencode.o:   $(HDRS) xtextencode.c
 
 # Dependencies for WITH_CONTENT_SCAN modules
 
@@ -843,14 +894,12 @@ spool_mbox.o:    $(HDRS) spool_mbox.c
 
 # Dependencies for EXPERIMENTAL_* modules
 
-arc.o:		$(HDRS) pdkim/pdkim.h arc.c
 bmi_spam.o:	$(HDRS) bmi_spam.c
 dane.o:		$(HDRS) dane.c dane-openssl.c
 dcc.o:		$(HDRS) dcc.h dcc.c
-dmarc.o:	$(HDRS) pdkim/pdkim.h dmarc.h dmarc.c
 imap_utf7.o:	$(HDRS) imap_utf7.c
-spf.o:		$(HDRS) spf.h spf.c
 utf8.o:		$(HDRS) utf8.c
+xclient.o:	$(HDRS) xclient.c
 
 # The module containing tables of available lookups, routers, auths, and
 # transports must be rebuilt if any of them are. However, because the makefiles
@@ -862,11 +911,73 @@ utf8.o:		$(HDRS) utf8.c
 
 drtables.o:      $(HDRS) drtables.c
 
-# We depend upon object files built as part of building the lookups library
-# When using parallel make, we don't have the dependency to force building
-# in the sub-directory unless we force that dependency:
+# Some sources live in the lookups, routers or auths directory
 
-$(OBJ_LOOKUPS):  buildlookups
+$(OBJ_LOOKUPS) $(OBJ_ROUTERS) $(OBJ_AUTHS):    $(HDRS)
+
+$(OBJ_LOOKUPS):	lookups/lf_functions.h
+lf_check_file.o: lookups/lf_check_file.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+lf_quote.o:      lookups/lf_quote.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+lf_sqlperform.o: lookups/lf_sqlperform.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+
+$(OBJ_ROUTERS):	routers/rf_functions.h
+rf_change_domain.o:      routers/rf_change_domain.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_expand_data.o:        routers/rf_expand_data.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_get_errors_address.o: routers/rf_get_errors_address.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_get_munge_headers.o:  routers/rf_get_munge_headers.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_get_transport.o:      routers/rf_get_transport.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_get_ugid.o:           routers/rf_get_ugid.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_lookup_hostlist.o:    routers/rf_lookup_hostlist.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_queue_add.o:          routers/rf_queue_add.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_self_action.o:        routers/rf_self_action.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+rf_set_ugid.o:           routers/rf_set_ugid.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+
+auth-spa.o:         auths/auth-spa.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+call_pwcheck.o:     auths/call_pwcheck.c auths/pwcheck.h
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+check_serv_cond.o:  auths/check_serv_cond.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+get_data.o:         auths/get_data.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+get_no64_data.o:    auths/get_no64_data.c
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+pwcheck.o:          auths/pwcheck.c auths/pwcheck.h
+	@echo "$(CC) $<"
+	$(FE)$(CC) -c $(CFLAGS) -I. $(INCLUDE) $<
+
+
 
 # The exim monitor's private modules - the sources live in a private
 # subdirectory. The final binary combines the private modules with some
@@ -892,6 +1003,19 @@ $(MONBIN): $(HDRS)
 
 # Targets for the various libraries that Exim uses.
 
+# Copies of modules built as dynamic-load libraries
+
+dynmodules: buildlookups buildrouters buildtransports buildauths \
+		buildmisc
+	rm -fr dynmodules
+	mkdir dynmodules
+	for d in lookup router transport auth miscmod; do \
+	  for f in $${d}s/*.so; do \
+	    [ -e $$f ] && ln $$f dynmodules/`basename $$f .so`_$$d.so; \
+	  done; \
+	done; \
+	true
+
 # The lookups library.
 
 buildlookups: config
@@ -905,6 +1029,7 @@ buildlookups: config
 
 buildrouters: config
 	 @cd routers && $(MAKE) SHELL=$(SHELL) AR="$(AR)" $(MFLAGS) CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	   CFLAGS_DYNAMIC="$(CFLAGS_DYNAMIC)" \
 	   FE="$(FE)" RANLIB="$(RANLIB)" RM_COMMAND="$(RM_COMMAND)" HDRS="$(PHDRS)" \
 	   INCLUDE="$(INCLUDE) $(IPV6_INCLUDE) $(TLS_INCLUDE)"
 	 @echo " "
@@ -913,6 +1038,7 @@ buildrouters: config
 
 buildtransports: config
 	 @cd transports && $(MAKE) SHELL=$(SHELL) AR="$(AR)" $(MFLAGS) CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	   CFLAGS_DYNAMIC="$(CFLAGS_DYNAMIC)" \
 	   FE="$(FE)" RANLIB="$(RANLIB)" RM_COMMAND="$(RM_COMMAND)" HDRS="$(PHDRS)" \
 	   INCLUDE="$(INCLUDE) $(IPV6_INCLUDE) $(TLS_INCLUDE)"
 	 @echo " "
@@ -921,17 +1047,20 @@ buildtransports: config
 
 buildauths: config
 	 @cd auths && $(MAKE) SHELL=$(SHELL) AR="$(AR)" $(MFLAGS) CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	   CFLAGS_DYNAMIC="$(CFLAGS_DYNAMIC)" \
 	   FE="$(FE)" RANLIB="$(RANLIB)" RM_COMMAND="$(RM_COMMAND)" HDRS="$(PHDRS)" \
 	   INCLUDE="$(INCLUDE) $(IPV6_INCLUDE) $(TLS_INCLUDE)"
 	 @echo " "
 
-# The PDKIM library
-
-buildpdkim: pdkim/pdkim.a
-pdkim/pdkim.a: config
-	 @cd pdkim && $(MAKE) SHELL=$(SHELL) AR="$(AR)" $(MFLAGS) CC="$(CC)" CFLAGS="$(CFLAGS)" \
-	   FE="$(FE)" RANLIB="$(RANLIB)" RM_COMMAND="$(RM_COMMAND)" HDRS="$(PHDRS)" \
-	   INCLUDE="$(INCLUDE) $(IPV6_INCLUDE) $(TLS_INCLUDE)"
+buildmisc: config
+	 @cd miscmods && $(MAKE) SHELL=$(SHELL) AR="$(AR)" $(MFLAGS) \
+	   CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	     CFLAGS_DYNAMIC="$(CFLAGS_DYNAMIC)" \
+	     LDFLAGS_PARTIAL="$(LDFLAGS_PARTIAL)" HDRS="../version.h $(PHDRS)" \
+	     FE="$(FE)" RANLIB="$(RANLIB)" RM_COMMAND="$(RM_COMMAND)" \
+	     PERL_CC="$(PERL_CC)" PERL_CCOPTS="$(PERL_CCOPTS)" \
+	     PERL_CFLAGS="$(PERL_CFLAGS)" PERL_LFLAGS="$(PERL_LFLAGS)" \
+	     INCLUDE="$(INCLUDE) $(IPV6_INCLUDE)" TLS_INCLUDE="$(TLS_INCLUDE)"
 	 @echo " "
 
 # The "clean", "install", and "makefile" targets just pass themselves back to
