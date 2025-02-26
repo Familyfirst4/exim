@@ -2,12 +2,15 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
+
+#ifdef ROUTER_MANUALROUTE
 #include "rf_functions.h"
 #include "manualroute.h"
 
@@ -15,11 +18,14 @@
 /* Options specific to the manualroute router. */
 
 optionlist manualroute_router_options[] = {
+  { "*expand_hosts_randomize", opt_stringptr | opt_hidden,
+    OPT_OFF(manualroute_router_options_block, expand_hosts_randomize) },
+
   { "host_all_ignored", opt_stringptr,
       OPT_OFF(manualroute_router_options_block, host_all_ignored) },
   { "host_find_failed", opt_stringptr,
       OPT_OFF(manualroute_router_options_block, host_find_failed) },
-  { "hosts_randomize",  opt_bool,
+  { "hosts_randomize",  opt_expand_bool,
       OPT_OFF(manualroute_router_options_block, hosts_randomize) },
   { "route_data",       opt_stringptr,
       OPT_OFF(manualroute_router_options_block, route_data) },
@@ -40,7 +46,7 @@ int manualroute_router_options_count =
 
 /* Dummy entries */
 manualroute_router_options_block manualroute_router_option_defaults = {0};
-void manualroute_router_init(router_instance *rblock) {}
+void manualroute_router_init(driver_instance *rblock) {}
 int manualroute_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -50,16 +56,14 @@ int manualroute_router_entry(router_instance *rblock, address_item *addr,
 
 
 
-/* Default private options block for the manualroute router. */
+/* Default private options block for the manualroute router.
+All other entries 0/FALSE/NULL */
 
 manualroute_router_options_block manualroute_router_option_defaults = {
-  -1,           /* host_all_ignored code (unset) */
-  -1,           /* host_find_failed code (unset) */
-  FALSE,        /* hosts_randomize */
-  US"defer",    /* host_all_ignored */
-  US"freeze",   /* host_find_failed */
-  NULL,         /* route_data */
-  NULL          /* route_list */
+  .hai_code = -1,			/* host_all_ignored code (unset) */
+  .hff_code = -1,			/* host_find_failed code (unset) */
+  .host_all_ignored =	US"defer",
+  .host_find_failed =	US"freeze",
 };
 
 
@@ -88,10 +92,10 @@ static int hff_count= sizeof(hff_codes)/sizeof(int);
 consistency checks to be done, or anything else that needs to be set up. */
 
 void
-manualroute_router_init(router_instance *rblock)
+manualroute_router_init(driver_instance * rblock)
 {
-manualroute_router_options_block *ob =
-  (manualroute_router_options_block *)(rblock->options_block);
+manualroute_router_options_block * ob =
+  (manualroute_router_options_block *) rblock->options_block;
 
 /* Host_find_failed must be a recognized word */
 
@@ -102,7 +106,7 @@ for (int i = 0; i < hff_count; i++)
     break;
     }
 if (ob->hff_code < 0)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "unrecognized setting for host_find_failed option", rblock->name);
 
 for (int i = 1; i < hff_count; i++)   /* NB starts at 1 to skip "ignore" */
@@ -112,14 +116,14 @@ for (int i = 1; i < hff_count; i++)   /* NB starts at 1 to skip "ignore" */
     break;
     }
 if (ob->hai_code < 0)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "unrecognized setting for host_all_ignored option", rblock->name);
 
 /* One of route_list or route_data must be specified */
 
-if ((ob->route_list == NULL && ob->route_data == NULL) ||
-    (ob->route_list != NULL && ob->route_data != NULL))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+if (  !ob->route_list && !ob->route_data
+   || ob->route_list && ob->route_data)
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "route_list or route_data (but not both) must be specified",
     rblock->name);
 }
@@ -153,17 +157,17 @@ static BOOL
 parse_route_item(const uschar *s, const uschar **domain, const uschar **hostlist,
   const uschar **options)
 {
-while (*s != 0 && isspace(*s)) s++;
+Uskip_whitespace(&s);
 
 if (domain)
   {
   if (!*s) return FALSE;            /* missing data */
   *domain = string_dequote(&s);
-  while (*s && isspace(*s)) s++;
+  Uskip_whitespace(&s);
   }
 
 *hostlist = string_dequote(&s);
-while (*s && isspace(*s)) s++;
+Uskip_whitespace(&s);
 *options = s;
 return TRUE;
 }
@@ -237,19 +241,15 @@ manualroute_router_entry(
 {
 int rc, lookup_type;
 uschar *route_item = NULL;
-const uschar *options = NULL;
-const uschar *hostlist = NULL;
-const uschar *domain;
-uschar *newhostlist;
-const uschar *listptr;
-manualroute_router_options_block *ob =
-  (manualroute_router_options_block *)(rblock->options_block);
-transport_instance *transport = NULL;
-BOOL individual_transport_set = FALSE;
-BOOL randomize = ob->hosts_randomize;
+const uschar * options = NULL, * hostlist = NULL, * domain, * listptr;
+uschar * newhostlist;
+manualroute_router_options_block * ob =
+  (manualroute_router_options_block *)(rblock->drinst.options_block);
+transport_instance * transport = NULL;
+BOOL individual_transport_set = FALSE, randomize;
 
 DEBUG(D_route) debug_printf("%s router called for %s\n  domain = %s\n",
-  rblock->name, addr->address, addr->domain);
+  rblock->drinst.name, addr->address, addr->domain);
 
 /* The initialization check ensures that either route_list or route_data is
 set. */
@@ -290,6 +290,7 @@ string, decline. */
 
 else
   {
+  GET_OPTION("route_data");
   if (!(route_item = rf_expand_data(addr, ob->route_data, &rc)))
     return rc;
   (void) parse_route_item(route_item, NULL, &hostlist, &options);
@@ -314,7 +315,7 @@ if (!newhostlist)
   {
   if (f.expand_string_forcedfail) return DECLINE;
   addr->message = string_sprintf("%s router: failed to expand \"%s\": %s",
-    rblock->name, hostlist, expand_string_message);
+    rblock->drinst.name, hostlist, expand_string_message);
   return DEFER;
   }
 else hostlist = newhostlist;
@@ -322,16 +323,24 @@ else hostlist = newhostlist;
 DEBUG(D_route) debug_printf("expanded list of hosts = '%s' options = '%s'\n",
   hostlist, options);
 
-/* Set default lookup type and scan the options */
+/* Get the hosts_randomize router option, expanding if needed */
+
+if (exp_bool(addr, US"router", rblock->drinst.name, D_route,
+	  US"hosts_randomize", ob->hosts_randomize, ob->expand_hosts_randomize,
+	  &randomize) != OK)
+  return DEFER;
+
+/* Set default lookup type and scan the route-data options */
 
 lookup_type = LK_DEFAULT;
 
 while (*options)
   {
   unsigned n;
-  const uschar *s = options;
-  while (*options != 0 && !isspace(*options)) options++;
-  n = options-s;
+  const uschar * s = options;
+
+  Uskip_nonwhite(&options);
+  n = options - s;
 
   if (Ustrncmp(s, "randomize", n) == 0) randomize = TRUE;
   else if (Ustrncmp(s, "no_randomize", n) == 0) randomize = FALSE;
@@ -343,9 +352,9 @@ while (*options)
   else if (Ustrncmp(s, "ipv4_only",   n) == 0) lookup_type |= LK_IPV4_ONLY;
   else
     {
-    transport_instance *t;
-    for (t = transports; t; t = t->next)
-      if (Ustrncmp(t->name, s, n) == 0)
+    transport_instance * t;
+    for (t = transports; t; t = t->drinst.next)
+      if (Ustrncmp(t->drinst.name, s, n) == 0)
         {
         transport = t;
         individual_transport_set = TRUE;
@@ -355,7 +364,7 @@ while (*options)
     if (!t)
       {
       s = string_sprintf("unknown routing option or transport name \"%s\"", s);
-      log_write(0, LOG_MAIN, "Error in %s router: %s", rblock->name, s);
+      log_write(0, LOG_MAIN, "Error in %s router: %s", rblock->drinst.name, s);
       addr->message = string_sprintf("error in router: %s", s);
       return DEFER;
       }
@@ -364,7 +373,7 @@ while (*options)
   if (*options)
     {
     options++;
-    while (*options != 0 && isspace(*options)) options++;
+    Uskip_whitespace(&options);
     }
   }
 
@@ -385,8 +394,8 @@ set. */
 
 if (!individual_transport_set)
   {
-  if (!rf_get_transport(rblock->transport_name, &(rblock->transport), addr,
-      rblock->name, NULL))
+  if (!rf_get_transport(rblock->transport_name, &rblock->transport, addr,
+      rblock->drinst.name, NULL))
     return DEFER;
   transport = rblock->transport;
   }
@@ -394,29 +403,32 @@ if (!individual_transport_set)
 /* Deal with the case of a local transport. The host list is passed over as a
 single text string that ends up in $host. */
 
-if (transport && transport->info->local)
+if (transport)
   {
-  if (hostlist[0])
+  const transport_info * ti = transport->drinst.info;
+  if (ti->local)
     {
-    host_item *h;
-    addr->host_list = h = store_get(sizeof(host_item), GET_UNTAINTED);
-    h->name = string_copy(hostlist);
-    h->address = NULL;
-    h->port = PORT_NONE;
-    h->mx = MX_NONE;
-    h->status = hstatus_unknown;
-    h->why = hwhy_unknown;
-    h->last_try = 0;
-    h->next = NULL;
+    if (hostlist[0])
+      {
+      host_item * h = store_get(sizeof(host_item), GET_UNTAINTED);
+      h->name = string_copy(hostlist);
+      h->address = NULL;
+      h->port = PORT_NONE;
+      h->mx = MX_NONE;
+      h->status = hstatus_unknown;
+      h->why = hwhy_unknown;
+      h->last_try = 0;
+      h->next = NULL;
+      addr->host_list = h;
+      }
+
+    /* There is nothing more to do other than to queue the address for the
+    local transport, filling in any uid/gid. This can be done by the common
+    rf_queue_add() function. */
+
+    addr->transport = transport;
+    return rf_queue_add(addr, addr_local, addr_remote, rblock, pw) ? OK : DEFER;
     }
-
-  /* There is nothing more to do other than to queue the address for the
-  local transport, filling in any uid/gid. This can be done by the common
-  rf_queue_add() function. */
-
-  addr->transport = transport;
-  return rf_queue_add(addr, addr_local, addr_remote, rblock, pw)?
-    OK : DEFER;
   }
 
 /* There is either no transport (verify_only) or a remote transport. A host
@@ -427,7 +439,7 @@ if (!hostlist[0])
   {
   if (verify != v_none) goto ROUTED;
   addr->message = string_sprintf("error in %s router: no host(s) specified "
-    "for domain %s", rblock->name, addr->domain);
+    "for domain %s", rblock->drinst.name, addr->domain);
   log_write(0, LOG_MAIN, "%s", addr->message);
   return DEFER;
   }
@@ -455,7 +467,8 @@ if (!addr->host_list)
     if (ob->hai_code == hff_codes[i]) break;
 
   addr->message = string_sprintf("lookup failed for all hosts in %s router: "
-    "host_find_failed=ignore host_all_ignored=%s", rblock->name, hff_names[i]);
+    "host_find_failed=ignore host_all_ignored=%s",
+    rblock->drinst.name, hff_names[i]);
 
   if (ob->hai_code == hff_defer) return DEFER;
   if (ob->hai_code == hff_fail) return FAIL;
@@ -471,7 +484,7 @@ dealt with above. However, we don't need one if verifying only. */
 if (!transport && verify == v_none)
     {
     log_write(0, LOG_MAIN, "Error in %s router: no transport defined",
-      rblock->name);
+      rblock->drinst.name);
     addr->message = US"error in router: transport missing";
     return DEFER;
     }
@@ -486,5 +499,31 @@ addr->transport = transport;
 return OK;
 }
 
-#endif   /*!MACRO_PREDEF*/
+
+
+
+# ifdef DYNLOOKUP
+#  define manualroute_router_info _router_info
+# endif
+
+router_info manualroute_router_info =
+{
+.drinfo = {
+  .driver_name =	US"manualroute",
+  .options =		manualroute_router_options,
+  .options_count =	&manualroute_router_options_count,
+  .options_block =	&manualroute_router_option_defaults,
+  .options_len =	sizeof(manualroute_router_options_block),
+  .init =		manualroute_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		ROUTER_MAGIC,
+# endif
+  },
+.code =			manualroute_router_entry,
+.tidyup =		NULL,     /* no tidyup entry */
+.ri_flags =		0
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*ROUTER_MANUALROUTE*/
 /* End of routers/manualroute.c */

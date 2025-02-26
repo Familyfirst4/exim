@@ -2,8 +2,9 @@
 # appropriate links, and then creating and running the main makefile in that
 # directory.
 
-# Copyright (c) The Exim Maintainers 2022
+# Copyright (c) The Exim Maintainers 2022 - 2023
 # Copyright (c) University of Cambridge, 1995 - 2018
+# SPDX-License-Identifier: GPL-2.0-or-later
 # See the file NOTICE for conditions of use and distribution.
 
 # IRIX make uses the shell that is in the SHELL variable, which often defaults
@@ -36,10 +37,12 @@ all: Local/Makefile configure
 	@cd build-$(buildname); $(MAKE) SHELL=$(SHELL) $(MFLAGS)
 
 # This pair for the convenience of of the Debian maintainers
-exim: Local/Makefile configure
-	@cd build-$(buildname); $(MAKE) SHELL=$(SHELL) $(MFLAGS) exim
-utils: Local/Makefile configure
-	@cd build-$(buildname); $(MAKE) SHELL=$(SHELL) $(MFLAGS) utils
+exim utils: Local/Makefile configure
+	@cd build-$(buildname); $(MAKE) SHELL=$(SHELL) $(MFLAGS) $@
+
+# For testsuite builds
+exim_openssl exim_gnutls: Local/Makefile configure
+	@cd build-$(buildname); $(MAKE) SHELL=$(SHELL) $(MFLAGS) $@
 
 Local/Makefile:
 	@echo ""
@@ -84,21 +87,32 @@ install:        all
 		@cd build-$(buildname); \
 		build=$(build) $(SHELL) ../scripts/exim_install $(INSTALL_ARG)
 
+# For testing only; the version number is a dummy.
+# The build for release is done by the release-process script "mk_exim_release"
+
+doc:	FRC
+	cd ../doc/doc-docbook; $(MAKE) EXIM_VER=0 everything
+
 # Tidy-up targets
 
-clean:; @echo ""; echo '*** "make clean" just removes all .o and .a files'
+clean_exim:; cd build-$(buildname); \
+	$(RM_COMMAND) -f *.o; \
+	for d in lookups auths routers transports miscmods; do \
+		$(RM_COMMAND) -f $$d/*.{o,a,so}; \
+	done; \
+	$(RM_COMMAND) -fr dynmodules
+
+clean_doc: FRC
+	cd ../doc/doc-docbook; \
+	$(RM_COMMAND) -f {filter,spec}*.{pdf,ps,txt,html,xml}
+
+clean:	clean_exim clean_doc
+	@echo ""; echo '*** "make clean" just removes all .o and .a files'
 	@echo '*** Use "make makefile" to force a rebuild of the makefile'
 	@echo ""
-	cd build-$(buildname); \
-	$(RM_COMMAND) -f *.o lookups/*.o lookups/*.a auths/*.o auths/*.a \
-	routers/*.o routers/*.a transports/*.o transports/*.a \
-	pdkim/*.o pdkim/*.a
 
-clean_exim:; cd build-$(buildname); \
-	 $(RM_COMMAND) -f *.o lookups/*.o lookups/*.a auths/*.o auths/*.a \
-	routers/*.o routers/*.a transports/*.o transports/*.a lookups/*.so
-
-distclean:; $(RM_COMMAND) -rf build-* cscope*
+distclean: clean_doc
+	$(RM_COMMAND) -rf build-* cscope*
 
 cscope.files: FRC
 	echo "-q" > $@

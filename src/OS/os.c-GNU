@@ -3,6 +3,7 @@
 *************************************************/
 
 /* Copyright (c) The Exim Maintainers 2020 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /* See the file NOTICE for conditions of use and distribution. */
 
 /* GNU-specific code. This is concatenated onto the generic src/os.c file.
@@ -44,7 +45,7 @@ if (getloadavg_initialized)
     #if LOAD_SCALE == 1000
     return info.load_average;
     #else
-    return (int) (((double) info.load_average * 1000) / LOAD_SCALE));
+    return (int) (((double) info.load_average * 1000) / LOAD_SCALE);
     #endif
     }
   }

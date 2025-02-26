@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Thanks to Petr Cech for contributing the original code for these
 functions. Thanks to Joachim Wieland for the initial patch for the Unix domain
@@ -145,7 +146,7 @@ for (int i = 2; i >= 0; i--)
   if (!pp)
     {
     *errmsg = string_sprintf("incomplete pgSQL server data: %s",
-      (i == 2)? server : server_copy);
+      i == 2 ? server : server_copy);
     *defer_break = TRUE;
     return DEFER;
     }
@@ -209,12 +210,21 @@ if (!cn)
 
   else
     {
-    uschar *p;
-    if ((p = Ustrchr(server, ':')))
-      {
-      *p++ = 0;
-      port = p;
-      }
+    uschar * p;
+
+    /* If there is a colon (":") it could be a port number after an ipv4 or
+    hostname, or could be an ipv6. The latter must have at least two colons,
+    and we look instead for a period (".").  We assume a hostname never
+    contains a colon. */
+
+    if ((p = Ustrrchr(server, ':')))
+      if (  Ustrchr(server, ':') == p		/* only one colon */
+	 || (p = Ustrrchr(server, '.'))		/* >1 colon, and a period */
+	 )
+	{
+	*p++ = 0;
+	port = p;
+	}
 
     if (Ustrchr(server, '/'))
       {
@@ -292,7 +302,7 @@ switch(PQresultStatus(pg_result))
     result = string_cat(result, US PQcmdTuples(pg_result));
     *do_cache = 0;
     DEBUG(D_lookup) debug_printf_indent("PGSQL: command does not return any data "
-      "but was successful. Rows affected: %s\n", string_from_gstring(result));
+      "but was successful. Rows affected: %Y\n", result);
     break;
 
   case PGRES_TUPLES_OK:
@@ -430,7 +440,7 @@ if (opt) return NULL;     /* No options recognized */
 while ((c = *t++))
   if (Ustrchr("\n\t\r\b\'\"\\", c) != NULL) count++;
 
-t = quoted = store_get_quoted(Ustrlen(s) + count + 1, s, idx);
+t = quoted = store_get_quoted(Ustrlen(s) + count + 1, s, idx, US"pgsql");
 
 while ((c = *s++))
   {

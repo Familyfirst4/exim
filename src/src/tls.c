@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This module provides TLS (aka SSL) support for Exim. The code for OpenSSL is
 based on a patch that was originally contributed by Steve Haslam. It was
@@ -25,11 +26,6 @@ functions from the OpenSSL or GNU TLS libraries. */
 #endif
 
 
-/* Forward decl. */
-static void tls_client_resmption_key(tls_support *, smtp_connect_args *,
-  smtp_transport_options_block *);
-
-
 #if defined(MACRO_PREDEF) && !defined(DISABLE_TLS)
 # include "macro_predef.h"
 # ifdef USE_GNUTLS
@@ -44,12 +40,15 @@ static void tls_client_resmption_key(tls_support *, smtp_connect_args *,
 static void tls_per_lib_daemon_init(void);
 static void tls_per_lib_daemon_tick(void);
 static unsigned  tls_server_creds_init(void);
-static void tls_server_creds_invalidate(void);
 static void tls_client_creds_init(transport_instance *, BOOL);
-static void tls_client_creds_invalidate(transport_instance *);
 static void tls_daemon_creds_reload(void);
 static BOOL opt_set_and_noexpand(const uschar *);
 static BOOL opt_unset_or_noexpand(const uschar *);
+
+#if defined(EXIM_HAVE_INOTIFY) || defined(EXIM_HAVE_KEVENT)
+static void tls_server_creds_invalidate(void);
+static void tls_client_creds_invalidate(transport_instance *);
+#endif
 
 
 
@@ -105,10 +104,14 @@ Returns:    TRUE if OK; result may still be NULL after forced failure
 */
 
 static BOOL
-expand_check(const uschar *s, const uschar *name, uschar **result, uschar ** errstr)
+expand_check(const uschar * s, const uschar * name,
+  uschar ** result, uschar ** errstr)
 {
 if (!s)
+  {
+  f.expand_string_forcedfail = FALSE;
   *result = NULL;
+  }
 else if (  !(*result = expand_string(US s)) /* need to clean up const more */
 	&& !f.expand_string_forcedfail
 	)
@@ -143,15 +146,29 @@ static BOOL
 tls_set_one_watch(const uschar * filename)
 # ifdef EXIM_HAVE_INOTIFY
 {
+uschar buf[PATH_MAX];
+ssize_t len;
 uschar * s;
 
 if (Ustrcmp(filename, "system,cache") == 0) return TRUE;
-
 if (!(s = Ustrrchr(filename, '/'))) return FALSE;
-s = string_copyn(filename, s - filename);	/* mem released by tls_set_watch */
-DEBUG(D_tls) debug_printf("watch dir '%s'\n", s);
 
-/*XXX unclear what effect symlinked files will have for inotify */
+for (unsigned loop = 20;
+     (len = readlink(CCS filename, CS buf, sizeof(buf))) >= 0; )
+  {						/* a symlink */
+  if (--loop == 0) { errno = ELOOP; return FALSE; }
+  filename = buf[0] == '/'
+    ? string_copyn(buf, (unsigned)len)	/* mem released by tls_set_watch */
+    : string_sprintf("%.*s/%.*s", (int)(s - filename), filename, (int)len, buf);
+  s = Ustrrchr(filename, '/');
+  }
+if (errno != EINVAL)
+  return FALSE;					/* other error */
+
+/* not a symlink */
+s = string_copyn(filename, s - filename);	/* mem released by tls_set_watch */
+
+DEBUG(D_tls) debug_printf("watch dir '%s'\n", s);
 
 if (inotify_add_watch(tls_watch_fd, CCS s,
       IN_ONESHOT | IN_CLOSE_WRITE | IN_DELETE | IN_DELETE_SELF
@@ -277,7 +294,7 @@ r = store_mark();
 if (list)
   {
   int sep = 0;
-  for (uschar * s; s = string_nextinlist(&filename, &sep, NULL, 0); )
+  for (const uschar * s; s = string_nextinlist(&filename, &sep, NULL, 0); )
     if (!(rc = tls_set_one_watch(s))) break;
   }
 else
@@ -293,13 +310,14 @@ void
 tls_watch_discard_event(int fd)
 {
 #ifdef EXIM_HAVE_INOTIFY
-(void) read(fd, big_buffer, big_buffer_size);
+int rc = read(fd, big_buffer, big_buffer_size);
 #endif
 #ifdef EXIM_HAVE_KEVENT
 struct kevent kev;
 struct timespec t = {0};
-(void) kevent(fd, NULL, 0, &kev, 1, &t);
+int rc = kevent(fd, NULL, 0, &kev, 1, &t);
 #endif
+rc = rc;	/* stupid compiler quietening */
 }
 #endif	/*EXIM_HAVE_INOTIFY*/
 
@@ -307,10 +325,12 @@ struct timespec t = {0};
 void
 tls_client_creds_reload(BOOL watch)
 {
-for(transport_instance * t = transports; t; t = t->next)
-  if (Ustrcmp(t->driver_name, "smtp") == 0)
+for(transport_instance * t = transports; t; t = t->drinst.next)
+  if (Ustrcmp(t->drinst.driver_name, "smtp") == 0)
     {
+#if defined(EXIM_HAVE_INOTIFY) || defined(EXIM_HAVE_KEVENT)
     tls_client_creds_invalidate(t);
+#endif
     tls_client_creds_init(t, watch);
     }
 }
@@ -346,7 +366,11 @@ unsigned lifetime;
 tls_watch_invalidate();
 #endif
 
+#if defined(EXIM_HAVE_INOTIFY) || defined(EXIM_HAVE_KEVENT)
 tls_server_creds_invalidate();
+#endif
+
+/* _expire is for a time-limited selfsign server cert */
 tls_creds_expire = (lifetime = tls_server_creds_init())
   ? time(NULL) + lifetime : 0;
 
@@ -441,6 +465,10 @@ tzset();
 /*************************************************
 *        Many functions are package-specific     *
 *************************************************/
+/* Forward decl. */
+static void tls_client_resmption_key(tls_support *, const smtp_connect_args *,
+  const smtp_transport_options_block *);
+
 
 #ifdef USE_GNUTLS
 # include "tls-gnu.c"
@@ -477,7 +505,7 @@ int
 tls_ungetc(int ch)
 {
 if (ssl_xfer_buffer_lwm <= 0)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "buffer underflow in tls_ungetc");
+  log_write_die(0, LOG_MAIN, "buffer underflow in tls_ungetc");
 
 ssl_xfer_buffer[--ssl_xfer_buffer_lwm] = ch;
 return ch;
@@ -596,8 +624,7 @@ tls_field_from_dn(uschar * dn, const uschar * mod)
 {
 int insep = ',';
 uschar outsep = '\n';
-uschar * ele;
-uschar * match = NULL;
+const uschar * match = NULL, * ele;
 int len;
 gstring * list = NULL;
 
@@ -627,7 +654,7 @@ Return TRUE for a match
 static BOOL
 is_name_match(const uschar * name, const uschar * pat)
 {
-uschar * cp;
+const uschar * cp;
 return *pat == '*'		/* possible wildcard match */
   ?    *++pat == '.'		/* starts star, dot              */
     && !Ustrchr(++pat, '*')	/* has no more stars             */
@@ -653,21 +680,24 @@ Returns:
 BOOL
 tls_is_name_for_cert(const uschar * namelist, void * cert)
 {
-uschar * altnames = tls_cert_subject_altname(cert, US"dns");
-uschar * subjdn;
-uschar * certname;
+uschar * altnames, * subjdn, * certname, * cmpname;
 int cmp_sep = 0;
-uschar * cmpname;
 
 if ((altnames = tls_cert_subject_altname(cert, US"dns")))
   {
   int alt_sep = '\n';
+  DEBUG(D_tls|D_lookup) debug_printf_indent("cert has SAN\n");
   while ((cmpname = string_nextinlist(&namelist, &cmp_sep, NULL, 0)))
     {
     const uschar * an = altnames;
+    DEBUG(D_tls|D_lookup) debug_printf_indent(" %s in SANs?", cmpname);
     while ((certname = string_nextinlist(&an, &alt_sep, NULL, 0)))
       if (is_name_match(cmpname, certname))
+	{
+	DEBUG(D_tls|D_lookup) debug_printf_indent("  yes (matched %s)\n", certname);
 	return TRUE;
+	}
+    DEBUG(D_tls|D_lookup) debug_printf_indent(" no (end of SAN list)\n");
     }
   }
 
@@ -679,13 +709,18 @@ else if ((subjdn = tls_cert_subject(cert, NULL)))
   while ((cmpname = string_nextinlist(&namelist, &cmp_sep, NULL, 0)))
     {
     const uschar * sn = subjdn;
+    DEBUG(D_tls|D_lookup) debug_printf_indent(" %s in SN?", cmpname);
     while ((certname = string_nextinlist(&sn, &sn_sep, NULL, 0)))
       if (  *certname++ == 'C'
 	 && *certname++ == 'N'
 	 && *certname++ == '='
 	 && is_name_match(cmpname, certname)
 	 )
+	{
+	DEBUG(D_tls|D_lookup) debug_printf_indent("  yes (matched %s)\n", certname);
 	return TRUE;
+	}
+    DEBUG(D_tls|D_lookup) debug_printf_indent(" no (end of CN)\n");
     }
   }
 return FALSE;
@@ -743,7 +778,7 @@ Returns:  bool for "okay"; false will cause caller to immediately exit.
 BOOL
 tls_dropprivs_validate_require_cipher(BOOL nowarn)
 {
-const uschar *errmsg;
+const uschar * errmsg;
 pid_t pid;
 int rc, status;
 void (*oldsignal)(int);
@@ -764,7 +799,7 @@ oldsignal = signal(SIGCHLD, SIG_DFL);
 
 fflush(NULL);
 if ((pid = exim_fork(US"cipher-validate")) < 0)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "fork failed for TLS check");
+  log_write_die(0, LOG_MAIN, "fork failed for TLS check");
 
 if (pid == 0)
   {
@@ -774,7 +809,7 @@ if (pid == 0)
         US"calling tls_validate_require_cipher");
 
   if ((errmsg = tls_validate_require_cipher()))
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG,
+    log_write_die(0, LOG_CONFIG,
         "tls_require_ciphers invalid: %s", errmsg);
   fflush(NULL);
   exim_underbar_exit(EXIT_SUCCESS);
@@ -797,8 +832,8 @@ return status == 0;
 
 
 static void
-tls_client_resmption_key(tls_support * tlsp, smtp_connect_args * conn_args,
-  smtp_transport_options_block * ob)
+tls_client_resmption_key(tls_support * tlsp,
+  const smtp_connect_args * conn_args, const smtp_transport_options_block * ob)
 {
 #ifndef DISABLE_TLS_RESUME
 hctx * h = &tlsp->resume_hctx;
@@ -828,12 +863,61 @@ exim_sha_update_string(h, tlsp->sni);
 exim_sha_update_string(h, ob->tls_alpn);
 # endif
 exim_sha_finish(h, &b);
-for (g = string_get(b.len*2+1); b.len-- > 0; )
-  g = string_fmt_append(g, "%02x", *b.data++);
-tlsp->resume_index = string_from_gstring(g);
+tlsp->resume_index = string_sprintf("%.*H", (int)b.len, b.data);
 DEBUG(D_tls) debug_printf("TLS: resume session index %s\n", tlsp->resume_index);
 #endif
 }
+
+
+
+/* Start TLS as a client for an ajunct connection, eg. readsocket
+Return boolean success.
+*/
+
+BOOL
+tls_client_adjunct_start(host_item * host, client_conn_ctx * cctx,
+  const uschar * sni, uschar ** errmsg)
+{
+union sockaddr_46 interface_sock;
+EXIM_SOCKLEN_T size = sizeof(interface_sock);
+smtp_connect_args conn_args = {.host = host };
+tls_support tls_dummy = { .sni = NULL };
+uschar * errstr;
+
+if (getsockname(cctx->sock, (struct sockaddr *) &interface_sock, &size) == 0)
+  conn_args.sending_ip_address = host_ntoa(-1, &interface_sock, NULL, NULL);
+else
+  {
+  *errmsg = string_sprintf("getsockname failed: %s", strerror(errno));
+  return FALSE;
+  }
+
+/* To handle SNI we need to emulate more of a real transport because the
+base tls code assumes that is where the SNI string lives. */
+
+if (*sni)
+  {
+  transport_instance * tb;
+  smtp_transport_options_block * ob;
+
+  conn_args.tblock = tb = store_get(sizeof(*tb), GET_UNTAINTED);
+  memset(tb, 0, sizeof(*tb));
+
+  tb->drinst.options_block = ob = store_get(sizeof(*ob), GET_UNTAINTED);
+  memcpy(ob, &smtp_transport_option_defaults, sizeof(*ob));
+
+  ob->tls_sni = sni;
+  }
+
+if (!tls_client_start(cctx, &conn_args, NULL, &tls_dummy, &errstr))
+  {
+  *errmsg = string_sprintf("TLS connect failed: %s", errstr);
+  return FALSE;
+  }
+return TRUE;
+}
+
+
 
 #endif	/*!DISABLE_TLS*/
 #endif	/*!MACRO_PREDEF*/

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for reading spool files. When compiling for a utility (eximon),
 not all are needed, and some functionality can be cut out. */
@@ -35,18 +36,18 @@ Side effect: message_subdir is set for the (possibly split) spool directory
 */
 
 int
-spool_open_datafile(uschar *id)
+spool_open_datafile(const uschar * id)
 {
 struct stat statbuf;
 flock_t lock_data;
 int fd;
 
-/* If split_spool_directory is set, first look for the file in the appropriate
-sub-directory of the input directory. If it is not found there, try the input
-directory itself, to pick up leftovers from before the splitting. If split_
-spool_directory is not set, first look in the main input directory. If it is
-not found there, try the split sub-directory, in case it is left over from a
-splitting state. */
+/* If split_spool_directory is set (handled by set_subdir_str()), first look for
+the file in the appropriate sub-directory of the input directory. If it is not
+found there, try the input directory itself, to pick up leftovers from before
+the splitting. If split_ spool_directory is not set, first look in the main
+input directory. If it is not found there, try the split sub-directory, in case
+it is left over from a splitting state. */
 
 for (int i = 0; i < 2; i++)
   {
@@ -58,18 +59,12 @@ for (int i = 0; i < 2; i++)
   DEBUG(D_deliver) debug_printf_indent("Trying spool file %s\n", fname);
 
   /* We protect against symlink attacks both in not propagating the
-   * file-descriptor to other processes as we exec, and also ensuring that we
-   * don't even open symlinks.
-   * No -D file inside the spool area should be a symlink.
-   */
+  file-descriptor to other processes as we exec, and also ensuring that we
+  don't even open symlinks.
+  No -D file inside the spool area should be a symlink.  */
+
   if ((fd = Uopen(fname,
-#ifdef O_CLOEXEC
-		      O_CLOEXEC |
-#endif
-#ifdef O_NOFOLLOW
-		      O_NOFOLLOW |
-#endif
-		      O_RDWR | O_APPEND, 0)) >= 0)
+		  EXIM_CLOEXEC | EXIM_NOFOLLOW | O_RDWR | O_APPEND, 0)) >= 0)
     break;
   save_errno = errno;
   if (errno == ENOENT)
@@ -77,6 +72,11 @@ for (int i = 0; i < 2; i++)
     if (i == 0) continue;
     if (!f.queue_running)
       log_write(0, LOG_MAIN, "Spool%s%s file %s-D not found",
+	*queue_name ? US" Q=" : US"",
+	*queue_name ? queue_name : US"",
+	id);
+    else DEBUG(D_deliver)
+      debug_printf("Spool%s%s file %s-D not found\n",
 	*queue_name ? US" Q=" : US"",
 	*queue_name ? queue_name : US"",
 	id);
@@ -102,7 +102,7 @@ what it locks. */
 lock_data.l_type = F_WRLCK;
 lock_data.l_whence = SEEK_SET;
 lock_data.l_start = 0;
-lock_data.l_len = SPOOL_DATA_START_OFFSET;
+lock_data.l_len = spool_data_start_offset(id);
 
 if (fcntl(fd, F_SETLK, &lock_data) < 0)
   {
@@ -119,7 +119,7 @@ in the count, but add one for the newline before the data. */
 
 if (fstat(fd, &statbuf) == 0)
   {
-  message_body_size = statbuf.st_size - SPOOL_DATA_START_OFFSET;
+  message_body_size = statbuf.st_size - spool_data_start_offset(id);
   message_size = message_body_size + 1;
   }
 
@@ -269,9 +269,18 @@ bmi_verdicts = NULL;
 #endif
 
 #ifndef DISABLE_DKIM
-dkim_signers = NULL;
 f.dkim_disable_verify = FALSE;
+# ifdef COMPILE_UTILITY
+dkim_signers = NULL;
 dkim_collect_input = 0;
+#else
+  {
+  misc_module_info * mi = misc_mod_findonly(US"dkim");
+  /* We used to clear only dkim_signers, dkim_collect_input. This does more
+  but I think it is safe. */
+  if (mi) mi->smtp_reset();
+  }
+# endif
 #endif
 
 #ifndef DISABLE_TLS
@@ -323,7 +332,7 @@ while ((len = Ustrlen(big_buffer)) == big_buffer_size-1
 
   if (big_buffer_size >= BIG_BUFFER_SIZE * 4) return NULL;
   newsize = big_buffer_size * 2;
-  newbuffer = store_get_perm(newsize, FALSE);
+  newbuffer = store_get_perm(newsize, GET_UNTAINTED);
   memcpy(newbuffer, big_buffer, len);
 
   big_buffer = newbuffer;
@@ -356,7 +365,7 @@ malformed.
 As called from deliver_message() (at least) we are running as root.
 
 Arguments:
-  name          name of the header file, including the -H
+  fname         name of the header file, including the -H
   read_headers  TRUE if in-store header structures are to be built
   subdir_set    TRUE is message_subdir is already set
 
@@ -367,13 +376,13 @@ Returns:        spool_read_OK        success
 */
 
 int
-spool_read_header(uschar *name, BOOL read_headers, BOOL subdir_set)
+spool_read_header(uschar * fname, BOOL read_headers, BOOL subdir_set)
 {
 FILE * fp = NULL;
-int n;
-int rcount = 0;
+int rcount = 0, n;
 long int uid, gid;
 BOOL inheader = FALSE;
+const uschar * where;
 
 /* Reset all the global variables to their default values. However, there is
 one exception. DO NOT change the default value of dont_deliver, because it may
@@ -385,29 +394,35 @@ spool_clear_header_globals();
 set, just look in the given directory. Otherwise, look in both the split
 and unsplit directories, as for the data file above. */
 
-for (int n = 0; n < 2; n++)
+for (int i = 0; i < 2; i++)
   {
   if (!subdir_set)
-    set_subdir_str(message_subdir, name, n);
+    set_subdir_str(message_subdir, fname, i);
 
-  if ((fp = Ufopen(spool_fname(US"input", message_subdir, name, US""), "rb")))
+  if ((fp = Ufopen(spool_fname(US"input", message_subdir, fname, US""), "rb")))
     break;
-  if (n != 0 || subdir_set || errno != ENOENT)
+  if (i != 0 || subdir_set || errno != ENOENT)
     return spool_read_notopen;
   }
 
 errno = 0;
 
 #ifndef COMPILE_UTILITY
-DEBUG(D_deliver) debug_printf_indent("reading spool file %s\n", name);
+DEBUG(D_deliver) debug_printf_indent("reading spool file %s\n", fname);
 #endif  /* COMPILE_UTILITY */
 
 /* The first line of a spool file contains the message id followed by -H (i.e.
 the file name), in order to make the file self-identifying. */
 
+where = US"first line read";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
-if (Ustrlen(big_buffer) != MESSAGE_ID_LENGTH + 3 ||
-    Ustrncmp(big_buffer, name, MESSAGE_ID_LENGTH + 2) != 0)
+where = US"first line length";
+if (  (  Ustrlen(big_buffer) != MESSAGE_ID_LENGTH + 3
+      && Ustrlen(big_buffer) != MESSAGE_ID_LENGTH_OLD + 3
+      )
+   || (  Ustrncmp(big_buffer, fname, MESSAGE_ID_LENGTH + 2) != 0
+      && Ustrncmp(big_buffer, fname, MESSAGE_ID_LENGTH_OLD + 2) != 0
+   )  )
   goto SPOOL_FORMAT_ERROR;
 
 /* The next three lines in the header file are in a fixed format. The first
@@ -417,20 +432,24 @@ negative uids and gids. The second contains the mail address of the message's
 sender, enclosed in <>. The third contains the time the message was received,
 and the number of warning messages for delivery delays that have been sent. */
 
+where = US"2nd line read";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
 
  {
   uschar *p = big_buffer + Ustrlen(big_buffer);
   while (p > big_buffer && isspace(p[-1])) p--;
   *p = 0;
+  where = US"2nd line fmt 1";
   if (!isdigit(p[-1])) goto SPOOL_FORMAT_ERROR;
   while (p > big_buffer && (isdigit(p[-1]) || '-' == p[-1])) p--;
   gid = Uatoi(p);
+  where = US"2nd line fmt 2";
   if (p <= big_buffer || *(--p) != ' ') goto SPOOL_FORMAT_ERROR;
   *p = 0;
   if (!isdigit(p[-1])) goto SPOOL_FORMAT_ERROR;
   while (p > big_buffer && (isdigit(p[-1]) || '-' == p[-1])) p--;
   uid = Uatoi(p);
+  where = US"2nd line fmt 3";
   if (p <= big_buffer || *(--p) != ' ') goto SPOOL_FORMAT_ERROR;
   *p = 0;
  }
@@ -439,17 +458,20 @@ originator_login = string_copy(big_buffer);
 originator_uid = (uid_t)uid;
 originator_gid = (gid_t)gid;
 
-/* envelope from */
+where = US"envelope from";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
 n = Ustrlen(big_buffer);
 if (n < 3 || big_buffer[0] != '<' || big_buffer[n-2] != '>')
   goto SPOOL_FORMAT_ERROR;
 
-sender_address = store_get(n-2, GET_TAINTED);
-Ustrncpy(sender_address, big_buffer+1, n-3);
-sender_address[n-3] = 0;
+ {
+  uschar * s = store_get(n-2, GET_TAINTED);
+  Ustrncpy(s, big_buffer+1, n-3);
+  s[n-3] = '\0';
+  sender_address = s;
+ }
 
-/* time */
+where = US"time";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
 if (sscanf(CS big_buffer, TIME_T_FMT " %d", &received_time.tv_sec, &warning_count) != 2)
   goto SPOOL_FORMAT_ERROR;
@@ -501,15 +523,19 @@ for (;;)
   if (*var == '(')				/* marker for quoted value */
     {
     uschar * s;
-    int idx;
     for (s = ++var; *s != ')'; ) s++;
 #ifndef COMPILE_UTILITY
-    if ((idx = search_findtype(var, s - var)) < 0)
       {
-      DEBUG(D_any) debug_printf("Unrecognised quoter %.*s\n", (int)(s - var), var+1);
-      goto SPOOL_FORMAT_ERROR;
+      const lookup_info * li;
+      if (!(li= search_findtype(var, s - var)))
+	{
+	DEBUG(D_any)
+	  debug_printf("Unrecognised quoter %.*s\n", (int)(s - var), var+1);
+	where = NULL;
+	goto SPOOL_FORMAT_ERROR;
+	}
+      proto_mem = store_get_quoted(1, GET_TAINTED, li->acq_num, li->name);
       }
-    proto_mem = store_get_quoted(1, GET_TAINTED, idx);
 #endif  /* COMPILE_UTILITY */
     var = s + 1;
     }
@@ -527,18 +553,20 @@ for (;;)
     if (Ustrncmp(p, "clc ", 4) == 0 ||
         Ustrncmp(p, "clm ", 4) == 0)
       {
-      uschar *name, *endptr;
+      const uschar * vname, * endptr;
       int count;
-      tree_node *node;
+      tree_node * node;
+
       endptr = Ustrchr(var + 5, ' ');
-      if (endptr == NULL) goto SPOOL_FORMAT_ERROR;
-      name = string_sprintf("%c%.*s", var[3],
+      where = US"-aclXn";
+      if (!endptr) goto SPOOL_FORMAT_ERROR;
+      vname = string_sprintf("%c%.*s", var[3],
         (int)(endptr - var - 5), var + 5);
       if (sscanf(CS endptr, " %d", &count) != 1) goto SPOOL_FORMAT_ERROR;
-      node = acl_var_create(name);
+      node = acl_var_create(vname);
       node->data.ptr = store_get(count + 1, proto_mem);
       if (fread(node->data.ptr, 1, count+1, fp) < count) goto SPOOL_READ_ERROR;
-      ((uschar*)node->data.ptr)[count] = 0;
+      ((uschar*)node->data.ptr)[count] = '\0';
       }
 
     else if (Ustrcmp(p, "llow_unqualified_recipient") == 0)
@@ -563,18 +591,19 @@ for (;;)
     else if (Ustrncmp(p, "cl ", 3) == 0)
       {
       unsigned index, count;
-      uschar name[20];   /* Need plenty of space for %u format */
+      uschar vname[20];   /* Need plenty of space for %u format */
       tree_node * node;
+      where = US"-acl (old)";
       if (  sscanf(CS var + 4, "%u %u", &index, &count) != 2
 	 || index >= 20
 	 || count > 16384	/* arbitrary limit on variable size */
          )
         goto SPOOL_FORMAT_ERROR;
       if (index < 10)
-        (void) string_format(name, sizeof(name), "%c%u", 'c', index);
+        (void) string_format(vname, sizeof(vname), "%c%u", 'c', index);
       else
-        (void) string_format(name, sizeof(name), "%c%u", 'm', index - 10);
-      node = acl_var_create(name);
+        (void) string_format(vname, sizeof(vname), "%c%u", 'm', index - 10);
+      node = acl_var_create(vname);
       node->data.ptr = store_get(count + 1, proto_mem);
       /* We sanity-checked the count, so disable the Coverity error */
       /* coverity[tainted_data] */
@@ -779,6 +808,7 @@ DEBUG(D_deliver)
 /* We now have the tree of addresses NOT to deliver to, or a line
 containing "XX", indicating no tree. */
 
+where = US"nondeliver";
 if (Ustrncmp(big_buffer, "XX\n", 3) != 0 &&
   !read_nonrecipients_tree(&tree_nonrecipients, fp, big_buffer, big_buffer_size))
     goto SPOOL_FORMAT_ERROR;
@@ -791,6 +821,7 @@ DEBUG(D_deliver) debug_print_tree("Non-recipients", tree_nonrecipients);
 buffer. It contains the count of recipients which follow on separate lines.
 Apply an arbitrary sanity check.*/
 
+where = US"rcpt cnt";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
 if (sscanf(CS big_buffer, "%d", &rcount) != 1 || rcount > 16384)
   goto SPOOL_FORMAT_ERROR;
@@ -806,6 +837,7 @@ recipients_list = store_get(rcount * sizeof(recipient_item), GET_UNTAINTED);
 the Coverity error on recipients_count */
 /* coverity[tainted_data] */
 
+where = US"recipient";
 for (recipients_count = 0; recipients_count < rcount; recipients_count++)
   {
   int nn;
@@ -957,12 +989,13 @@ always, in order to check on the format of the file, but only create a header
 list if requested to do so. */
 
 inheader = TRUE;
+where = US"headers";
 if (Ufgets(big_buffer, big_buffer_size, fp) == NULL) goto SPOOL_READ_ERROR;
 if (big_buffer[0] != '\n') goto SPOOL_FORMAT_ERROR;
 
 while ((n = fgetc(fp)) != EOF)
   {
-  header_line *h;
+  header_line * h;
   uschar flag[4];
   int i;
 
@@ -1029,7 +1062,7 @@ if (errno != 0)
   n = errno;
 
 #ifndef COMPILE_UTILITY
-  DEBUG(D_any) debug_printf("Error while reading spool file %s\n", name);
+  DEBUG(D_any) debug_printf("Error while reading spool file %s\n", fname);
 #endif  /* COMPILE_UTILITY */
 
   fclose(fp);
@@ -1040,7 +1073,10 @@ if (errno != 0)
 SPOOL_FORMAT_ERROR:
 
 #ifndef COMPILE_UTILITY
-DEBUG(D_any) debug_printf("Format error in spool file %s\n", name);
+DEBUG(D_any) debug_printf("Format error in spool file %s%s%s\n", fname,
+  where ? ": " : "", where ? where : US"");
+#else
+where = where;	/* compiler quietening */
 #endif  /* COMPILE_UTILITY */
 
 fclose(fp);
@@ -1059,15 +1095,14 @@ We assume that message_subdir is already set.
 uschar *
 spool_sender_from_msgid(const uschar * id)
 {
-uschar * name = string_sprintf("%s-H", id);
 FILE * fp;
 int n;
 uschar * yield = NULL;
 
-if (!(fp = Ufopen(spool_fname(US"input", message_subdir, name, US""), "rb")))
+if (!(fp = Ufopen(spool_fname(US"input", message_subdir, id, US"-H"), "rb")))
   return NULL;
 
-DEBUG(D_deliver) debug_printf_indent("reading spool file %s\n", name);
+DEBUG(D_deliver) debug_printf_indent("reading spool file %s-H\n", id);
 
 /* Skip the line with the copy of the filename, then the line with login/uid/gid.
 Read the next line, which should be the envelope sender.

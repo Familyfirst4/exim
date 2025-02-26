@@ -32,16 +32,18 @@ primary_hostname = testhost.test.ex
 domainlist local_domains = @ : test.ex
 
 acl_smtp_rcpt = check_recipient
+.ifdef _HAVE_PRDR
 acl_smtp_data_prdr = check_prdr
+.endif
 acl_smtp_data = check_data
 trusted_users = CALLER
 queue_only
 smtp_receive_timeout = 2s
 
 .ifdef _HAVE_DKIM
-log_selector = +received_recipients +millisec +dkim_verbose
+log_selector = +received_recipients +connection_id +millisec +dkim_verbose
 .else
-log_selector = +received_recipients +millisec
+log_selector = +received_recipients +connection_id +millisec
 .endif
 
 .ifdef _HAVE_TLS

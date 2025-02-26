@@ -1,12 +1,13 @@
 /*
- * Copyright (c) The Exim Maintainers 2006 - 2022
- * Copyright (c) 2004 Andrey Panin <pazke@donpac.ru>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published
- * by the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+Copyright (c) The Exim Maintainers 2006 - 2024
+Copyright (c) 2004 Andrey Panin <pazke@donpac.ru>
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published
+by the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+*/
 
 /* A number of modifications have been made to the original code. Originally I
 commented them specially, but now they are getting quite extensive, so I have
@@ -22,6 +23,8 @@ because using C buffered I/O gives problems on some operating systems. PH */
  */
 
 #include "../exim.h"
+
+#ifdef AUTH_DOVECOT	/* Remainder of file */
 #include "dovecot.h"
 
 #define VERSION_MAJOR  1
@@ -51,8 +54,10 @@ The cost is the length of an array of pointers on the stack.
 
 /* Options specific to the authentication mechanism. */
 optionlist auth_dovecot_options[] = {
-  { "server_socket", opt_stringptr, OPT_OFF(auth_dovecot_options_block, server_socket) },
-/*{ "server_tls", opt_bool, OPT_OFF(auth_dovecot_options_block, server_tls) },*/
+  { "server_socket", opt_stringptr,
+    OPT_OFF(auth_dovecot_options_block, server_socket) },
+/*{ "server_tls", opt_bool,
+    OPT_OFF(auth_dovecot_options_block, server_tls) },*/
 };
 
 /* Size of the options list. An extern variable has to be used so that its
@@ -73,10 +78,8 @@ auth_dovecot_options_block auth_dovecot_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_dovecot_init(auth_instance *ablock) {}
+void auth_dovecot_init(driver_instance *ablock) {}
 int auth_dovecot_server(auth_instance *ablock, uschar *data) {return 0;}
-int auth_dovecot_client(auth_instance *ablock, void * sx,
-  int timeout, uschar *buffer, int buffsize) {return 0;}
 
 #else   /*!MACRO_PREDEF*/
 
@@ -96,13 +99,20 @@ static int socket_buffer_left;
 enable consistency checks to be done, or anything else that needs
 to be set up. */
 
-void auth_dovecot_init(auth_instance *ablock)
+void
+auth_dovecot_init(driver_instance * a)
 {
-auth_dovecot_options_block *ob =
-       (auth_dovecot_options_block *)(ablock->options_block);
+auth_instance * ablock = (auth_instance *)a;
+const auth_dovecot_options_block * ob =
+       (auth_dovecot_options_block *)(a->options_block);
 
-if (!ablock->public_name) ablock->public_name = ablock->name;
-if (ob->server_socket) ablock->server = TRUE;
+if (!ablock->public_name)
+  ablock->public_name = a->name;
+if (ob->server_socket)
+  ablock->server = TRUE;
+else DEBUG(D_auth)
+  debug_printf("Dovecot auth driver: no server_socket for %s\n",
+	      ablock->public_name);
 ablock->client = FALSE;
 }
 
@@ -236,6 +246,20 @@ return s;
 }
 
 
+static int
+dc_write(client_conn_ctx * cctx, const uschar * s)
+{
+int len = Ustrlen(s), res;
+
+HDEBUG(D_auth) debug_printf("  DOVECOT>> '%s'\n", s);
+#ifndef DISABLE_TLS
+res = cctx->tls_ctx
+  ? tls_write(cctx->tls_ctx, s, len, FALSE)
+#endif
+  : write(cctx->sock, s, len);
+
+return res;
+}
 
 
 /*************************************************
@@ -245,13 +269,10 @@ return s;
 int
 auth_dovecot_server(auth_instance * ablock, uschar * data)
 {
-auth_dovecot_options_block *ob =
-       (auth_dovecot_options_block *) ablock->options_block;
+const auth_dovecot_options_block * ob = ablock->drinst.options_block;
 uschar buffer[DOVECOT_AUTH_MAXLINELEN];
-uschar *args[DOVECOT_AUTH_MAXFIELDCOUNT];
-uschar *auth_command;
-uschar *auth_extra_data = US"";
-uschar *p;
+uschar * args[DOVECOT_AUTH_MAXFIELDCOUNT];
+uschar * auth_extra_data = US"", * auth_command;
 int nargs, tmp;
 int crequid = 1, ret = DEFER;
 host_item host;
@@ -303,36 +324,45 @@ auth_defer_msg = US"authentication socket protocol error";
 socket_buffer_left = 0;  /* Global, used to read more than a line but return by line */
 for (;;)
   {
-debug_printf("%s %d\n", __FUNCTION__, __LINE__);
+  uschar * p;
+
   if (!dc_gets(buffer, sizeof(buffer), &cctx))
     OUT("authentication socket read error or premature eof");
-debug_printf("%s %d\n", __FUNCTION__, __LINE__);
   p = buffer + Ustrlen(buffer) - 1;
   if (*p != '\n')
     OUT("authentication socket protocol line too long");
 
   *p = '\0';
-  HDEBUG(D_auth) debug_printf("received: '%s'\n", buffer);
+  HDEBUG(D_auth) debug_printf("  DOVECOT<< '%s'\n", buffer);
 
   nargs = strcut(buffer, args, nelem(args));
 
   HDEBUG(D_auth) debug_strcut(args, nargs, nelem(args));
 
-  /* Code below rewritten by Kirill Miazine (km@krot.org). Only check commands that
-    Exim will need. Original code also failed if Dovecot server sent unknown
-    command. E.g. COOKIE in version 1.1 of the protocol would cause troubles. */
+  /* Code below rewritten by Kirill Miazine (km@krot.org). Only check commands
+  that Exim will need. Original code also failed if Dovecot server sent unknown
+  command. E.g. COOKIE in version 1.1 of the protocol would cause troubles. */
   /* pdp: note that CUID is a per-connection identifier sent by the server,
-    which increments at server discretion.
-    By contrast, the "id" field of the protocol is a connection-specific request
-    identifier, which needs to be unique per request from the client and is not
-    connected to the CUID value, so we ignore CUID from server.  It's purely for
-    diagnostics. */
+  which increments at server discretion.
+  By contrast, the "id" field of the protocol is a connection-specific request
+  identifier, which needs to be unique per request from the client and is not
+  connected to the CUID value, so we ignore CUID from server.  It's purely for
+  diagnostics. */
 
   if (Ustrcmp(args[0], US"VERSION") == 0)
     {
+    uschar * version_command;
+
     CHECK_COMMAND("VERSION", 2, 2);
     if (Uatoi(args[1]) != VERSION_MAJOR)
       OUT("authentication socket protocol version mismatch");
+
+    version_command = string_sprintf("VERSION\t%d\t%d\n",
+	   VERSION_MAJOR, VERSION_MINOR);
+    
+    if (dc_write(&cctx, version_command) < 0)
+      HDEBUG(D_auth) debug_printf("error sending version_command: %s\n",
+	strerror(errno));
     }
   else if (Ustrcmp(args[0], US"MECH") == 0)
     {
@@ -408,26 +438,20 @@ Subsequently, the command was modified to add "secured" and "valid-client-
 cert" when relevant.
 ****************************************************************************/
 
-auth_command = string_sprintf("VERSION\t%d\t%d\nCPID\t%d\n"
+auth_command = string_sprintf("CPID\t%d\n"
        "AUTH\t%d\t%s\tservice=smtp\t%srip=%s\tlip=%s\tnologin\tresp=%s\n",
-       VERSION_MAJOR, VERSION_MINOR, getpid(), crequid,
+       getpid(), crequid,
        ablock->public_name, auth_extra_data, sender_host_address,
        interface_address, data);
 
-if ((
-#ifndef DISABLE_TLS
-    cctx.tls_ctx ? tls_write(cctx.tls_ctx, auth_command, Ustrlen(auth_command), FALSE) :
-#endif
-    write(cctx.sock, auth_command, Ustrlen(auth_command))) < 0)
+if (dc_write(&cctx, auth_command) < 0)
   HDEBUG(D_auth) debug_printf("error sending auth_command: %s\n",
     strerror(errno));
 
-HDEBUG(D_auth) debug_printf("sent: '%s'\n", auth_command);
-
 while (1)
   {
-  uschar *temp;
-  uschar *auth_id_pre = NULL;
+  uschar * temp;
+  const uschar * auth_id_pre = NULL;
 
   if (!dc_gets(buffer, sizeof(buffer), &cctx))
     {
@@ -436,7 +460,7 @@ while (1)
     }
 
   buffer[Ustrlen(buffer) - 1] = 0;
-  HDEBUG(D_auth) debug_printf("received: '%s'\n", buffer);
+  HDEBUG(D_auth) debug_printf("  DOVECOT<< '%s'\n", buffer);
   nargs = strcut(buffer, args, nelem(args));
   HDEBUG(D_auth) debug_strcut(args, nargs, nelem(args));
 
@@ -464,12 +488,9 @@ while (1)
 	}
 
       temp = string_sprintf("CONT\t%d\t%s\n", crequid, data);
-      if ((
-#ifndef DISABLE_TLS
-	  cctx.tls_ctx ? tls_write(cctx.tls_ctx, temp, Ustrlen(temp), FALSE) :
-#endif
-	  write(cctx.sock, temp, Ustrlen(temp))) < 0)
+      if (dc_write(&cctx, temp) < 0)
 	OUT("authentication socket write error");
+
       break;
 
     case 'F':
@@ -523,8 +544,35 @@ if (cctx.sock >= 0)
   close(cctx.sock);
 
 /* Expand server_condition as an authorization check */
-return ret == OK ? auth_check_serv_cond(ablock) : ret;
+if (ret == OK) ret = auth_check_serv_cond(ablock);
+
+HDEBUG(D_auth) debug_printf("dovecot auth ret: %s\n", rc_names[ret]);
+return ret;
 }
 
 
-#endif   /*!MACRO_PREDEF*/
+# ifdef DYNLOOKUP
+#  define dovecot_auth_info _auth_info
+# endif
+
+auth_info dovecot_auth_info = {
+.drinfo = {
+  .driver_name =	US"dovecot",                   /* lookup name */
+  .options =		auth_dovecot_options,
+  .options_count =	&auth_dovecot_options_count,
+  .options_block =	&auth_dovecot_option_defaults,
+  .options_len =	sizeof(auth_dovecot_options_block),
+  .init =		auth_dovecot_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_dovecot_server,
+.clientcode =		NULL,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*AUTH_DOVECOT*/
+/* end of auths/dovecot.c */

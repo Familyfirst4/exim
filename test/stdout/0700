@@ -1,0 +1,243 @@
+### A Message ID as it appears in an email:
+2022-12-29 07:35:43.928000 GMT
+### A Message ID as it appears in the exim log:
+2023-01-08 06:36:04.082000 GMT
+### New-format log message ID
+2023-05-01 15:44:36.979706 BST
+### Just the date part of the Message ID:
+###    The Epoch ...
+1970-01-01 01:00:00.000000 BST
+### ... the script was under development at this time ...
+2023-01-08 06:36:04.000000 GMT
+### ... the end of exim msg-id time
+3769-12-05 03:13:03.000000 GMT
+### All three time zones with a non-GMT time
+1656539662.789000
+2022-06-29 21:54:22.789000
+2022-06-29 22:54:22.789000 BST
+### All three types of message-ids, at once:
+1970-01-01 01:00:00.000000 BST
+2022-12-29 07:35:43.928000 GMT
+3769-12-05 03:13:03.000000 GMT
+### Message IDs generated on a system, such as Mac or Cygwin,
+### which has low-resolution Message-ID timestamps
+1970-01-01 01:00:00.000000 BST
+2038-12-24 05:45:35.999000 GMT
+### An invalid base option
+### Message IDs generated on a standard system
+### with high-resolution Message-ID timestamps
+1970-01-01 01:00:00.000000 BST
+3002-09-30 12:51:45.999500 GMT
+3769-12-05 03:13:03.999500 GMT
+### Some strings that are similar to, but not Exim Message IDs:
+### Print date with localtime
+1970-01-01 01:00:00.000000 BST
+2022-12-29 07:35:43.928000 GMT
+3769-12-05 03:13:03.999500 GMT
+### Print date with timezone GMT/Zulu
+1970-01-01 00:00:00.000000
+2022-12-29 07:35:43.928000
+2022-12-29 07:35:43.928000
+3002-09-30 12:51:45.999500
+### Print date as seconds since the UNIX epoch.
+0.000000
+1672299343.999500
+56800235583.999500
+### Show the process id too
+32590299105.999500	pid 874183
+3002-09-30 12:51:45.999500 GMT	pid 874183
+3002-09-30 12:51:45.999500 GMT	pid 874183
+### Override the value of localhost_number set in the exim configuation file
+3002-09-30 12:51:45.995000 GMT
+3002-09-30 12:51:45.995000 GMT
+2038-12-24 05:45:35.360000 GMT
+### hostno too big
+3002-09-30 12:51:45.995000 GMT
+### hostno negative
+### hostno too big
+### From here as 701 - 703
+### Each msg-id type, all zone
+0.000000	pid 1319504
+1970-01-01 00:00:00.000000	pid 1319504
+1970-01-01 01:00:00.000000 BST	pid 1319504
+0.000000	pid 1319504
+1970-01-01 00:00:00.000000	pid 1319504
+1970-01-01 00:00:00.000000 GMT	pid 1319504
+32590299105.999500	pid 1319504
+3002-09-30 12:51:45.999500	pid 1319504
+3002-09-30 12:51:45.999500 GMT	pid 1319504
+1288014663.915000	pid 774213
+2010-10-25 13:51:03.915000	pid 774213
+2010-10-25 13:51:03.915000 GMT	pid 774213
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 14:51:03.000000 BST
+56800235583.000000
+3769-12-05 03:13:03.000000
+3769-12-05 03:13:03.000000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 13:51:03.000000 GMT
+32590299105.000000
+3002-09-30 12:51:45.000000
+3002-09-30 12:51:45.000000 GMT
+### All msg-id types, all zones,  localhost_number = 3
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+32590299105.215000
+3002-09-30 12:51:45.215000
+3002-09-30 12:51:45.215000 GMT
+1288014663.150000
+2010-10-25 13:51:03.150000
+2010-10-25 13:51:03.150000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 14:51:03.000000 BST
+56800235583.000000
+3769-12-05 03:13:03.000000
+3769-12-05 03:13:03.000000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 13:51:03.000000 GMT
+32590299105.000000
+3002-09-30 12:51:45.000000
+3002-09-30 12:51:45.000000 GMT
+### All msg-id types, all zones,  localhost_number = 13
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+32590299105.215000
+3002-09-30 12:51:45.215000
+3002-09-30 12:51:45.215000 GMT
+1288014663.150000
+2010-10-25 13:51:03.150000
+2010-10-25 13:51:03.150000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 14:51:03.000000 BST
+56800235583.000000
+3769-12-05 03:13:03.000000
+3769-12-05 03:13:03.000000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 13:51:03.000000 GMT
+32590299105.000000
+3002-09-30 12:51:45.000000
+3002-09-30 12:51:45.000000 GMT
+### All msg-id types, all zones,  localhost_number = 20
+### All msg-id types, all zones,  base=36
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+2176782335.972000
+2038-12-24 05:45:35.972000
+2038-12-24 05:45:35.972000 GMT
+102953955.999000
+1973-04-06 14:19:15.999000
+1973-04-06 14:19:15.999000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+102953955.000000
+1973-04-06 14:19:15.000000
+1973-04-06 15:19:15.000000 BST
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+102953955.000000
+1973-04-06 14:19:15.000000
+1973-04-06 14:19:15.000000 GMT
+2176782335.000000
+2038-12-24 05:45:35.000000
+2038-12-24 05:45:35.000000 GMT
+### All msg-id types, all zones,  base=62
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+32590299105.999500
+3002-09-30 12:51:45.999500
+3002-09-30 12:51:45.999500 GMT
+1288014663.915000
+2010-10-25 13:51:03.915000
+2010-10-25 13:51:03.915000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 01:00:00.000000 BST
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 14:51:03.000000 BST
+56800235583.000000
+3769-12-05 03:13:03.000000
+3769-12-05 03:13:03.000000 GMT
+0.000000
+1970-01-01 00:00:00.000000
+1970-01-01 00:00:00.000000 GMT
+1288014663.000000
+2010-10-25 13:51:03.000000
+2010-10-25 13:51:03.000000 GMT
+32590299105.000000
+3002-09-30 12:51:45.000000
+3002-09-30 12:51:45.000000 GMT
+
+******** SERVER ********
+### A Message ID as it appears in an email:
+### A Message ID as it appears in the exim log:
+### New-format log message ID
+### Just the date part of the Message ID:
+###    The Epoch ...
+### ... the script was under development at this time ...
+### ... the end of exim msg-id time
+### All three time zones with a non-GMT time
+### All three types of message-ids, at once:
+### Message IDs generated on a system, such as Mac or Cygwin,
+### which has low-resolution Message-ID timestamps
+### An invalid base option
+### Message IDs generated on a standard system
+### with high-resolution Message-ID timestamps
+### Some strings that are similar to, but not Exim Message IDs:
+### Print date with localtime
+### Print date with timezone GMT/Zulu
+### Print date as seconds since the UNIX epoch.
+### Show the process id too
+### Override the value of localhost_number set in the exim configuation file
+### hostno too big
+### hostno negative
+### hostno too big
+### From here as 701 - 703
+### Each msg-id type, all zone
+### All msg-id types, all zones,  localhost_number = 3
+### All msg-id types, all zones,  localhost_number = 13
+### All msg-id types, all zones,  localhost_number = 20
+### All msg-id types, all zones,  base=36
+### All msg-id types, all zones,  base=62

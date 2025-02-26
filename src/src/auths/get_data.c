@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 
@@ -29,17 +30,18 @@ if (Ustrcmp(data, "=") == 0)
   }
 else
   {
-  uschar * clear, * end;
+  uschar * clear;
   int len;
 
-  if ((len = b64decode(data, &clear)) < 0) return BAD64;
+  if ((len = b64decode(data, &clear, GET_TAINTED)) < 0) return BAD64;
   DEBUG(D_auth) debug_printf("auth input decode:");
-  for (end = clear + len; clear < end && expand_nmax < EXPAND_MAXN; )
+  for (const uschar * end = clear + len;
+      clear < end && expand_nmax < EXPAND_MAXN; )
     {
     DEBUG(D_auth) debug_printf(" '%s'", clear);
     if (expand_nmax < AUTH_VARS) auth_vars[expand_nmax] = clear;
     expand_nstring[++expand_nmax] = clear;
-    while (*clear != 0) clear++;
+    while (*clear) clear++;
     expand_nlength[expand_nmax] = clear++ - expand_nstring[expand_nmax];
     }
   DEBUG(D_auth) debug_printf("\n");
@@ -65,6 +67,10 @@ Arguments:
 Returns:      OK on success
               BAD64 if response too large for buffer
               CANCELLED if response is "*"
+
+NOTE: the data came from the wire so should be tainted - but
+big_buffer is not taint-tracked.  EVERY CALLER needs to apply
+tainting.
 */
 
 int
@@ -72,7 +78,7 @@ auth_get_data(uschar ** aptr, const uschar * challenge, int challen)
 {
 int c;
 int p = 0;
-smtp_printf("334 %s\r\n", FALSE, b64encode(challenge, challen));
+smtp_printf("334 %s\r\n", SP_NO_MORE, b64encode(challenge, challen));
 while ((c = receive_getc(GETC_BUFFER_UNLIMITED)) != '\n' && c != EOF)
   {
   if (p >= big_buffer_size - 1) return BAD64;
@@ -92,11 +98,12 @@ int
 auth_prompt(const uschar * challenge)
 {
 int rc, len;
-uschar * resp, * clear, * end;
+uschar * resp, * clear;
+const uschar * end;
 
 if ((rc = auth_get_data(&resp, challenge, Ustrlen(challenge))) != OK)
   return rc;
-if ((len = b64decode(resp, &clear)) < 0)
+if ((len = b64decode(resp, &clear, GET_TAINTED)) < 0)
   return BAD64;
 end = clear + len;
 
@@ -105,7 +112,7 @@ do
   {
   if (expand_nmax < AUTH_VARS) auth_vars[expand_nmax] = clear;
   expand_nstring[++expand_nmax] = clear;
-  while (*clear != 0) clear++;
+  while (*clear) clear++;
   expand_nlength[expand_nmax] = clear++ - expand_nstring[expand_nmax];
   }
 while (clear < end && expand_nmax < EXPAND_MAXN);
@@ -119,7 +126,7 @@ return OK;
 
 /* Expand and send one client auth item and read the response.
 Include the AUTH command and method if tagged as "first".  Use the given buffer
-for receiving the b6-encoded reply; decode it it return it in the string arg.
+for receiving the b64-encoded reply; decode it and return it in the string arg.
 
 Return:
   OK          success
@@ -138,10 +145,7 @@ auth_client_item(void * sx, auth_instance * ablock, const uschar ** inout,
   unsigned flags, int timeout, uschar * buffer, int buffsize)
 {
 int len, clear_len;
-uschar * ss, * clear;
-
-ss = US expand_cstring(*inout);
-if (ss == *inout) ss = string_copy(ss);
+uschar * ss = expand_string_copy(*inout), * clear;
 
 /* Forced expansion failure is not an error; authentication is abandoned. On
 all but the first string, we have to abandon the authentication attempt by
@@ -161,7 +165,7 @@ if (!ss)
     return CANCELLED;
     }
   string_format(buffer, buffsize, "expansion of \"%s\" failed in %s "
-    "authenticator: %s", *inout, ablock->name, expand_string_message);
+    "authenticator: %s", *inout, ablock->drinst.name, expand_string_message);
   return ERROR;
   }
 
@@ -220,14 +224,14 @@ if (flags & AUTH_ITEM_LAST)
   if (smtp_write_command(sx, SCMD_FLUSH, "*\r\n") >= 0)
     (void)smtp_read_response(sx, US buffer, buffsize, '2', timeout);
   string_format(buffer, buffsize, "Too few items in client_send in %s "
-    "authenticator", ablock->name);
+    "authenticator", ablock->drinst.name);
   return ERROR;
   }
 
 /* Now that we know we'll continue, we put the received data into $auth<n>,
 if possible. First, decode it: buffer+4 skips over the SMTP status code. */
 
-clear_len = b64decode(buffer+4, &clear);
+clear_len = b64decode(buffer+4, &clear, buffer+4);
 
 /* If decoding failed, the default is to terminate the authentication, and
 return FAIL, with the SMTP response still in the buffer. However, if client_
@@ -236,7 +240,7 @@ into $auth<n>. */
 
 if (clear_len < 0)
   {
-  uschar *save_bad = string_copy(buffer);
+  const uschar * save_bad = string_copy(buffer);
   if (!(flags & AUTH_ITEM_IGN64))
     {
     if (smtp_write_command(sx, SCMD_FLUSH, "*\r\n") >= 0)
@@ -248,7 +252,6 @@ if (clear_len < 0)
   DEBUG(D_auth) debug_printf("bad b64 decode for '%s';"
        " ignoring due to client_ignore_invalid_base64\n", save_bad);
   clear = string_copy(US"");
-  clear_len = 0;
   }
 
 *inout = clear;

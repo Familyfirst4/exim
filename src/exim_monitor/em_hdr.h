@@ -2,9 +2,10 @@
 *                 Exim Monitor                   *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* This is the general header file for all the modules that comprise
@@ -95,12 +96,13 @@ this interface so that this kind of kludge isn't needed. */
 #ifndef NS_MAXMSG
 # define NS_MAXMSG 65535
 #endif
-typedef void * hctx;
 
 #include "local_scan.h"
+#include "path_max.h"
 #include "macros.h"
 #include "structs.h"
 #include "blob.h"
+#include "hash.h"
 #include "globals.h"
 #include "hintsdb.h"
 #include "hintsdb_structs.h"
@@ -189,7 +191,7 @@ typedef struct queue_item {
   int  update_time;
   int  size;
   uschar *sender;
-  uschar name[17];
+  uschar name[MESSAGE_ID_LENGTH + 1];
   uschar seen;
   uschar frozen;
   uschar dir_char;
@@ -308,7 +310,7 @@ extern uschar *copystring(uschar *);
 extern void    create_dialog(uschar *, uschar *);
 extern void    create_stripchart(Widget, uschar *);
 extern void    debug(char *, ...);
-extern dest_item *find_dest(queue_item *, uschar *, int, BOOL);
+extern dest_item *find_dest(queue_item *, const uschar *, int, BOOL);
 extern queue_item *find_queue(uschar *, int, int);
 extern void    init(int, uschar **);
 extern void    menu_create(Widget, XEvent *, String *, Cardinal *);

@@ -8,16 +8,21 @@ echo Starting DB server
 perl
 system 'DIR/bin.sys/initdb -D DIR/pgsql/data';
 ****
-sudo rm test-stdout
+#
+# I don not understand why, but the DB fails to start if this rm is present.
+#sudo rm test-stdout
+#
+# Start the DB server
 background
 DIR/bin.sys/postgres -D DIR/pgsql/data -p PORT_N -k DIR/pgsql
 ****
+#
 sleep 1
 echo Waiting for DB server
 perl
 system 'DIR/bin.sys/pg_ctl -w -D DIR/pgsql/data status';
 system 'createdb -h localhost -p PORT_N test';
-system 'psql -h localhost -p PORT_N -d test \
+system 'DIR/bin.sys/psql -h localhost -p PORT_N -d test \
  -c "CREATE TABLE them ( name text, id text ); \
      INSERT INTO them VALUES ( \'Philip Hazel\', \'ph10\' ); \
      INSERT INTO them VALUES ( \'Aristotle\',    \'aaaa\' ); \
@@ -28,6 +33,7 @@ system 'psql -h localhost -p PORT_N -d test \
      INSERT INTO them VALUES ( CHR(39) || \'stquot\', \'quote1\' );" \
  ';
 ****
+#
 echo Populated DB server
 #
 # now, the tests
@@ -44,7 +50,10 @@ ${lookup pgsql {select * from them where id='tab';}}
 ${lookup pgsql {select * from them where name='${quote_pgsql:'stquot}';}}
 ${lookup pgsql {servers=x:localhost; select name from them where id='ph10';}}
 ${lookup pgsql {servers=localhost::PORT_N:x; select name from them where id='ph10';}}
-${lookup pgsql {servers=localhost::PORT_N/test/CALLER/:x; select name from them where id='ph10';}}
+name: ${lookup pgsql {servers=localhost::PORT_N/test/CALLER/:x; select name from them where id='ph10';}}
+ipv4: ${lookup pgsql {servers=127.0.0.1::PORT_N/test/CALLER/:x; select name from them where id='ph10';}}
+oldsyntax ipv6: ${lookup pgsql {servers=<!::1.PORT_N/test/CALLER/!x; select name from them where id='ph10';}}
+newsyntax ipv6: ${lookup pgsql,servers=<!::1.PORT_N/test/CALLER/!x { select name from them where id='ph10';}}
 ${lookup pgsql {servers=(DIR/pgsql/.s.PGSQL.PORT_N)/test/CALLER/:x; select name from them where id='ph10';}}
 x
 ${lookup pgsql {SELECT name FROM them WHERE id IN ('ph10', 'aaaa');}}

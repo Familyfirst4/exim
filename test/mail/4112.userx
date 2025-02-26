@@ -1,0 +1,39 @@
+From CALLER@test.ex Tue Mar 02 09:44:33 1999
+Return-path: <CALLER@test.ex>
+Envelope-to: userx+page@test.ex
+Delivery-date: Tue, 2 Mar 1999 09:44:33 +0000
+Received: from CALLER by the.local.host.name with local (Exim x.yz)
+	(envelope-from <CALLER@test.ex>)
+	id 10HmaX-000000005vi-0000
+	for userx+page@test.ex;
+	Tue, 2 Mar 1999 09:44:33 +0000
+Message-Id: <E10HmaX-000000005vi-0000@the.local.host.name>
+From: CALLER_NAME <CALLER@test.ex>
+Date: Tue, 2 Mar 1999 09:44:33 +0000
+X-local_part: userx
+X-local_part_suffix: +page
+X-local_part_suffix_v: page
+
+Some message text.
+
+From MAILER-DAEMON Tue Mar 02 09:44:33 1999
+Return-path: <>
+Envelope-to: userx@test.ex
+Delivery-date: Tue, 2 Mar 1999 09:44:33 +0000
+Received: from CALLER by the.local.host.name with local (Exim x.yz)
+	id 10HmaY-000000005vi-0000
+	for userx@test.ex;
+	Tue, 2 Mar 1999 09:44:33 +0000
+To: userx@test.ex
+In-Reply-To: <E10HmaX-000000005vi-0000@the.local.host.name>
+References: <E10HmaX-000000005vi-0000@the.local.host.name>
+Auto-Submitted: auto-replied
+Message-Id: <E10HmaY-000000005vi-0000@the.local.host.name>
+From: CALLER_NAME <CALLER@test.ex>
+Date: Tue, 2 Mar 1999 09:44:33 +0000
+X-local_part: userx
+X-local_part_suffix: 
+X-local_part_suffix_v: 
+
+callpager -r 108 PAGE:Some message text. 
+

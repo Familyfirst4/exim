@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -12,26 +13,28 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
-F From: "Phil Q. Hazel" <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
+ F From: "Phil Q. Hazel" <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmaX-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmaX-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -45,25 +48,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmaY-0005vi-00@myhost.test.ex>
-F From: John "Jack" Smith <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmaY-000000005vi-0000@myhost.test.ex>
+ F From: John "Jack" Smith <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaY-0005vi-00-D
-Data file written for message 10HmaY-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaY-000000005vi-0000-D
+Data file written for message 10HmaY-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmaY-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmaY-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -77,25 +82,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmaZ-0005vi-00@myhost.test.ex>
-F From: John "Jack" "Q." Smith <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmaZ-000000005vi-0000@myhost.test.ex>
+ F From: John "Jack" "Q." Smith <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaZ-0005vi-00-D
-Data file written for message 10HmaZ-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaZ-000000005vi-0000-D
+Data file written for message 10HmaZ-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaZ-0005vi-00
+	id 10HmaZ-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaZ-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmaZ-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaZ-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmaZ-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -109,25 +116,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmbA-0005vi-00@myhost.test.ex>
-F From: "John (Jack) Q. Smith" <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmbA-000000005vi-0000@myhost.test.ex>
+ F From: "John (Jack) Q. Smith" <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmbA-0005vi-00-D
-Data file written for message 10HmbA-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmbA-000000005vi-0000-D
+Data file written for message 10HmbA-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbA-0005vi-00
+	id 10HmbA-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmbA-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmbA-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmbA-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmbA-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -141,25 +150,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmbB-0005vi-00@myhost.test.ex>
-F From: John ("Jack") "Q." Smith <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmbB-000000005vi-0000@myhost.test.ex>
+ F From: John ("Jack") "Q." Smith <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmbB-0005vi-00-D
-Data file written for message 10HmbB-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmbB-000000005vi-0000-D
+Data file written for message 10HmbB-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbB-0005vi-00
+	id 10HmbB-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmbB-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmbB-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmbB-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmbB-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -173,25 +184,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmbC-0005vi-00@myhost.test.ex>
-F From: "John (\"Jack\") Q. Smith" <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmbC-000000005vi-0000@myhost.test.ex>
+ F From: "John (\"Jack\") Q. Smith" <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmbC-0005vi-00-D
-Data file written for message 10HmbC-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmbC-000000005vi-0000-D
+Data file written for message 10HmbC-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbC-0005vi-00
+	id 10HmbC-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmbC-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmbC-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmbC-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmbC-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1239 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -205,25 +218,27 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmbD-0005vi-00@myhost.test.ex>
-F From: "Phil \"Q Hazel" <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmbD-000000005vi-0000@myhost.test.ex>
+ F From: "Phil \"Q Hazel" <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmbD-0005vi-00-D
-Data file written for message 10HmbD-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmbD-000000005vi-0000-D
+Data file written for message 10HmbD-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbD-0005vi-00
+	id 10HmbD-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmbD-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmbD-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmbD-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmbD-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1240 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -237,21 +252,22 @@ Recipients:
 >>Headers received:
 
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmbE-0005vi-00@myhost.test.ex>
-F From: "Phil \"Q" "X." Hazel <CALLER@myhost.test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmbE-000000005vi-0000@myhost.test.ex>
+ F From: "Phil \"Q" "X." Hazel <CALLER@myhost.test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmbE-0005vi-00-D
-Data file written for message 10HmbE-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmbE-000000005vi-0000-D
+Data file written for message 10HmbE-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbE-0005vi-00
+	id 10HmbE-000000005vi-0000
 	for X@myhost.test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmbE-0005vi-00
-Renaming spool header file: TESTSUITE/spool//input//10HmbE-0005vi-00-H
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmbE-000000005vi-0000
+Renaming spool header file: TESTSUITE/spool//input//10HmbE-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
+receive_msg: tidyup
 >>>>>>>>>>>>>>>> Exim pid=p1241 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

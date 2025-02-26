@@ -5,7 +5,9 @@
 /* Copyright (c) The Exim Maintainers 2022 */
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#define LOOKUPAPI_H
 
 /* The "type" field in each item is a set of bit flags:
 
@@ -18,6 +20,7 @@
 typedef struct lookup_info {
   uschar *name;                   /* e.g. "lsearch" */
   int type;                       /* query/singlekey/abs-file */
+  unsigned acq_num;		  /* acquisition number */
   void *(*open)(                  /* open function */
     const uschar *,               /* file name for those that have one */
     uschar **);                   /* for error message */

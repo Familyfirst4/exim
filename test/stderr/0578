@@ -1,9 +1,11 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -12,7 +14,8 @@ Attempting full verification using callout
 callout cache: no domain record found for localhost
 callout cache: no address record found for ok@localhost
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -29,15 +32,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for localhost:
   result=1 postmaster=0 random=0
 wrote positive callout cache address record for ok@localhost
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -46,15 +59,25 @@ Attempting full verification using callout
 callout cache: found domain record for localhost
 callout cache: found address record for ok@localhost
 callout cache: address record is positive
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -63,21 +86,25 @@ Attempting full verification using callout
 callout cache: found domain record for localhost
 callout cache: address record expired for ok@localhost
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  failed: Connection refused
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+ failed: Connection refused
+cmdlog: (unset)
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root sender verify defer for <ok@localhost>: Could not complete sender verify callout: 127.0.0.1 [127.0.0.1] : Connection refused
 created log directory TESTSUITE/spool/log
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root F=<ok@localhost> temporarily rejected RCPT <z@test.ex>: Could not complete sender verify callout
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying bad@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -86,7 +113,8 @@ Attempting full verification using callout
 callout cache: found domain record for localhost
 callout cache: no address record found for bad@localhost
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -108,14 +136,16 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root F=<bad@localhost> rejected RCPT <z@test.ex>: (recipient): Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying bad@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -129,14 +159,16 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root F=<bad@localhost> rejected RCPT <z@test.ex>: (recipient): Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -145,7 +177,8 @@ Attempting full verification using callout
 callout cache: found domain record for localhost
 callout cache: address record expired for ok@localhost
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -166,14 +199,16 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root F=<ok@localhost> rejected RCPT <z@test.ex>: (mail): Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1239 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@localhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -186,14 +221,17 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.1] U=root F=<ok@localhost> rejected RCPT <z@test.ex>: (mail): Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1240 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -202,7 +240,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost
 callout cache: no address record found for ok@otherhost
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -231,14 +270,17 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.2] U=root F=<ok@otherhost> rejected RCPT <z@test.ex>: Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1241 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -251,14 +293,17 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.2] U=root F=<ok@otherhost> rejected RCPT <z@test.ex>: Sender verify failed
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1242 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost2
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -267,7 +312,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost2
 callout cache: no address record found for ok@otherhost2
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -291,15 +337,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:RSET:250:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost2:
   result=1 postmaster=1 random=0
 wrote positive callout cache address record for ok@otherhost2
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1243 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost2
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -309,15 +365,26 @@ callout cache: found domain record for otherhost2
 callout cache: domain accepts RCPT TO:<postmaster@domain>
 callout cache: found address record for ok@otherhost2
 callout cache: address record is positive
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1244 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost3
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -326,7 +393,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost3
 callout cache: no address record found for ok@otherhost3
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -342,17 +410,27 @@ Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
 cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost3:
   result=1 postmaster=0 random=1
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: MAIN
   (random)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1245 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying otherok@otherhost3
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -360,17 +438,28 @@ Considering otherok@otherhost3
 Attempting full verification using callout
 callout cache: found domain record for otherhost3
 callout cache: domain accepts random addresses
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: MAIN
   (random)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1246 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost4
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -379,7 +468,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost4
 callout cache: no address record found for ok@otherhost4
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -395,17 +485,27 @@ Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
 cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost4:
   result=1 postmaster=0 random=1
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: MAIN
   (random)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1247 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost4
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -413,17 +513,27 @@ Considering ok@otherhost4
 Attempting full verification using callout
 callout cache: found domain record for otherhost4
 callout cache: domain accepts random addresses
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: MAIN
   (random)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1248 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost41
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -432,7 +542,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost41
 callout cache: no address record found for ok@otherhost41
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -462,15 +573,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:550:RSET:250:MAIL|:RCPT:250:250:RSET:250:M
 wrote callout cache domain record for otherhost41:
   result=1 postmaster=1 random=2
 wrote positive callout cache address record for ok@otherhost41
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1249 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost41
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -481,15 +602,23 @@ callout cache: domain rejects random addresses
 callout cache: domain accepts RCPT TO:<postmaster@domain>
 callout cache: found address record for ok@otherhost41
 callout cache: address record is positive
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1250 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost21
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -498,7 +627,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost21
 callout cache: no address record found for ok@otherhost21
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -522,15 +652,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:RSET:250:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost21:
   result=1 postmaster=1 random=0
 wrote positive callout cache address record for ok@otherhost21
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1251 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok2@otherhost21
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -540,7 +680,8 @@ callout cache: found domain record for otherhost21
 callout cache: domain accepts RCPT TO:<postmaster@domain>
 callout cache: no address record found for ok2@otherhost21
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -557,15 +698,26 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost21:
   result=1 postmaster=1 random=0
 wrote positive callout cache address record for ok2@otherhost21
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1252 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost31
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -574,7 +726,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost31
 callout cache: no address record found for ok@otherhost31
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -597,15 +750,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:550:RSET:250:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost31:
   result=1 postmaster=0 random=2
 wrote positive callout cache address record for ok@otherhost31
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1253 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying okok@otherhost31
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -615,7 +778,8 @@ callout cache: found domain record for otherhost31
 callout cache: domain rejects random addresses
 callout cache: no address record found for okok@otherhost31
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -632,15 +796,25 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost31:
   result=1 postmaster=0 random=2
 wrote positive callout cache address record for okok@otherhost31
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1254 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying okokok@otherhost31
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -649,7 +823,8 @@ Attempting full verification using callout
 callout cache: domain record expired for otherhost31
 callout cache: no address record found for okokok@otherhost31
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -672,15 +847,27 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:550:RSET:250:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost31:
   result=1 postmaster=0 random=2
 wrote positive callout cache address record for okokok@otherhost31
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1255 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying okok@otherhost51
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -689,7 +876,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost51
 callout cache: no address record found for okok@otherhost51
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -709,14 +897,21 @@ LOG: MAIN REJECT
 LOG: MAIN REJECT
   H=(test) [V4NET.0.0.5] U=root F=<okok@otherhost51> temporarily rejected RCPT <z@test.ex>: Could not complete sender verify callout
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1256 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying okokok@otherhost52
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -725,7 +920,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost52
 callout cache: no address record found for okokok@otherhost52
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -749,15 +945,29 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:RSET:250:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for otherhost52:
   result=1 postmaster=1 random=0
 wrote positive callout cache address record for okokok@otherhost52
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1257 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 verifying Reply-To: header address abcd@x.y.z
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying abcd@x.y.z
@@ -767,7 +977,8 @@ Attempting full verification using callout
 callout cache: no domain record found for x.y.z
 callout cache: no address record found for abcd@x.y.z/<somesender@a.domain>
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -784,17 +995,30 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:QUIT:250'
 wrote callout cache domain record for x.y.z:
   result=1 postmaster=0 random=0
 wrote positive callout cache address record for abcd@x.y.z/<somesender@a.domain>
+host in "V4NET.0.0.8"? no (end of list)
 LOG: MAIN
   <= ok7@otherhost53 H=(test) [V4NET.0.0.7] U=root P=smtp S=sss
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1258 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.7"? no (end of list)
 verifying Reply-To: header address abcd@x.y.z
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying abcd@x.y.z
@@ -804,7 +1028,8 @@ Attempting full verification using callout
 callout cache: found domain record for x.y.z
 callout cache: no address record found for abcd@x.y.z
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -822,14 +1047,22 @@ wrote callout cache domain record for x.y.z:
 LOG: MAIN
   <= ok7@otherhost53 H=(test) [V4NET.0.0.8] U=root P=smtp S=sss
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1259 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying ok@otherhost9
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -838,7 +1071,8 @@ Attempting full verification using callout
 callout cache: no domain record found for otherhost9
 callout cache: no address record found for ok@otherhost9
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -864,15 +1098,26 @@ cmdlog: '220:EHLO:250-:MAIL|:RCPT:250:250:RSET:250:MAIL|:RCPT:250:550:RCPT:250:Q
 wrote callout cache domain record for otherhost9:
   result=1 postmaster=1 random=0
 wrote positive callout cache address record for ok@otherhost9
+host in "V4NET.0.0.10"? no (end of list)
+host in "V4NET.0.0.10"? no (end of list)
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1260 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 LOG: smtp_connection MAIN
   SMTP connection from root
+test in helo_lookup_domains? no (end of list)
+host in "V4NET.0.0.1"? no (end of list)
+host in "V4NET.0.0.2"? no (end of list)
+host in "V4NET.0.0.3"? no (end of list)
+host in "V4NET.0.0.4"? no (end of list)
+host in "V4NET.0.0.5"? no (end of list)
+host in "V4NET.0.0.6"? no (end of list)
+host in "V4NET.0.0.9"? no (end of list)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying z@test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -881,7 +1126,8 @@ Attempting full verification using callout
 callout cache: no domain record found for test.ex
 callout cache: no address record found for z@test.ex/<postmaster@myhost.test.ex>
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 Server ready
   SMTP>> EHLO myhost.test.ex
   SMTP<< 250-Yeah mate
@@ -912,5 +1158,5 @@ wrote callout cache domain record for test.ex:
   result=1 postmaster=1 random=2
 wrote positive callout cache address record for z@test.ex/<postmaster@myhost.test.ex>
 LOG: smtp_connection MAIN
-  SMTP connection from root closed by QUIT
+  SMTP connection from root D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1261 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
-/* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
@@ -40,12 +41,12 @@ Side effect: sets errno to ERRNO_BADUGID, ERRNO_NOTREGULAR or ERRNO_BADMODE for
 
 int
 lf_check_file(int fd, const uschar * filename, int s_type, int modemask,
-  uid_t * owners, gid_t * owngroups, const char * type, uschar ** errmsg)
+  const uid_t * owners, const gid_t * owngroups,
+  const char * type, uschar ** errmsg)
 {
 struct stat statbuf;
 
-if ((fd >= 0 && fstat(fd, &statbuf) != 0) ||
-    (fd  < 0 && Ustat(filename, &statbuf) != 0))
+if ((fd  < 0 ? Ustat(filename, &statbuf) : fstat(fd, &statbuf)) != 0)
   {
   int save_errno = errno;
   *errmsg = string_sprintf("%s: stat failed", filename);
@@ -79,7 +80,7 @@ if ((statbuf.st_mode & modemask) != 0)
   return +1;
   }
 
-if (owners != NULL)
+if (owners)
   {
   BOOL uid_ok = FALSE;
   for (int i = 1; i <= (int)owners[0]; i++)
@@ -93,7 +94,7 @@ if (owners != NULL)
     }
   }
 
-if (owngroups != NULL)
+if (owngroups)
   {
   BOOL gid_ok = FALSE;
   for (int i = 1; i <= (int)owngroups[0]; i++)

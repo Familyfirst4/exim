@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file contains a function for decoding message header lines that may
 contain encoded "words" according to the rules described in
@@ -121,7 +122,7 @@ for (;; string = mimeword + 2)
   encoding = toupper((*q1ptr)[1]);
   **endptr = 0;
   if (encoding == 'B')
-    dlen = b64decode(*q2ptr+1, dptrptr);
+    dlen = b64decode(*q2ptr+1, dptrptr, *q2ptr+1);
   else if (encoding == 'Q')
     dlen = rfc2047_qpdecode(*q2ptr+1, dptrptr);
   **endptr = '?';   /* restore */
@@ -191,9 +192,9 @@ rfc2047_decode2(uschar *string, BOOL lencheck, const uschar *target,
 {
 int size = Ustrlen(string);
 size_t dlen;
-uschar *dptr;
-gstring *yield;
-uschar *mimeword, *q1, *q2, *endword;
+uschar * dptr;
+gstring * yield;
+uschar * mimeword, * q1, * q2, * endword;
 
 *error = NULL;
 mimeword = decode_mimeword(string, lencheck, &q1, &q2, &endword, &dlen, &dptr);
@@ -209,17 +210,14 @@ building the result as we go. The result may be longer than the input if it is
 translated into a multibyte code such as UTF-8. That's why we use the dynamic
 string building code. */
 
-yield = store_get(sizeof(gstring) + ++size, string);
-yield->size = size;
-yield->ptr = 0;
-yield->s = US(yield + 1);
+yield = string_get_tainted(++size, string);
 
 while (mimeword)
   {
 
-  #if HAVE_ICONV
+#if HAVE_ICONV
   iconv_t icd = (iconv_t)(-1);
-  #endif
+#endif
 
   if (mimeword != string)
     yield = string_catn(yield, string, mimeword - string);
@@ -232,7 +230,7 @@ while (mimeword)
   of long strings - the RFC puts limits on the length, but it's best to be
   robust. */
 
-  #if HAVE_ICONV
+#if HAVE_ICONV
   *q1 = 0;
   if (target && strcmpic(target, mimeword+2) != 0)
     if ((icd = iconv_open(CS target, CS(mimeword+2))) == (iconv_t)-1)
@@ -240,14 +238,14 @@ while (mimeword)
         target, mimeword+2, strerror(errno),
         (errno == EINVAL)? " (maybe unsupported conversion)" : "");
   *q1 = '?';
-  #endif
+#endif
 
   while (dlen > 0)
     {
     uschar *tptr = NULL;   /* Stops compiler warning */
     int tlen = -1;
 
-    #if HAVE_ICONV
+#if HAVE_ICONV
     uschar tbuffer[256];
     uschar *outptr = tbuffer;
     size_t outleft = sizeof(tbuffer);
@@ -280,7 +278,7 @@ while (mimeword)
         }
       }
 
-    #endif
+#endif
 
     /* No charset translation is happening or there was a translation error;
     just set up the original as the string to be added, and mark it all used.
@@ -304,9 +302,9 @@ while (mimeword)
     yield = string_catn(yield, tptr, tlen);
     }
 
-  #if HAVE_ICONV
+#if HAVE_ICONV
   if (icd != (iconv_t)(-1))  iconv_close(icd);
-  #endif
+#endif
 
   /* Update string past the MIME word; skip any white space if the next thing
   is another MIME word. */
@@ -315,8 +313,8 @@ while (mimeword)
   mimeword = decode_mimeword(string, lencheck, &q1, &q2, &endword, &dlen, &dptr);
   if (mimeword)
     {
-    uschar *s = string;
-    while (isspace(*s)) s++;
+    uschar * s = string;
+    Uskip_whitespace(&s);
     if (s == mimeword) string = s;
     }
   }

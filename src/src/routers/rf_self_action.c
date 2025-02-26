@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
@@ -57,8 +59,8 @@ Returns:   DEFER, REROUTED, PASS, FAIL, or OK, according to the value of code.
 */
 
 int
-rf_self_action(address_item *addr, host_item *host, int code, BOOL rewrite,
-  uschar *new, address_item **addr_new)
+rf_self_action(address_item * addr, host_item * host, int code, BOOL rewrite,
+  uschar * new, address_item ** addr_new)
 {
 uschar * msg = host->mx >= 0
   ? US"lowest numbered MX record points to local host"
@@ -73,7 +75,7 @@ switch (code)
     and where it has come from. Otherwise, during message delivery, the normal
     logging for the address will be sufficient. */
 
-    if (message_id[0] == 0)
+    if (!message_id[0])
       if (sender_fullhost)
 	log_write(0, LOG_MAIN, "%s: %s (while verifying <%s> from host %s)",
 	  msg, addr->domain, addr->address, sender_fullhost);

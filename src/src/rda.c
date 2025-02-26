@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim maintainers 2020 - 2022 */
+/* Copyright (c) The Exim maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This module contains code for extracting addresses from a forwarding list
 (from an alias or forward file) or by running the filter interpreter. It may do
@@ -321,10 +322,7 @@ Arguments:
   rdata                     the redirection block
   options                   the options bits
   include_directory         restrain to this directory
-  sieve_vacation_directory  passed to sieve_interpret
-  sieve_enotify_mailto_owner passed to sieve_interpret
-  sieve_useraddress         passed to sieve_interpret
-  sieve_subaddress          passed to sieve_interpret
+  sieve			    passed to sieve_interpret
   generated                 where to hang generated addresses
   error                     for error messages
   eblockp                   for details of skipped syntax errors
@@ -340,9 +338,8 @@ Returns:                    a suitable return for rda_interpret()
 
 static int
 rda_extract(const redirect_block * rdata, int options,
-  const uschar * include_directory, const uschar * sieve_vacation_directory,
-  const uschar * sieve_enotify_mailto_owner, const uschar * sieve_useraddress,
-  const uschar * sieve_subaddress, address_item ** generated, uschar ** error,
+  const uschar * include_directory, const sieve_block * sieve,
+  address_item ** generated, uschar ** error,
   error_block ** eblockp, int * filtertype)
 {
 const uschar * data;
@@ -386,23 +383,40 @@ if (*filtertype != FILTER_FORWARD)
 
   if (*filtertype == FILTER_EXIM)
     {
-    if ((options & RDO_EXIM_FILTER) != 0)
+    const misc_module_info * mi;
+    typedef int (*fn_t)(const uschar *, int, address_item **, uschar **);
+
+    if (options & RDO_EXIM_FILTER)
       {
       *error = US"Exim filtering not enabled";
       return FF_ERROR;
       }
-    frc = filter_interpret(data, options, generated, error);
+    if (!(mi = misc_mod_find(US"exim_filter", NULL)))
+      {
+      *error = US"Exim-filtering not available";
+      return FF_ERROR;
+      }
+    frc = (((fn_t *) mi->functions)[EXIM_INTERPRET])
+				      (data, options, generated, error);
     }
   else
     {
+    const misc_module_info * mi;
+    typedef int (*fn_t)(const uschar *, int, const sieve_block *,
+		       address_item **, uschar **);
+
     if (options & RDO_SIEVE_FILTER)
       {
       *error = US"Sieve filtering not enabled";
       return FF_ERROR;
       }
-    frc = sieve_interpret(data, options, sieve_vacation_directory,
-      sieve_enotify_mailto_owner, sieve_useraddress, sieve_subaddress,
-      generated, error);
+    if (!(mi = misc_mod_find(US"sieve_filter", NULL)))
+      {
+      *error = US"Sieve filtering not available";
+      return FF_ERROR;
+      }
+    frc = (((fn_t *) mi->functions)[SIEVE_INTERPRET])
+				      (data, options, sieve, generated, error);
     }
 
   expand_forbid = old_expand_forbid;
@@ -465,7 +479,7 @@ Returns:     FALSE if data missing
 */
 
 static BOOL
-rda_read_string(int fd, uschar **sp)
+rda_read_string(int fd, uschar ** sp)
 {
 int len;
 
@@ -512,10 +526,7 @@ Arguments:
   options                   options to pass to the extraction functions,
                               plus ENOTDIR and EACCES handling bits
   include_directory         restrain :include: to this directory
-  sieve_vacation_directory  directory passed to sieve_interpret
-  sieve_enotify_mailto_owner passed to sieve_interpret
-  sieve_useraddress         passed to sieve_interpret
-  sieve_subaddress          passed to sieve_interpret
+  sieve			    passed to sieve_interpret
   ugid                      uid/gid to run under - if NULL, no change
   generated                 where to hang generated addresses, initially NULL
   error                     pointer for error message
@@ -542,9 +553,8 @@ Returns:        values from extraction function, or FF_NONEXIST:
 
 int
 rda_interpret(redirect_block * rdata, int options,
-  const uschar * include_directory, const uschar * sieve_vacation_directory,
-  const uschar * sieve_enotify_mailto_owner, const uschar * sieve_useraddress,
-  const uschar * sieve_subaddress, const ugid_block * ugid, address_item ** generated,
+  const uschar * include_directory, const sieve_block * sieve,
+  const ugid_block * ugid, address_item ** generated,
   uschar ** error, error_block ** eblockp, int * filtertype, const uschar * rname)
 {
 int fd, rc, pfd[2];
@@ -583,13 +593,13 @@ with #Exim filter or #Sieve filter, and does not contain :include:, do all the
 work in this process. Note that for a system filter, we always have a file, so
 the work is done in this process only if no user is supplied. */
 
-if (!ugid->uid_set ||                         /* Either there's no uid, or */
-    (!rdata->isfile &&                        /* We've got the data, and */
-     rda_is_filter(data) == FILTER_FORWARD && /* It's not a filter script, */
-     Ustrstr(data, ":include:") == NULL))     /* and there's no :include: */
-  return rda_extract(rdata, options, include_directory,
-    sieve_vacation_directory, sieve_enotify_mailto_owner, sieve_useraddress,
-    sieve_subaddress, generated, error, eblockp, filtertype);
+if (  !ugid->uid_set				/* Either there's no uid, or */
+   || (  !rdata->isfile				/* We've got the data, and */
+      && rda_is_filter(data) == FILTER_FORWARD	/* It's not a filter script, */
+      && Ustrstr(data, ":include:") == NULL	/* and there's no :include: */
+   )  )
+  return rda_extract(rdata, options, include_directory, sieve,
+		    generated, error, eblockp, filtertype);
 
 /* We need to run the processing code in a sub-process. However, if we can
 determine the non-existence of a file first, we can decline without having to
@@ -603,7 +613,7 @@ we have to create the subprocess to do everything as the given user. The
 results of processing are passed back via a pipe. */
 
 if (pipe(pfd) != 0)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "creation of pipe for filter or "
+  log_write_die(0, LOG_MAIN, "creation of pipe for filter or "
     ":include: failed for %s: %s", rname, strerror(errno));
 
 /* Ensure that SIGCHLD is set to SIG_DFL before forking, so that the child
@@ -641,9 +651,8 @@ if ((pid = exim_fork(US"router-interpret")) == 0)
 
   /* Now do the business */
 
-  yield = rda_extract(rdata, options, include_directory,
-    sieve_vacation_directory, sieve_enotify_mailto_owner, sieve_useraddress,
-    sieve_subaddress, generated, error, eblockp, filtertype);
+  yield = rda_extract(rdata, options, include_directory, sieve,
+		      generated, error, eblockp, filtertype);
 
   /* Pass back whether it was a filter, and the return code and any overall
   error text via the pipe. */
@@ -783,7 +792,7 @@ bad:
 /* Back in the main process: panic if the fork did not succeed. */
 
 if (pid < 0)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "fork failed for %s", rname);
+  log_write_die(0, LOG_MAIN, "fork failed for %s", rname);
 
 /* Read the pipe to get the data from the filter/forward. Our copy of the
 writing end must be closed first, as otherwise read() won't return zero on an
@@ -865,9 +874,9 @@ if (yield == FF_DELIVERED || yield == FF_NOTDELIVERED ||
   for (;;)
     {
     int i, reply_options;
-    address_item *addr;
-    uschar *recipient;
-    uschar *expandn[EXPAND_MAXN + 2];
+    address_item * addr;
+    uschar * recipient, * s;
+    uschar * expandn[EXPAND_MAXN + 2];
 
     /* First string is the address; NULL => end of addresses */
 
@@ -884,10 +893,11 @@ if (yield == FF_DELIVERED || yield == FF_NOTDELIVERED ||
 
     if (  read(fd, &addr->mode, sizeof(addr->mode)) != sizeof(addr->mode)
        || read(fd, &addr->flags, sizeof(addr->flags)) != sizeof(addr->flags)
-       || !rda_read_string(fd, &addr->prop.errors_address)
+       || !rda_read_string(fd, &s)
        || read(fd, &i, sizeof(i)) != sizeof(i)
        )
       goto DISASTER;
+    addr->prop.errors_address = s;
     addr->prop.ignore_error = (i != 0);
 
     /* Next comes a possible setting for $thisaddress and any numerical

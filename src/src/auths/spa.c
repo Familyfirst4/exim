@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file, which provides support for Microsoft's Secure Password
 Authentication, was contributed by Marc Prud'hommeaux. Tom Kistner added SPA
@@ -33,6 +34,8 @@ References:
 
 
 #include "../exim.h"
+
+#ifdef AUTH_SPA		/* Remainder of file */
 #include "spa.h"
 
 /* #define DEBUG_SPA */
@@ -75,7 +78,7 @@ auth_spa_options_block auth_spa_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_spa_init(auth_instance *ablock) {}
+void auth_spa_init(driver_instance *ablock) {}
 int auth_spa_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_spa_client(auth_instance *ablock, void * sx, int timeout,
     uschar *buffer, int buffsize) {return 0;}
@@ -94,21 +97,22 @@ enable consistency checks to be done, or anything else that needs
 to be set up. */
 
 void
-auth_spa_init(auth_instance *ablock)
+auth_spa_init(driver_instance * a)
 {
-auth_spa_options_block *ob =
-  (auth_spa_options_block *)(ablock->options_block);
+auth_instance * ablock = (auth_instance *)a;
+const auth_spa_options_block * ob = a->options_block;
 
 /* The public name defaults to the authenticator name */
 
-if (ablock->public_name == NULL) ablock->public_name = ablock->name;
+if (!ablock->public_name)
+  ablock->public_name = ablock->drinst.name;
 
 /* Both username and password must be set for a client */
 
 if ((ob->spa_username == NULL) != (ob->spa_password == NULL))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s authenticator:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s authenticator:\n  "
       "one of client_username and client_password cannot be set without "
-      "the other", ablock->name);
+      "the other", ablock->drinst.name);
 ablock->client = ob->spa_username != NULL;
 
 /* For a server we have just one option */
@@ -132,7 +136,7 @@ ablock->server = ob->spa_serverpassword != NULL;
 int
 auth_spa_server(auth_instance *ablock, uschar *data)
 {
-auth_spa_options_block *ob = (auth_spa_options_block *)(ablock->options_block);
+auth_spa_options_block * ob = ablock->drinst.options_block;
 uint8x lmRespData[24];
 uint8x ntRespData[24];
 SPAAuthRequest request;
@@ -140,7 +144,8 @@ SPAAuthChallenge challenge;
 SPAAuthResponse  response;
 SPAAuthResponse  *responseptr = &response;
 uschar msgbuf[2048];
-uschar *clearpass, *s;
+uschar * clearpass;
+const uschar * s;
 unsigned off;
 
 /* send a 334, MS Exchange style, and grab the client's request,
@@ -192,7 +197,7 @@ that causes failure if the size of msgbuf is exceeded. ****/
   int len = SVAL(&responseptr->uUser.len,0)/2;
 
   if (  (off = IVAL(&responseptr->uUser.offset,0)) >= sizeof(SPAAuthResponse)
-     || len >= sizeof(responseptr->buffer)/2
+     || len >= sizeof(responseptr->buf.buffer)/2
      || (p = (CS responseptr) + off) + len*2 >= CS (responseptr+1)
      )
     {
@@ -278,43 +283,42 @@ auth_spa_client(
   uschar *buffer,                        /* buffer for reading response */
   int buffsize)                          /* size of buffer */
 {
-auth_spa_options_block *ob =
-       (auth_spa_options_block *)(ablock->options_block);
+auth_spa_options_block * ob = ablock->drinst.options_block;
+const uschar * auname = ablock->drinst.name;
 SPAAuthRequest   request;
 SPAAuthChallenge challenge;
 SPAAuthResponse  response;
 char msgbuf[2048];
-char *domain = NULL;
-char *username, *password;
+uschar * domain = NULL, * username, * password;
 
 /* Code added by PH to expand the options */
 
 *buffer = 0;    /* Default no message when cancelled */
 
-if (!(username = CS expand_string(ob->spa_username)))
+if (!(username = expand_string(ob->spa_username)))
   {
   if (f.expand_string_forcedfail) return CANCELLED;
   string_format(buffer, buffsize, "expansion of \"%s\" failed in %s "
-   "authenticator: %s", ob->spa_username, ablock->name,
+   "authenticator: %s", ob->spa_username, auname,
    expand_string_message);
   return ERROR;
   }
 
-if (!(password = CS expand_string(ob->spa_password)))
+if (!(password = expand_string(ob->spa_password)))
   {
   if (f.expand_string_forcedfail) return CANCELLED;
   string_format(buffer, buffsize, "expansion of \"%s\" failed in %s "
-   "authenticator: %s", ob->spa_password, ablock->name,
+   "authenticator: %s", ob->spa_password, auname,
    expand_string_message);
   return ERROR;
   }
 
 if (ob->spa_domain)
-  if (!(domain = CS expand_string(ob->spa_domain)))
+  if (!(domain = expand_string(ob->spa_domain)))
     {
     if (f.expand_string_forcedfail) return CANCELLED;
     string_format(buffer, buffsize, "expansion of \"%s\" failed in %s "
-		  "authenticator: %s", ob->spa_domain, ablock->name,
+		  "authenticator: %s", ob->spa_domain, auname,
 		  expand_string_message);
     return ERROR;
     }
@@ -328,12 +332,12 @@ if (smtp_write_command(sx, SCMD_FLUSH, "AUTH %s\r\n", ablock->public_name) < 0)
 if (!smtp_read_response(sx, US buffer, buffsize, '3', timeout))
   return FAIL;
 
-DSPA("\n\n%s authenticator: using domain %s\n\n", ablock->name, domain);
+DSPA("\n\n%s authenticator: using domain %s\n\n", auname, domain);
 
-spa_build_auth_request(&request, CS username, domain);
+spa_build_auth_request(&request, username, domain);
 spa_bits_to_base64(US msgbuf, US &request, spa_request_length(&request));
 
-DSPA("\n\n%s authenticator: sending request (%s)\n\n", ablock->name, msgbuf);
+DSPA("\n\n%s authenticator: sending request (%s)\n\n", auname, msgbuf);
 
 /* send the encrypted password */
 if (smtp_write_command(sx, SCMD_FLUSH, "%s\r\n", msgbuf) < 0)
@@ -344,12 +348,12 @@ if (!smtp_read_response(sx, US buffer, buffsize, '3', timeout))
   return FAIL;
 
 /* convert the challenge into the challenge struct */
-DSPA("\n\n%s authenticator: challenge (%s)\n\n", ablock->name, buffer + 4);
+DSPA("\n\n%s authenticator: challenge (%s)\n\n", auname, buffer + 4);
 spa_base64_to_bits(CS (&challenge), sizeof(challenge), CCS (buffer + 4));
 
-spa_build_auth_response(&challenge, &response, CS username, CS password);
+spa_build_auth_response(&challenge, &response, username, password);
 spa_bits_to_base64(US msgbuf, US &response, spa_request_length(&response));
-DSPA("\n\n%s authenticator: challenge response (%s)\n\n", ablock->name, msgbuf);
+DSPA("\n\n%s authenticator: challenge response (%s)\n\n", auname, msgbuf);
 
 /* send the challenge response */
 if (smtp_write_command(sx, SCMD_FLUSH, "%s\r\n", msgbuf) < 0)
@@ -372,5 +376,28 @@ if (errno != 0 || buffer[0] != '3')
 return FAIL;
 }
 
-#endif   /*!MACRO_PREDEF*/
+# ifdef DYNLOOKUP
+#  define spa_auth_info _auth_info
+# endif
+
+auth_info spa_auth_info = {
+.drinfo = {
+  .driver_name =	US"spa",                   /* lookup name */
+  .options =		auth_spa_options,
+  .options_count =	&auth_spa_options_count,
+  .options_block =	&auth_spa_option_defaults,
+  .options_len =	sizeof(auth_spa_options_block),
+  .init =		auth_spa_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_spa_server,
+.clientcode =		auth_spa_client,
+.version_report =	NULL,
+.macros_create =	NULL,
+};
+
+#endif	/*!MACRO_PREDEF*/
+#endif	/*AUTH_SPA*/
 /* End of spa.c */

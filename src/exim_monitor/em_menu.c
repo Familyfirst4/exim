@@ -3,8 +3,9 @@
 *************************************************/
 
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2021 */
+/* Copyright (c) The Exim Maintainers 2023 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "em_hdr.h"
@@ -363,7 +364,7 @@ if ((pid = fork()) == 0)
   dup2(pipe_fd[1], 2);
   close(pipe_fd[1]);
 
-  system(CS buffer);
+  if (system(CS buffer)) ;
 
   close(1);
   close(2);

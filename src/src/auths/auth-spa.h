@@ -9,6 +9,8 @@
  * All the code used here was torn by Marc Prud'hommeaux out of the
  * Samba project (by Andrew Tridgell, Jeremy Allison, and others).
  */
+/* Copyright (c) The Exim Maintainers 2023 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* December 2004: The spa_base64_to_bits() function has no length checking in
 it. I have added a check. PH */
@@ -37,6 +39,12 @@ typedef struct
 
 typedef struct
 {
+	uint8x	buffer[1024];
+	uint32x	bufIndex;
+} SPAbuf;
+
+typedef struct
+{
        char         ident[8];
        uint32x         msgType;
        SPAStrHeader    uDomain;
@@ -44,8 +52,7 @@ typedef struct
        uint8x         challengeData[8];
        uint8x         reserved[8];
        SPAStrHeader    emptyString;
-       uint8x         buffer[1024];
-       uint32x         bufIndex;
+       SPAbuf		buf;
 } SPAAuthChallenge;
 
 
@@ -56,8 +63,7 @@ typedef struct
        uint32x         flags;
        SPAStrHeader    user;
        SPAStrHeader    domain;
-       uint8x         buffer[1024];
-       uint32x         bufIndex;
+       SPAbuf		buf;
 } SPAAuthRequest;
 
 typedef struct
@@ -71,18 +77,17 @@ typedef struct
        SPAStrHeader    uWks;
        SPAStrHeader    sessionKey;
        uint32x         flags;
-       uint8x         buffer[1024];
-       uint32x         bufIndex;
+       SPAbuf		buf;
 } SPAAuthResponse;
 
-#define spa_request_length(ptr) (((ptr)->buffer - (uint8x*)(ptr)) + (ptr)->bufIndex)
+#define spa_request_length(ptr) (((uint8x*)&(ptr)->buf - (uint8x*)(ptr)) + (ptr)->buf.bufIndex)
 
 void spa_bits_to_base64 (unsigned char *, const unsigned char *, int);
 int spa_base64_to_bits(char *, int, const char *);
-void spa_build_auth_response (SPAAuthChallenge *challenge,
-       SPAAuthResponse *response, char *user, char *password);
-void spa_build_auth_request (SPAAuthRequest *request, char *user,
-       char *domain);
+void spa_build_auth_response (SPAAuthChallenge * challenge,
+       SPAAuthResponse * response, const uschar * user, uschar * password);
+void spa_build_auth_request (SPAAuthRequest * request, const uschar * user,
+       const uschar * domain);
 extern void spa_smb_encrypt (unsigned char * passwd, unsigned char * c8,
                              unsigned char * p24);
 extern void spa_smb_nt_encrypt (unsigned char * passwd, unsigned char * c8,

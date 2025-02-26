@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* Copyright (c) The Exim Maintainers 2010 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Function for setting up the version string. */
 
@@ -24,8 +25,7 @@ version_init(void)
 static uschar cnumber_buffer[24];
 static uschar date_buffer[32];
 
-uschar today[20];
-uschar *version_cnumber_format;
+const uschar * version_cnumber_format;
 
 int cnumber =
 #include "cnumber.h"
@@ -51,17 +51,20 @@ version_date[0] = 0;
 Ustrncat(version_date, EXIM_BUILD_DATE_OVERRIDE, sizeof(date_buffer));
 
 #else
-Ustrcpy(today, US __DATE__);
-if (today[4] == ' ') today[4] = '0';
-today[3] = today[6] = '-';
+ {
+  uschar today[20];
+  Ustrcpy(today, US __DATE__);
+  if (today[4] == ' ') today[4] = '0';
+  today[3] = today[6] = '-';
 
-version_date = date_buffer;
-version_date[0] = 0;
-Ustrncat(version_date, today+4, 3);
-Ustrncat(version_date, today, 4);
-Ustrncat(version_date, today+7, 4);
-Ustrcat(version_date, US" ");
-Ustrcat(version_date, US __TIME__);
+  version_date = date_buffer;
+  version_date[0] = 0;
+  Ustrncat(version_date, today+4, 3);
+  Ustrncat(version_date, today, 4);
+  Ustrncat(version_date, today+7, 4);
+  Ustrcat(version_date, US" ");
+  Ustrcat(version_date, US __TIME__);
+ }
 #endif
 }
 

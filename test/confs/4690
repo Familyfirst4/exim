@@ -1,0 +1,115 @@
+# Exim test configuration 4690
+
+SERVER=
+
+exim_path = EXIM_PATH
+keep_environment =
+host_lookup_order = bydns
+spool_directory = DIR/spool
+log_file_path = DIR/spool/log/SERVER%slog
+gecos_pattern = ""
+gecos_name = CALLER_NAME
+chunking_advertise_hosts = *
+tls_advertise_hosts =
+.ifdef _HAVE_PIPE_CONNECT
+pipelining_connect_advertise_hosts =
+.endif
+
+primary_hostname = test.ex
+
+# ----- Main settings -----
+
+dmarc_tld_file = DIR/aux-fixed/TESTNUM.tldfile
+dmarc_history_file = DIR/tmp/TESTNUM.hist.dmarc
+
+acl_smtp_rcpt = accept
+acl_smtp_data = check_data
+
+log_selector = +received_recipients +dkim_verbose
+queue_only
+queue_run_in_order
+
+# ----- ACL -----
+begin acl
+
+check_data:
+  warn	!verify =	arc
+
+  warn	logwrite =	arc_state:      <$arc_state>
+	logwrite =	domains:        <$arc_domains>
+	logwrite =	arc_oldest_pass <$arc_oldest_pass>
+	logwrite =	reason:         <$arc_state_reason>
+	logwrite =	lh_A-R:         <$lh_Authentication-Results:>
+	logwrite =	lh-AAR:         <$lh_ARC-Authentication-Results:>
+	logwrite =	oldest-p-AAR:   <${reduce {$lh_ARC-Authentication-Results:} \
+						{} \
+						{${if = {$arc_oldest_pass} \
+							{${extract {i}{${extract {1}{;}{$item}}}}} \
+							{$item} {$value}}} \
+					}>
+
+  require	spf =		pass : !pass
+  		dmarc_status =  none : !none
+		logwrite =      dmarc_status <$dmarc_status>
+		logwrite =      dmarc_status_text <$dmarc_status_text>
+		logwrite =      dmarc_used_domain <$dmarc_used_domain>
+		logwrite =      dmarc_domain_policy <$dmarc_domain_policy>
+		set acl_m0 =    ${authresults {$primary_hostname}}
+		logwrite =      $acl_m0
+
+  accept add_header =	:at_start:$acl_m0
+  
+# ----- Routers -----
+
+begin routers
+
+d1:
+  driver = accept
+  local_parts = ^a
+  transport = tfile
+
+r2:
+  driver =	redirect
+  local_parts = ^m
+  data =	${substr_1:$local_part}@$domain
+  redirect_router = mlist
+
+redir:
+  driver =	redirect
+  data =	${substr_1:$local_part}@$domain
+  redirect_router = fwd
+
+fwd:
+  driver =	accept
+  transport =	tsmtp
+
+mlist:
+  driver =	accept
+  transport =	tmlist
+
+# ----- Transports -----
+
+begin transports
+
+tfile:
+  driver =	appendfile
+  file =	DIR/test-mail/$local_part
+  create_file =	DIR/test-mail
+  user =	CALLER
+
+tsmtp:
+  driver =	smtp
+  hosts =	127.0.0.1
+  port =	PORT_D
+  allow_localhost
+  arc_sign =	$primary_hostname : sel : DIR/aux-fixed/dkim/dkim.private
+
+tmlist:
+  driver =	smtp
+  hosts =	127.0.0.1
+  port =	PORT_D
+  allow_localhost
+  transport_filter =	/bin/cat - DIR/aux-fixed/TESTNUM.mlistfooter
+  arc_sign =	$primary_hostname : sel : DIR/aux-fixed/dkim/dkim.private
+
+# End

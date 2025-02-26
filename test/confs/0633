@@ -1,0 +1,23 @@
+# Exim test configuration 0633
+
+.include DIR/aux-var/std_conf_prefix
+
+# ----- Main settings -----
+
+acl_smtp_rcpt = accept
+acl_smtp_data = check_data
+
+log_selector = +received_recipients
+
+# ----- ACL -----
+
+begin acl
+
+check_data:
+  accept	set acl_m0 =	${sg{${sg{${sg{aaa}{a}{bbbbbbbbbbb}}}{b}{cccccccccccc}}}{c}{ddddddddddddddddddd}}
+		logwrite =	${acl_m0}eeeeeeeeeeeeeee
+		logwrite =	${acl_m0}eeeeeeeeeeeeeeea
+		logwrite =	${acl_m0}eeeeeeeeeeeeeeeaa
+		logwrite =	${acl_m0}eeeeeeeeeeeeeeeaaa
+
+# End

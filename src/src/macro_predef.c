@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) Jeremy Harris 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Create a static data structure with the predefined macros, to be
 included in the main Exim build */
@@ -14,21 +15,25 @@ included in the main Exim build */
 
 unsigned mp_index = 0;
 
-/* Global dummy variables */
+/* Global dummy variables and functions */
 
 void fn_smtp_receive_timeout(const uschar * name, const uschar * str) {}
 uschar * syslog_facility_str;
+
+/* Solaris needs this one for the macro expand_string() */
+const uschar * expand_string_2(const uschar * string, BOOL * textonly_p)
+{return NULL; }
 
 /******************************************************************************/
 
 void
 builtin_macro_create_var(const uschar * name, const uschar * val)
 {
-printf ("static macro_item p%d = { ", mp_index);
+printf ("static macro_item p%u = { ", mp_index);
 if (mp_index == 0)
   printf(".next=NULL,");
 else
-  printf(".next=&p%d,", mp_index-1);
+  printf(".next=&p%u,", mp_index-1);
 
 printf(" .command_line=FALSE, .namelen=%d, .replen=%d,"
 	" .name=US\"%s\", .replacement=US\"%s\" };\n",
@@ -118,6 +123,12 @@ due to conflicts with other common macros. */
 #ifdef SUPPORT_PAM
   builtin_macro_create(US"_HAVE_PAM");
 #endif
+#ifdef RADIUS_CONFIG_FILE
+  builtin_macro_create(US"_HAVE_RADIUS");
+#endif
+#ifdef CYRUS_PWCHECK_SOCKET
+  builtin_macro_create(US"_HAVE_PWCHECK");
+#endif
 #ifdef EXIM_PERL
   builtin_macro_create(US"_HAVE_PERL");
 #endif
@@ -152,6 +163,9 @@ due to conflicts with other common macros. */
 #endif
 #ifndef DISABLE_DNSSEC
   builtin_macro_create(US"_HAVE_DNSSEC");
+#endif
+#ifndef DISABLE_ESMTP_LIMITS
+  builtin_macro_create(US"_HAVE_ESMTP_LIMITS");
 #endif
 #ifndef DISABLE_EVENT
   builtin_macro_create(US"_HAVE_EVENT");
@@ -203,6 +217,24 @@ due to conflicts with other common macros. */
 #endif
 #ifndef DISABLE_TLS_RESUME
   builtin_macro_create(US"_HAVE_TLS_RESUME");
+#endif
+#ifndef DISABLE_WELLKNOWN
+  builtin_macro_create(US"_HAVE_WELLKNOWN");
+#endif
+#ifdef EXPERIMENTAL_XCLIENT
+  builtin_macro_create(US"_HAVE_XCLIENT");
+#endif
+
+#ifdef USE_SQLITE
+  builtin_macro_create(US"_HAVE_HINTS_SQLITE");
+#elif defined(USE_TDB)
+  builtin_macro_create(US"_HAVE_HINTS_TDB");
+#elif defined(USE_DB)
+  builtin_macro_create(US"_HAVE_HINTS_BDB");
+#elif defined(USE_GDBM)
+  builtin_macro_create(US"_HAVE_HINTS_GDBM");
+#else
+  builtin_macro_create(US"_HAVE_HINTS_NDBM");
 #endif
 
 #ifdef LOOKUP_LSEARCH
@@ -299,9 +331,6 @@ exp_features(void)
 #ifdef EXPERIMENTAL_DSN_INFO
   builtin_macro_create(US"_EXP_DSNI");
 #endif
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
-  builtin_macro_create(US"_EXP_LIMITS");
-#endif
 #ifdef EXPERIMENTAL_QUEUEFILE
   builtin_macro_create(US"_EXP_QUEUEFILE");
 #endif
@@ -337,9 +366,10 @@ printf("#include \"exim.h\"\n");
 features();
 exp_features();
 options();
+expansions();
 params();
 
-printf("macro_item * macros = &p%d;\n", mp_index-1);
+printf("macro_item * macros = &p%u;\n", mp_index-1);
 printf("macro_item * mlast = &p0;\n");
 exit(0);
 }

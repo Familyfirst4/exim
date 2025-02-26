@@ -2,9 +2,13 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
+/* The "dbm" lookup uses whichever provider that is
+compiled in for supporting hintsdbs. */
 
 #include "../exim.h"
 #include "lf_functions.h"
@@ -19,12 +23,9 @@
 static void *
 dbmdb_open(const uschar * filename, uschar ** errmsg)
 {
-uschar * dirname = string_copy(filename);
-uschar * s;
-EXIM_DB * yield = NULL;
+open_db * yield = store_get(sizeof(open_db), GET_UNTAINTED);
 
-if ((s = Ustrrchr(dirname, '/'))) *s = '\0';
-if (!(yield = exim_dbopen(filename, dirname, O_RDONLY, 0)))
+if (!(yield = dbfn_open_path(filename, yield)))
   *errmsg = string_open_failed("%s as a %s file", filename, EXIM_DBTYPE);
 return yield;
 }
@@ -48,7 +49,7 @@ dbmdb_check(void *handle, const uschar *filename, int modemask, uid_t *owners,
 {
 int rc;
 
-#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM)
+#if defined(USE_DB) || defined(USE_TDB) || defined(USE_GDBM) || defined(USE_SQLITE)
 rc = lf_check_file(-1, filename, S_IFREG, modemask, owners, owngroups,
   "dbm", errmsg);
 #else
@@ -89,23 +90,8 @@ dbmdb_find(void * handle, const uschar * filename, const uschar * keystring,
   int length, uschar ** result, uschar ** errmsg, uint * do_cache,
   const uschar * opts)
 {
-EXIM_DB *d = (EXIM_DB *)handle;
-EXIM_DATUM key, data;
-
-exim_datum_init(&key);               /* Some DBM libraries require datums to */
-exim_datum_init(&data);              /* be cleared before use. */
-length++;
-exim_datum_data_set(&key,
-  memcpy(store_get(length, keystring), keystring, length)); /* key can have embedded NUL */
-exim_datum_size_set(&key, length);
-
-if (exim_dbget(d, &key, &data))
-  {
-  *result = string_copyn(exim_datum_data_get(&data), exim_datum_size_get(&data));
-  exim_datum_free(&data);            /* Some DBM libraries need a free() call */
-  return OK;
-  }
-return FAIL;
+open_db * d = (open_db *)handle;
+return (*result = dbfn_read_klen(d, keystring, length+1, NULL)) ? OK : FAIL;
 }
 
 
@@ -142,8 +128,8 @@ dbmjz_find(void * handle, const uschar * filename, const uschar * keystring,
   int length, uschar ** result, uschar ** errmsg, uint * do_cache,
   const uschar * opts)
 {
-uschar *key_item, *key_buffer, *key_p;
-const uschar *key_elems = keystring;
+uschar * key_buffer, * key_p;
+const uschar * key_elems = keystring, * key_item;
 int buflen, bufleft, key_item_len, sep = 0;
 
 /* To a first approximation, the size of the lookup key needs to be about,
@@ -215,7 +201,7 @@ return dbmdb_find(handle, filename, key_buffer, key_item_len - 1,
 void
 static dbmdb_close(void *handle)
 {
-exim_dbclose((EXIM_DB *)handle);
+dbfn_close((open_db *)handle);
 }
 
 
@@ -282,3 +268,5 @@ static lookup_info *_lookup_list[] = { &dbm_lookup_info, &dbmz_lookup_info, &dbm
 lookup_module_info dbmdb_lookup_module_info = { LOOKUP_MODULE_INFO_MAGIC, _lookup_list, 3 };
 
 /* End of lookups/dbmdb.c */
+/* vi: aw ai sw=2
+*/

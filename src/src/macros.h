@@ -2,10 +2,13 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#ifndef MACROS_H
+#define MACROS_H
 
 /* These two macros make it possible to obtain the result of macro-expanding
 a string as a text string. This is sometimes useful for debugging output. */
@@ -101,13 +104,14 @@ don't make the file descriptors two-way. */
 
 /* A macro to simplify testing bits in lookup types */
 
-#define mac_islookup(a,b) ((lookup_list[a]->type & (b)) != 0)
+#define mac_islookup(li,b) ((li)->type & (b))
 
 /* Debugging control */
 
 #define LOG_NAME_SIZE 256
-#define DEBUG(x)      if (debug_selector & (x))
-#define HDEBUG(x)     if (host_checking || debug_selector & (x))
+#define IS_DEBUG(x)	(debug_selector & (x))
+#define DEBUG(x)	if (IS_DEBUG(x))
+#define HDEBUG(x)	if (host_checking || IS_DEBUG(x))
 
 /* The default From: text for DSNs */
 
@@ -183,7 +187,8 @@ written on the spool, it gets read into big_buffer. */
 /* The length of the base names of spool files, which consist of an internal
 message id with a trailing "-H" or "-D" added. */
 
-#define SPOOL_NAME_LENGTH (MESSAGE_ID_LENGTH+2)
+#define SPOOL_NAME_LENGTH_OLD	(MESSAGE_ID_LENGTH_OLD + 2)
+#define SPOOL_NAME_LENGTH	(MESSAGE_ID_LENGTH     + 2)
 
 /* The maximum number of message ids to store in a waiting database
 record, and the max number of continuation records allowed. */
@@ -198,6 +203,8 @@ record, and the max number of continuation records allowed. */
 
 /* Macros for trivial functions */
 
+#define xstr(x)		#x
+#define str(x)		xstr(x)	/* stringize, expanding macros in arg first */
 #define mac_ismsgid(s)	(regex_match(regex_ismsgid, (s), -1, NULL))
 
 
@@ -338,7 +345,7 @@ and the first word of the log selector. */
 
 #define BIT_CLEAR(s,z,n) ((s)[BITWORD(n)] &= ~BITMASK(n))
 #define BIT_SET(s,z,n)   ((s)[BITWORD(n)] |=  BITMASK(n))
-#define BIT_TEST(s,z,n) (((s)[BITWORD(n)] &   BITMASK(n)) != 0)
+#define BIT_TEST(s,z,n)	 ((s)[BITWORD(n)]  &  BITMASK(n))
 
 /* Used in globals.c for initializing bit_table structures. T will be either
 D or L corresponding to the debug and log selector bits declared below. */
@@ -462,6 +469,7 @@ enum logbit {
   Li_8bitmime = BITWORDSIZE,
   Li_acl_warn_skipped,
   Li_arguments,
+  Li_connection_id,
   Li_deliver_time,
   Li_delivery_size,
   Li_dkim,
@@ -495,6 +503,7 @@ enum logbit {
   Li_subject,
   Li_tls_certificate_verified,
   Li_tls_cipher,
+  Li_tls_on_connect,
   Li_tls_peerdn,
   Li_tls_resumption,
   Li_tls_sni,
@@ -698,7 +707,7 @@ can be easily tested as a group. That is the only use of opt_bool_last. */
 enum { opt_bit = 32, opt_bool_verify, opt_bool_set, opt_expand_bool,
   opt_bool_last,
   opt_rewrite, opt_timelist, opt_uid, opt_gid, opt_uidlist, opt_gidlist,
-  opt_expand_uid, opt_expand_gid, opt_func, opt_void };
+  opt_expand_uid, opt_expand_gid, opt_func, opt_void, opt_module };
 
 /* There's a high-ish bit which is used to flag duplicate options, kept
 for compatibility, which shouldn't be output. Also used for hidden options
@@ -733,10 +742,12 @@ enum { v_none, v_sender, v_recipient, v_expn };
 #define vopt_callout_random       0x0020   /* during callout */
 #define vopt_callout_no_cache     0x0040   /* disable callout cache */
 #define vopt_callout_recipsender  0x0080   /* use real sender to verify recip */
-#define vopt_callout_recippmaster 0x0100   /* use postmaster to verify recip */
-#define vopt_callout_hold	  0x0200   /* lazy close connection */
-#define vopt_success_on_redirect  0x0400
-#define vopt_quota                0x0800   /* quota check, to local/appendfile */
+#define vopt_callout_r_pmaster	  0x0100   /* use postmaster to verify recip */
+#define vopt_callout_r_tptsender  0x0200   /* use s from tpt to verify recip */
+#define vopt_callout_hold	  0x0400   /* lazy close connection */
+#define vopt_success_on_redirect  0x0800
+#define vopt_quota                0x1000   /* quota check, to local/appendfile */
+#define vopt_atrn		  0x2000   /* ATRN customer mode */
 
 /* Values for fields in callout cache records */
 
@@ -816,14 +827,19 @@ local_scan.h */
 #define DEBUG_FROM_CONFIG       0x0001
 
 /* SMTP command identifiers for the smtp_connection_had field that records the
-most recent SMTP commands. Must be kept in step with the list of names in
-smtp_in.c that is used for creating the smtp_no_mail logging action. SCH_NONE
-is "empty". */
+most recent SMTP commands. SCH_NONE is "empty". */
 
 enum { SCH_NONE, SCH_AUTH, SCH_DATA, SCH_BDAT,
-       SCH_EHLO, SCH_ETRN, SCH_EXPN, SCH_HELO,
+       SCH_EHLO, SCH_ATRN, SCH_ETRN, SCH_EXPN, SCH_HELO,
        SCH_HELP, SCH_MAIL, SCH_NOOP, SCH_QUIT, SCH_RCPT, SCH_RSET, SCH_STARTTLS,
-       SCH_VRFY };
+       SCH_VRFY,
+#ifndef DISABLE_WELLKNOWN
+       SCH_WELLKNOWN,
+#endif
+#ifdef EXPERIMENTAL_XCLIENT
+       SCH_XCLIENT,
+#endif
+       };
 
 /* Returns from host_find_by{name,dns}() */
 
@@ -867,19 +883,20 @@ enum {
 
 /* Options for transport_write_message */
 
-#define topt_add_return_path    0x0001
-#define topt_add_delivery_date  0x0002
-#define topt_add_envelope_to    0x0004
-#define topt_escape_headers     0x0008	/* Apply escape check to headers */
-#define topt_use_crlf           0x0010	/* Terminate lines with CRLF */
-#define topt_no_headers         0x0020	/* Omit headers */
-#define topt_no_body            0x0040	/* Omit body */
-#define topt_end_dot            0x0080	/* Send terminating dot line */
-#define topt_no_flush		0x0100	/* more data expected after message (eg QUIT) */
-#define topt_use_bdat		0x0200	/* prepend chunks with RFC3030 BDAT header */
-#define topt_output_string	0x0400	/* create string rather than write to fd */
-#define topt_continuation	0x0800	/* do not reset buffer */
-#define topt_not_socket		0x1000	/* cannot do socket-only syscalls */
+#define topt_add_return_path    BIT(0)
+#define topt_add_delivery_date  BIT(1)
+#define topt_add_envelope_to    BIT(2)
+#define topt_escape_headers     BIT(3)	/* Apply escape check to headers */
+#define topt_truncate_headers   BIT(4)	/* Truncate header lines at 998 chars */
+#define topt_use_crlf           BIT(5)	/* Terminate lines with CRLF */
+#define topt_no_headers         BIT(6)	/* Omit headers */
+#define topt_no_body            BIT(7)	/* Omit body */
+#define topt_end_dot            BIT(8)	/* Send terminating dot line */
+#define topt_no_flush		BIT(9)	/* more data expected after message (eg QUIT) */
+#define topt_use_bdat		BIT(10)	/* prepend chunks with RFC3030 BDAT header */
+#define topt_output_string	BIT(11)	/* create string rather than write to fd */
+#define topt_continuation	BIT(12)	/* do not reset buffer */
+#define topt_not_socket		BIT(13)	/* cannot do socket-only syscalls */
 
 /* Options for smtp_write_command */
 
@@ -942,20 +959,21 @@ order without checking carefully!
 **** IMPORTANT ****
 */
 
-enum { ACL_WHERE_RCPT,       /* Some controls are for RCPT only */
-       ACL_WHERE_MAIL,       /* )                                           */
-       ACL_WHERE_PREDATA,    /* ) There are several tests for "in message", */
-       ACL_WHERE_MIME,       /* ) implemented by <= WHERE_NOTSMTP           */
-       ACL_WHERE_DKIM,       /* )                                           */
-       ACL_WHERE_DATA,       /* )                                           */
+enum { ACL_WHERE_RCPT,		/* Some controls are for RCPT only */
+       ACL_WHERE_MAIL,		/* )						*/
+       ACL_WHERE_PREDATA,	/* ) There are several tests for "in message",	*/
+       ACL_WHERE_MIME,		/* ) implemented by <= WHERE_NOTSMTP		*/
+       ACL_WHERE_DKIM,		/* )						*/
+       ACL_WHERE_DATA,		/* )						*/
 #ifndef DISABLE_PRDR
-       ACL_WHERE_PRDR,       /* )                                           */
+       ACL_WHERE_PRDR,		/* )						*/
 #endif
-       ACL_WHERE_NOTSMTP,    /* )                                           */
+       ACL_WHERE_NOTSMTP,	/* )						*/
 
-       ACL_WHERE_AUTH,       /* These remaining ones are not currently    */
-       ACL_WHERE_CONNECT,    /* required to be in a special order so they */
-       ACL_WHERE_ETRN,       /* are just alphabetical.                    */
+       ACL_WHERE_AUTH,		/* These remaining ones are not currently	*/
+       ACL_WHERE_ATRN,		/* */
+       ACL_WHERE_CONNECT,	/* required to be in a special order so they	*/
+       ACL_WHERE_ETRN,		/* are just alphabetical.			*/
        ACL_WHERE_EXPN,
        ACL_WHERE_HELO,
        ACL_WHERE_MAILAUTH,
@@ -963,6 +981,9 @@ enum { ACL_WHERE_RCPT,       /* Some controls are for RCPT only */
        ACL_WHERE_NOTQUIT,
        ACL_WHERE_QUIT,
        ACL_WHERE_STARTTLS,
+#ifndef DISABLE_WELLKNOWN
+       ACL_WHERE_WELLKNOWN,
+#endif
        ACL_WHERE_VRFY,
 
        ACL_WHERE_DELIVERY,
@@ -983,6 +1004,7 @@ enum { ACL_WHERE_RCPT,       /* Some controls are for RCPT only */
 #define ACL_BIT_NOTSMTP		BIT(ACL_WHERE_NOTSMTP)
 #define ACL_BIT_AUTH		BIT(ACL_WHERE_AUTH)
 #define ACL_BIT_CONNECT		BIT(ACL_WHERE_CONNECT)
+#define ACL_BIT_ATRN		BIT(ACL_WHERE_ATRN)
 #define ACL_BIT_ETRN		BIT(ACL_WHERE_ETRN)
 #define ACL_BIT_EXPN		BIT(ACL_WHERE_EXPN)
 #define ACL_BIT_HELO		BIT(ACL_WHERE_HELO)
@@ -992,6 +1014,9 @@ enum { ACL_WHERE_RCPT,       /* Some controls are for RCPT only */
 #define ACL_BIT_QUIT		BIT(ACL_WHERE_QUIT)
 #define ACL_BIT_STARTTLS	BIT(ACL_WHERE_STARTTLS)
 #define ACL_BIT_VRFY		BIT(ACL_WHERE_VRFY)
+#ifndef DISABLE_WELLKNOWN
+# define ACL_BIT_WELLKNOWN	BIT(ACL_WHERE_WELLKNOWN)
+#endif
 #define ACL_BIT_DELIVERY	BIT(ACL_WHERE_DELIVERY)
 #define ACL_BIT_UNKNOWN		BIT(ACL_WHERE_UNKNOWN)
 
@@ -1049,6 +1074,10 @@ enum { FILTER_UNSET, FILTER_FORWARD, FILTER_EXIM, FILTER_SIEVE };
 #define UTF8_VERT_RIGHT		"\xE2\x94\x9C"
 #define UTF8_UP_RIGHT		"\xE2\x95\xB0"
 #define UTF8_VERT_2DASH		"\xE2\x95\x8E"
+#define UTF8_LEFT_TRIANGLE	"\xE2\x97\x80"
+#define UTF8_RIGHT_TRIANGLE	"\xE2\x96\xB6"
+#define UTF8_LIGHT_SHADE	"\xE2\x96\x91"
+#define UTF8_L_ARROW_HOOK	"\xE2\x86\xA9"
 
 
 /* Options on tls_close */
@@ -1095,14 +1124,22 @@ should not be one active. */
 #define RESUME_USED		BIT(4)
 
 #define RESUME_DECODE_STRING \
-	  US"not requested or offered : 0x02 :client requested, no server ticket" \
-    ": 0x04 : 0x05 : 0x06 :client offered session, no server action" \
-    ": 0x08 :no client request: 0x0A :client requested new ticket, server provided" \
-    ": 0x0C :client offered session, not used: 0x0E :client offered session, server only provided new ticket" \
-    ": 0x10 :session resumed unasked: 0x12 :session resumed unasked" \
-    ": 0x14 : 0x15 : 0x16 :session resumed" \
-    ": 0x18 :session resumed unasked: 0x1A :session resumed unasked" \
-    ": 0x1C :session resumed: 0x1E :session resumed, also new ticket"
+  US"not requested or offered" \
+    ": 0x02 :client requested, no server ticket" \
+    ": 0x04 : 0x05 " \
+    ": 0x06 :client offered session, no server action" \
+    ": 0x08 :no client request" \
+    ": 0x0A :client requested new ticket, server provided" \
+    ": 0x0C :client offered session, not used" \
+    ": 0x0E :client offered session, server only provided new ticket" \
+    ": 0x10 :session resumed unasked" \
+    ": 0x12 :session resumed unasked" \
+    ": 0x14 : 0x15" \
+    ": 0x16 :session resumed" \
+    ": 0x18 :session resumed unasked" \
+    ": 0x1A :session resumed unasked" \
+    ": 0x1C :session resumed" \
+    ": 0x1E :session resumed, also new ticket"
 
 /* Flags for string_vformat */
 #define SVFMT_EXTEND		BIT(0)
@@ -1112,9 +1149,9 @@ should not be one active. */
 
 #define NOTIFIER_SOCKET_NAME	"exim_daemon_notify"
 /* Notify message types */
-#define NOTIFY_MSG_QRUN		1
-#define NOTIFY_QUEUE_SIZE_REQ	2
-#define NOTIFY_REGEX		3
+#define NOTIFY_MSG_QRUN		1	/* 2stage qrun fast-ramp trigger */
+#define NOTIFY_QUEUE_SIZE_REQ	2	/* obtain current queue count */
+#define NOTIFY_REGEX		3	/* an RE for caching */
 
 /* Flags for match_check_string() */
 typedef unsigned mcs_flags;
@@ -1124,4 +1161,73 @@ typedef unsigned mcs_flags;
 #define MCS_AT_SPECIAL		BIT(2)	/* recognize @, @[], etc. */
 #define MCS_CACHEABLE		BIT(3)	/* no dynamic expansions used for pattern */
 
+/* Flags for open() */
+#ifdef O_CLOEXEC
+# define EXIM_CLOEXEC O_CLOEXEC
+#else
+# define EXIM_CLOEXEC 0
+#endif
+#ifdef O_NOFOLLOW
+# define EXIM_NOFOLLOW O_NOFOLLOW
+#else
+# define EXIM_NOFOLLOW 0
+#endif
+
+/* A big number for (effectively) unlimited envelope addresses */
+#define UNLIMITED_ADDRS		999999
+
+/* Flags for queue_list() */
+#define QL_BASIC		0
+#define QL_UNDELIVERED_ONLY	1
+#define QL_PLUS_GENERATED	2
+#define QL_MSGID_ONLY		3
+#define QL_UNSORTED		8
+
+/* Flags for transport_set_up_command() */
+#define TSUC_EXPAND_ARGS	BIT(0)
+#define TSUC_ALLOW_TAINTED_ARGS	BIT(1)
+#define TSUC_ALLOW_RECIPIENTS	BIT(2)
+
+/* Flags for smtp_printf */
+#define SP_MORE		TRUE
+#define SP_NO_MORE	FALSE
+
+/* Flags for smtp_respond */
+#define SR_FINAL	TRUE
+#define SR_NOT_FINAL	FALSE
+
+/* Flags for continued-TLS-connection */
+#define CTF_CV	BIT(0)
+#define CTF_DV	BIT(1)
+#define CTF_TR	BIT(2)
+
+/* Return codes for smtp_write_mail_and_rcpt_cmds() */
+typedef enum {
+  sw_mrc_ok,	/* good, rcpt results in addr->transport_return (PENDING_OK, DEFER, FAIL) */
+  sw_mrc_bad_mail,		/* MAIL response error */
+  sw_mrc_bad_read,		/* any non-MAIL read i/o error */
+  sw_mrc_nonmail_read_timeo,	/* non-MAIL response timeout */
+  sw_mrc_bad_internal,		/* internal error; channel still usable */
+  sw_mrc_tx_fail,		/* transmit failed */
+} sw_mrc_t;
+
+/* Recent versions of PCRE2 are allocating 20kB per match, rather than the previous 112 B.
+When doing en extended loop of matching, release store periodically. */
+
+#define	REGEX_LOOPCOUNT_STORE_RESET	1000
+
+/* Debug an option access. Use for non-list ones about to be expanded
+(lists have their own debugging, under D_list). */
+#define GET_OPTION(name) \
+  DEBUG(D_expand) debug_printf("try option " name "\n");
+
+
+#ifdef EXPERIMENTAL_SRV_SMTPS
+/* Service name for the feature; used in DNS SRV RRs */
+# define SRV_SMTPS_SERVICE_NAME	"smtp-tls"	/* Per version 5 draft */
+#endif
+
+#endif	/* whole file */
 /* End of macros.h */
+/* vi: aw ai sw=2
+*/

@@ -4,6 +4,7 @@
 
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Private structure for the private options. */
 
@@ -26,7 +27,7 @@ extern lmtp_transport_options_block lmtp_transport_option_defaults;
 
 /* The main and init entry points for the transport */
 
+extern void lmtp_transport_init(driver_instance *);
 extern BOOL lmtp_transport_entry(transport_instance *, address_item *);
-extern void lmtp_transport_init(transport_instance *);
 
 /* End of transports/lmtp.h */

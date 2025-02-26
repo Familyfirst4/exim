@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions for writing spool files, and moving them about. */
 
@@ -51,7 +52,7 @@ if (f) (void)fclose(f);
 if (errmsg)
   *errmsg = msg;
 else
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s", msg);
+  log_write_die(0, LOG_MAIN, "%s", msg);
 
 return -1;
 }
@@ -123,9 +124,11 @@ spool_var_write(FILE * fp, const uschar * name, const uschar * val)
 putc('-', fp);
 if (is_tainted(val))
   {
-  int q = quoter_for_address(val);
+  const uschar * quoter_name;
   putc('-', fp);
-  if (is_real_quoter(q)) fprintf(fp, "(%s)", lookup_list[q]->name);
+  (void) quoter_for_address(val, &quoter_name);
+  if (quoter_name)
+    fprintf(fp, "(%s)", quoter_name);
   }
 fprintf(fp, "%s %s\n", name, val);
 }
@@ -142,7 +145,7 @@ be open and locked, thus preventing any other exim process from working on this
 message.
 
 Argument:
-  id      the message id
+  id      the message id (used for the eventual filename; the *content* uses the global. Unclear why.)
   where   SW_RECEIVING, SW_DELIVERING, or SW_MODIFYING
   errmsg  where to put an error message; if NULL, panic-die on error
 
@@ -151,16 +154,13 @@ Returns:  the size of the header texts on success;
 */
 
 int
-spool_write_header(uschar *id, int where, uschar **errmsg)
+spool_write_header(const uschar * id, int where, uschar ** errmsg)
 {
-int fd;
-int size_correction;
+int fd, size_correction;
 FILE * fp;
 struct stat statbuf;
-uschar * tname;
 uschar * fname;
-
-tname = spool_fname(US"input", message_subdir, US"hdr.", message_id);
+uschar * tname = spool_fname(US"input", message_subdir, US"hdr.", message_id);
 
 if ((fd = spool_open_temp(tname)) < 0)
   return spool_write_error(where, errmsg, US"open", NULL, NULL);
@@ -446,7 +446,7 @@ start-up time.
 
 Arguments:
   dir        base directory name
-  dq	     destiinationqueue name
+  dq	     destination queue name
   subdir     subdirectory name
   id         message id
   suffix     suffix to add to id
@@ -459,8 +459,8 @@ Returns:     TRUE if all went well
 */
 
 static BOOL
-make_link(uschar *dir, uschar * dq, uschar *subdir, uschar *id, uschar *suffix,
-  uschar *from, uschar *to, BOOL noentok)
+make_link(const uschar * dir, const uschar * dq, const uschar * subdir, const uschar * id,
+  const uschar * suffix, const uschar * from, const uschar * to, BOOL noentok)
 {
 uschar * fname = spool_fname(string_sprintf("%s%s", from, dir), subdir, id, suffix);
 uschar * tname = spool_q_fname(string_sprintf("%s%s", to,   dir), dq, subdir, id, suffix);
@@ -496,8 +496,8 @@ Returns:     TRUE if all went well
 */
 
 static BOOL
-break_link(uschar *dir, uschar *subdir, uschar *id, uschar *suffix, uschar *from,
-  BOOL noentok)
+break_link(const uschar * dir, const uschar * subdir, const uschar * id,
+  const uschar * suffix, const uschar * from, BOOL noentok)
 {
 uschar * fname = spool_fname(string_sprintf("%s%s", from, dir), subdir, id, suffix);
 if (Uunlink(fname) < 0 && (!noentok || errno != ENOENT))
@@ -530,7 +530,8 @@ Returns:      TRUE if all is well
 */
 
 BOOL
-spool_move_message(uschar *id, uschar *subdir, uschar *from, uschar *to)
+spool_move_message(const uschar * id, const uschar * subdir,
+  const uschar * from, const uschar * to)
 {
 uschar * dest_qname = queue_name_dest ? queue_name_dest : queue_name;
 

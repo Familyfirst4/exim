@@ -4,6 +4,7 @@
 
 /* Copyright (c) University of Cambridge 1995 - 2014 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Private structure for the private options. */
 
@@ -45,7 +46,7 @@ extern pipe_transport_options_block pipe_transport_option_defaults;
 
 /* The main and init entry points for the transport */
 
+extern void pipe_transport_init(driver_instance *);
 extern BOOL pipe_transport_entry(transport_instance *, address_item *);
-extern void pipe_transport_init(transport_instance *);
 
 /* End of transports/pipe.h */

@@ -24,20 +24,26 @@ queue_only
 queue_run_in_order
 
 
+.ifdef _HAVE_EVENT
 event_action = ${acl {ev_log}}
+.endif
 
 #
 
 begin acl
 
+.ifdef _HAVE_EVENT
 ev_log:
-  accept logwrite = event $event_name
+  accept logwrite = event $event_name data "$event_data"
+.endif
 
 rcpt:
-  accept hosts =	HOSTIPV4
+  accept	hosts =	HOSTIPV4
 
-  deny	local_parts =	rmt_reject
-  defer	local_parts =	rmt_defer
+  deny		local_parts =	rmt_reject
+  defer		local_parts =	rmt_defer
+  accept	local_parts =	rmt_fakereject
+		control =	fakereject
   accept
 
 # ----- Routers -----
@@ -74,20 +80,26 @@ begin transports
 
 smtp:
   driver =	smtp
+.ifdef _HAVE_EVENT
   event_action = ${acl {ev_log}}
+.endif
   hosts_try_fastopen = :
 
 bad_tpt:
   driver =	smtp
   connect_timeout = 1s
+.ifdef _HAVE_EVENT
   event_action = ${acl {ev_log}}
+.endif
 
 tofile:
   driver = appendfile
   file = DIR/test-mail/$local_part
   create_file = DIR/test-mail
   user = CALLER
+.ifdef _HAVE_EVENT
   event_action = ${acl {ev_log}}
+.endif
 
 begin retry
 

@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -17,15 +18,29 @@ routing joe-real@testexim.test.ex
 --------> router1 router <--------
 local_part=joe-real domain=testexim.test.ex
 checking local_parts
-joe-real in "joe:sam:tom"? no (end of list)
-joe-real in "+aliases"? no (end of list)
+joe-real in local_parts?
+ list element: +aliases
+  start sublist aliases
+   joe-real in "joe:sam:tom"?
+   ╎list element: joe
+   ╎list element: sam
+   ╎list element: tom
+   joe-real in "joe:sam:tom"? no (end of list)
+  end sublist aliases
+joe-real in local_parts? no (end of list)
 router1 router skipped: local_parts mismatch
 --------> router2 router <--------
 local_part=joe-real domain=testexim.test.ex
 stripped suffix -real
 checking local_parts
-joe in "joe:sam:tom"? yes (matched "joe")
-joe in "+aliases"? yes (matched "+aliases")
+joe in local_parts?
+ list element: +aliases
+  start sublist aliases
+   joe in "joe:sam:tom"?
+   ╎list element: joe
+   ╎joe in "joe:sam:tom"? yes (matched "joe")
+  end sublist aliases
+ joe in local_parts? yes (matched "+aliases")
 calling router2 router
 router2 router called for joe-real@testexim.test.ex
   domain = testexim.test.ex
@@ -35,7 +50,7 @@ domain = testexim.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=joe
 routed by router2 router
-  envelope to: joe-real@testexim.test.ex
-  transport: local_delivery
+  envelope to:	joe-real@testexim.test.ex
+  transport:	local_delivery
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

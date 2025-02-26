@@ -47,19 +47,21 @@ alternatename.server1 CNAME server1
 ; a broken dane config where the name does not match in the cert, TA-mode, dane-requested
 ; NOTE: the server uses the example.net cert hence the mismatch
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.net/CA/CA.pem -fingerprint -sha256 -noout \
 ;  | awk -F= '{print $2}' | tr -d : | tr '[A-F]' '[a-f]'
 ;
 ;
 DNSSEC danebroken7  A       127.0.0.1
-DNSSEC _1225._tcp.danebroken7 TLSA 2 0 1 7b7f27746dafe59e5b419ee4c5ea97f04fcf100f65567d92b1b91f88cf199055
+DNSSEC _PORT_D._tcp.danebroken7 TLSA 2 0 1 2ced61b091ad6127c99695c67e12bb2204c71c9ca1c4104659dc9a79ce88a549
 
 ; the same, EE-mode
 ;
+; TLSA_AUTOGEN
 ; openssl x509 -in aux-fixed/exim-ca/example.net/server1.example.net/server1.example.net.pem -noout -pubkey \
 ; | openssl pkey -pubin -outform DER | openssl dgst -sha256 | awk '{print $2}'
 ;
 DNSSEC danebroken8  A       127.0.0.1
-DNSSEC _1225._tcp.danebroken8 TLSA 3 1 1 403071b52f61ba0ab13013b68a97b08325ce8d5e13ba6b6b6f42c2da89ed1b21
+DNSSEC _PORT_D._tcp.danebroken8 TLSA 3 1 1 97f62dede161e64c2428fd8c390234c17628fa17e6696b9614927fe38c443acf
 
 ; End

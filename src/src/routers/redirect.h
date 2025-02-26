@@ -5,6 +5,7 @@
 /* Copyright (c) The Exim Maintainers 2021 - 2022 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Header for the redirect router */
 
@@ -24,10 +25,13 @@ typedef struct {
   uschar *include_directory;
   uschar *pipe_transport_name;
   uschar *reply_transport_name;
+
+  uschar *sieve_enotify_mailto_owner;
+  uschar *sieve_inbox;
   uschar *sieve_subaddress;
   uschar *sieve_useraddress;
   uschar *sieve_vacation_directory;
-  uschar *sieve_enotify_mailto_owner;
+
   uschar *syntax_errors_text;
   uschar *syntax_errors_to;
   uschar *qualify_domain;
@@ -65,6 +69,6 @@ extern int redirect_router_entry(router_instance *, address_item *,
   struct passwd *, int, address_item **, address_item **,
   address_item **, address_item **);
 
-extern void redirect_router_init(router_instance *);
+extern void redirect_router_init(driver_instance *);
 
 /* End of routers/redirect.h */

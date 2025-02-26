@@ -1,5 +1,7 @@
 # Exim: OS-specific make file for FreeBSD
-# Copyright (c) The Exim Maintainers 2020
+#
+# Copyright (c) The Exim Maintainers 2020 - 2023
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 CHOWN_COMMAND=/usr/sbin/chown
 #STRIP_COMMAND=/usr/bin/strip
@@ -17,6 +19,9 @@ LIBS=-lcrypt -lm -lutil -lexecinfo
 
 # Dynamically loaded modules need to be built with -fPIC
 CFLAGS_DYNAMIC=-shared -rdynamic -fPIC
+
+# Partial-linking needs -nostdlib
+LDFLAGS_PARTIAL=-nostdlib
 
 # FreeBSD always ships with Berkeley DB
 USE_DB=yes

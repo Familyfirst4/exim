@@ -1,5 +1,6 @@
 /* Exim: OS-specific C header file for GNU/Hurd */
 /* Copyright (c) The Exim Maintainers 2020 - 2021 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <features.h>
 
@@ -19,9 +20,6 @@ typedef struct flock flock_t;
 #define OS_STRSIGNAL
 
 /* Hurd-specific bits below */
-
-/* default is non-const */
-#define ICONV_ARG2_TYPE const char **
 
 /* setgroups(0, NULL) succeeds, and drops the gid group
 as well as any supplementary groups*/

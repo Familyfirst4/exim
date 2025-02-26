@@ -2,12 +2,15 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
+
+#ifdef ROUTER_REDIRECT	/* Remainder of file */
 #include "rf_functions.h"
 #include "redirect.h"
 
@@ -89,8 +92,9 @@ optionlist redirect_router_options[] = {
       LOFF(bit_options) },
 
   { "sieve_enotify_mailto_owner", opt_stringptr, LOFF(sieve_enotify_mailto_owner) },
-  { "sieve_subaddress", opt_stringptr,		LOFF(sieve_subaddress) },
-  { "sieve_useraddress", opt_stringptr,		LOFF(sieve_useraddress) },
+  { "sieve_inbox",	  opt_stringptr,	LOFF(sieve_inbox) },
+  { "sieve_subaddress",   opt_stringptr,	LOFF(sieve_subaddress) },
+  { "sieve_useraddress",  opt_stringptr,	LOFF(sieve_useraddress) },
   { "sieve_vacation_directory", opt_stringptr,	LOFF(sieve_vacation_directory) },
   { "skip_syntax_errors", opt_bool,		LOFF(skip_syntax_errors) },
   { "syntax_errors_text", opt_stringptr,	LOFF(syntax_errors_text) },
@@ -108,7 +112,7 @@ int redirect_router_options_count =
 
 /* Dummy entries */
 redirect_router_options_block redirect_router_option_defaults = {0};
-void redirect_router_init(router_instance *rblock) {}
+void redirect_router_init(driver_instance *rblock) {}
 int redirect_router_entry(router_instance *rblock, address_item *addr,
   struct passwd *pw, int verify, address_item **addr_local,
   address_item **addr_remote, address_item **addr_new,
@@ -118,43 +122,14 @@ int redirect_router_entry(router_instance *rblock, address_item *addr,
 
 
 
-/* Default private options block for the redirect router. */
+/* Default private options block for the redirect router.
+Unlisted elements are 0/NULL/FALSE */
 
 redirect_router_options_block redirect_router_option_defaults = {
-  NULL,        /* directory_transport */
-  NULL,        /* file_transport */
-  NULL,        /* pipe_transport */
-  NULL,        /* reply_transport */
-  NULL,        /* data */
-  NULL,        /* directory_transport_name */
-  NULL,        /* file */
-  NULL,        /* file_dir */
-  NULL,        /* file_transport_name */
-  NULL,        /* include_directory */
-  NULL,        /* pipe_transport_name */
-  NULL,        /* reply_transport_name */
-  NULL,        /* sieve_subaddress */
-  NULL,        /* sieve_useraddress */
-  NULL,        /* sieve_vacation_directory */
-  NULL,        /* sieve_enotify_mailto_owner */
-  NULL,        /* syntax_errors_text */
-  NULL,        /* syntax_errors_to */
-  NULL,        /* qualify_domain */
-  NULL,        /* owners */
-  NULL,        /* owngroups */
-  022,         /* modemask */
-  RDO_REWRITE | RDO_PREPEND_HOME, /* bit_options */
-  FALSE,       /* check_ancestor */
-  TRUE_UNSET,  /* check_owner */
-  TRUE_UNSET,  /* check_group */
-  FALSE,       /* forbid_file */
-  FALSE,       /* forbid_filter_reply */
-  FALSE,       /* forbid_pipe */
-  FALSE,       /* forbid_smtp_code */
-  FALSE,       /* hide_child_in_errmsg */
-  FALSE,       /* one_time */
-  FALSE,       /* qualify_preserve_domain */
-  FALSE        /* skip_syntax_errors */
+  .modemask = 022,
+  .bit_options = RDO_REWRITE | RDO_PREPEND_HOME,
+  .check_owner = TRUE_UNSET,
+  .check_group = TRUE_UNSET,
 };
 
 
@@ -166,17 +141,19 @@ redirect_router_options_block redirect_router_option_defaults = {
 /* Called for each instance, after its options have been read, to enable
 consistency checks to be done, or anything else that needs to be set up. */
 
-void redirect_router_init(router_instance *rblock)
+void
+redirect_router_init(driver_instance * r)
 {
-redirect_router_options_block *ob =
-  (redirect_router_options_block *)(rblock->options_block);
+const router_instance * rblock = (router_instance *)r;
+redirect_router_options_block * ob =
+  (redirect_router_options_block *)(r->options_block);
 
 /* Either file or data must be set, but not both */
 
 if ((ob->file == NULL) == (ob->data == NULL))
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "%sone of \"file\" or \"data\" must be specified",
-    rblock->name, (ob->file == NULL)? "" : "only ");
+    r->name, ob->file ? "only " : "");
 
 /* Onetime aliases can only be real addresses. Headers can't be manipulated.
 The combination of one_time and unseen is not allowed. We can't check the
@@ -187,12 +164,12 @@ if (ob->one_time)
   {
   ob->forbid_pipe = ob->forbid_file = ob->forbid_filter_reply = TRUE;
   if (rblock->extra_headers || rblock->remove_headers)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+    log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
       "\"headers_add\" and \"headers_remove\" are not permitted with "
-      "\"one_time\"", rblock->name);
+      "\"one_time\"", r->name);
   if (rblock->unseen || rblock->expand_unseen)
-    log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
-      "\"unseen\" may not be used with \"one_time\"", rblock->name);
+    log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
+      "\"unseen\" may not be used with \"one_time\"", r->name);
   }
 
 /* The defaults for check_owner and check_group depend on other settings. The
@@ -211,9 +188,9 @@ if (ob->check_group == TRUE_UNSET)
 /* If explicit qualify domain set, the preserve option is locked out */
 
 if (ob->qualify_domain && ob->qualify_preserve_domain)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "only one of \"qualify_domain\" or \"qualify_preserve_domain\" must be set",
-    rblock->name);
+    r->name);
 
 /* If allow_filter is set, either user or check_local_user must be set. */
 
@@ -221,9 +198,9 @@ if (!rblock->check_local_user &&
     !rblock->uid_set &&
     rblock->expand_uid == NULL &&
     (ob->bit_options & RDO_FILTER) != 0)
-  log_write(0, LOG_PANIC_DIE|LOG_CONFIG_FOR, "%s router:\n  "
+  log_write_die(0, LOG_CONFIG_FOR, "%s router:\n  "
     "\"user\" or \"check_local_user\" must be set with \"allow_filter\"",
-    rblock->name);
+    r->name);
 }
 
 
@@ -300,21 +277,20 @@ add_generated(router_instance *rblock, address_item **addr_new,
   address_item *addr, address_item *generated,
   address_item_propagated *addr_prop, ugid_block *ugidptr, struct passwd *pw)
 {
-redirect_router_options_block *ob =
-  (redirect_router_options_block *)(rblock->options_block);
+redirect_router_options_block * ob =
+  (redirect_router_options_block *)(rblock->drinst.options_block);
 
 while (generated)
   {
-  address_item *parent;
-  address_item *next = generated;
-  uschar *errors_address = next->prop.errors_address;
+  address_item * next = generated, * parent;
+  const uschar * errors_address = next->prop.errors_address;
 
   generated = next->next;
   next->parent = addr;
   next->start_router = rblock->redirect_router;
   if (addr->child_count == USHRT_MAX)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "%s router generated more than %d "
-      "child addresses for <%s>", rblock->name, USHRT_MAX, addr->address);
+    log_write_die(0, LOG_MAIN, "%s router generated more than %d "
+      "child addresses for <%s>", rblock->drinst.name, USHRT_MAX, addr->address);
   addr->child_count++;
 
   next->next = *addr_new;
@@ -370,12 +346,11 @@ while (generated)
     in \N...\N to avoid expansion later. In Cygwin, home directories can
     contain $ characters. */
 
-    if (rblock->home_directory != NULL)
+    if (rblock->home_directory)
       next->home_dir = rblock->home_directory;
     else if (rblock->check_local_user)
       next->home_dir = string_sprintf("\\N%s\\N", pw->pw_dir);
-    else if (rblock->router_home_directory != NULL &&
-             testflag(addr, af_home_expanded))
+    else if (rblock->router_home_directory && testflag(addr, af_home_expanded))
       {
       next->home_dir = deliver_home;
       setflag(next, af_home_expanded);
@@ -395,15 +370,17 @@ while (generated)
     if (next->address[0] == '|')
       {
       address_pipe = next->address;
+      GET_OPTION("pipe_transport");
       if (rf_get_transport(ob->pipe_transport_name, &ob->pipe_transport,
-          next, rblock->name, US"pipe_transport"))
+          next, rblock->drinst.name, US"pipe_transport"))
         next->transport = ob->pipe_transport;
       address_pipe = NULL;
       }
     else if (next->address[0] == '>')
       {
+      GET_OPTION("reply_transport");
       if (rf_get_transport(ob->reply_transport_name, &ob->reply_transport,
-          next, rblock->name, US"reply_transport"))
+          next, rblock->drinst.name, US"reply_transport"))
         next->transport = ob->reply_transport;
       }
     else  /* must be file or directory */
@@ -412,15 +389,19 @@ while (generated)
       address_file = next->address;
       if (next->address[len-1] == '/')
         {
+	GET_OPTION("directory_transport");
         if (rf_get_transport(ob->directory_transport_name,
-            &(ob->directory_transport), next, rblock->name,
+            &ob->directory_transport, next, rblock->drinst.name,
             US"directory_transport"))
           next->transport = ob->directory_transport;
         }
       else
+	{
+	GET_OPTION("file_transport");
         if (rf_get_transport(ob->file_transport_name, &ob->file_transport,
-            next, rblock->name, US"file_transport"))
+            next, rblock->drinst.name, US"file_transport"))
           next->transport = ob->file_transport;
+	}
 
       address_file = NULL;
       }
@@ -435,11 +416,11 @@ while (generated)
   DEBUG(D_route)
     {
     debug_printf("%s router generated %s\n  %serrors_to=%s transport=%s\n",
-      rblock->name,
+      rblock->drinst.name,
       next->address,
       testflag(next, af_pfr)? "pipe, file, or autoreply\n  " : "",
       next->prop.errors_address,
-      (next->transport == NULL)? US"NULL" : next->transport->name);
+      next->transport ? next->transport->drinst.name : US"NULL");
 
     if (testflag(next, af_uid_set))
       debug_printf("  uid=%ld ", (long int)(next->uid));
@@ -499,8 +480,8 @@ int redirect_router_entry(
   address_item **addr_new,        /* put new addresses on here */
   address_item **addr_succeed)    /* put old address here on success */
 {
-redirect_router_options_block *ob =
-  (redirect_router_options_block *)(rblock->options_block);
+redirect_router_options_block * ob =
+  (redirect_router_options_block *)(rblock->drinst.options_block);
 address_item *generated = NULL;
 const uschar *save_qualify_domain_recipient = qualify_domain_recipient;
 uschar *discarded = US"discarded";
@@ -508,6 +489,7 @@ address_item_propagated addr_prop;
 error_block *eblock = NULL;
 ugid_block ugid;
 redirect_block redirect;
+sieve_block sieve;
 int filtertype = FILTER_UNSET;
 int yield = OK;
 int options = ob->bit_options;
@@ -545,13 +527,13 @@ can't be found in the password file. Other errors set the freezing bit. */
 
 if (!rf_get_ugid(rblock, addr, &ugid)) return DEFER;
 
-if (!ugid.uid_set && pw != NULL)
+if (!ugid.uid_set && pw)
   {
   ugid.uid = pw->pw_uid;
   ugid.uid_set = TRUE;
   }
 
-if (!ugid.gid_set && pw != NULL)
+if (!ugid.gid_set && pw)
   {
   ugid.gid = pw->pw_gid;
   ugid.gid_set = TRUE;
@@ -566,11 +548,15 @@ address. Otherwise, if a local qualify_domain is provided, set that up. */
 
 if (ob->qualify_preserve_domain)
   qualify_domain_recipient = addr->domain;
-else if (ob->qualify_domain)
+else
   {
-  uschar *new_qdr = rf_expand_data(addr, ob->qualify_domain, &xrc);
-  if (!new_qdr) return xrc;
-  qualify_domain_recipient = new_qdr;
+  GET_OPTION("qualify_domain");
+  if (ob->qualify_domain)
+    {
+    uschar *new_qdr = rf_expand_data(addr, ob->qualify_domain, &xrc);
+    if (!new_qdr) return xrc;
+    qualify_domain_recipient = new_qdr;
+    }
   }
 
 redirect.owners = ob->owners;
@@ -583,11 +569,16 @@ redirect.pw = pw;
 redirect.string = (redirect.isfile = (ob->file != NULL))
   ? ob->file : ob->data;
 
-frc = rda_interpret(&redirect, options, ob->include_directory,
-  ob->sieve_vacation_directory, ob->sieve_enotify_mailto_owner,
-  ob->sieve_useraddress, ob->sieve_subaddress, &ugid, &generated,
-  &addr->message, ob->skip_syntax_errors? &eblock : NULL, &filtertype,
-  string_sprintf("%s router (recipient is %s)", rblock->name, addr->address));
+sieve.inbox = ob->sieve_inbox;
+sieve.subaddress = ob->sieve_subaddress;
+sieve.vacation_dir = ob->sieve_vacation_directory;
+sieve.useraddress = ob->sieve_useraddress;
+sieve.enotify_mailto_owner = ob->sieve_enotify_mailto_owner;
+
+frc = rda_interpret(&redirect, options, ob->include_directory, &sieve, &ugid,
+  &generated, &addr->message, ob->skip_syntax_errors ? &eblock : NULL,
+  &filtertype, string_sprintf("%s router (recipient is %s)",
+  rblock->drinst.name, addr->address));
 
 qualify_domain_recipient = save_qualify_domain_recipient;
 
@@ -712,7 +703,7 @@ dealing with it, the router declines. */
 if (eblock != NULL)
   {
   if (!moan_skipped_syntax_errors(
-        rblock->name,                            /* For message content */
+        rblock->drinst.name,			 /* For message content */
         eblock,                                  /* Ditto */
         (verify != v_none || f.address_test_mode)?
           NULL : ob->syntax_errors_to,           /* Who to mail */
@@ -720,7 +711,7 @@ if (eblock != NULL)
         ob->syntax_errors_text))                 /* Custom message */
     return DEFER;
 
-  if (filtertype != FILTER_FORWARD || generated == NULL)
+  if (filtertype != FILTER_FORWARD || !generated)
     {
     addr->message = US"syntax error in redirection data";
     return DECLINE;
@@ -733,7 +724,7 @@ calling sort_errors_and_headers() in case this router declines - that function
 may modify the errors_address field in the current address, and we don't want
 to do that for a decline. */
 
-if (generated != NULL)
+if (generated)
   {
   if ((xrc = sort_errors_and_headers(rblock, addr, verify, &addr_prop)) != OK)
     return xrc;
@@ -749,7 +740,7 @@ if (frc == FF_DELIVERED)
   if (generated == NULL && verify == v_none && !f.address_test_mode)
     {
     log_write(0, LOG_MAIN, "=> %s <%s> R=%s", discarded, addr->address,
-      rblock->name);
+      rblock->drinst.name);
     yield = DISCARD;
     }
   }
@@ -780,7 +771,7 @@ else
   next->prop = addr_prop;
 
   DEBUG(D_route) debug_printf("%s router autogenerated %s\n%s%s%s",
-    rblock->name,
+    rblock->drinst.name,
     next->address,
     (addr_prop.errors_address != NULL)? "  errors to " : "",
     (addr_prop.errors_address != NULL)? addr_prop.errors_address : US"",
@@ -797,5 +788,30 @@ addr->next = *addr_succeed;
 return yield;
 }
 
+
+
+# ifdef DYNLOOKUP
+#  define redirect_router_info _router_info
+# endif
+
+router_info redirect_router_info =
+{
+.drinfo = {
+  .driver_name =	US"redirect",
+  .options =		redirect_router_options,
+  .options_count =	&redirect_router_options_count,
+  .options_block =	&redirect_router_option_defaults,
+  .options_len =	sizeof(redirect_router_options_block),
+  .init =		redirect_router_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		ROUTER_MAGIC,
+# endif
+  },
+.code =			redirect_router_entry,
+.tidyup =		NULL,     /* no tidyup entry */
+.ri_flags =		ri_notransport
+};
+
 #endif   /*!MACRO_PREDEF*/
+#endif	/*ROUTER_REDIRECT*/
 /* End of routers/redirect.c */

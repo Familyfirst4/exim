@@ -1,10 +1,12 @@
-1999-03-02 09:44:33 10HmaX-0005vi-00 == userx@myhost.test.ex R=localuser T=maildir_tagged_appendfile defer (-1): Expansion of "${if eq{0}{1}{rhubarb}" (maildir_tag for maildir_tagged_appendfile transport) failed: syntax error in "if" item - "fail" expected
+1999-03-02 09:44:33 10HmaX-000000005vi-0000 == userx@myhost.test.ex R=localuser T=maildir_tagged_appendfile defer (-1): Expansion of "${if eq{0}{1}{rhubarb}" (maildir_tag for maildir_tagged_appendfile transport) failed: syntax error in "if" item - "fail" expected
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@myhost.test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -43,6 +45,7 @@ mailbox quota exceeded
 maildir: time since "new" directory modified = 10s
 Exim quota exceeded for tmp/dddddddddd.HddddddPddddd.myhost.test.ex
 appendfile yields 1 with errno=-22 more_errno=dd
+>>>>>>>>>>>>>>>> Exim pid=p1236 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 maildir_taggedX_appendfile transport returned DEFER for userx@myhost.test.ex
 added retry item for T:userx@myhost.test.ex: errno=-22 more_errno=dd flags=0
 LOG: MAIN

@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -13,79 +14,165 @@ Address testing: uid=uuuu gid=EXIM_GID euid=uuuu egid=EXIM_GID
 Testing userx@test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering userx@test.ex
-test.ex in "! *.ex"? no (matched "! *.ex")
-test.ex in "test.ex"? yes (matched "test.ex")
-test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
+test.ex in percent_hack_domains?
+ list element: +hold_domains
+  start sublist hold_domains
+   test.ex in "! *.ex"?
+   ╎list element: !░*.ex
+   ╎test.ex in "! *.ex"? no (matched "! *.ex")
+  end sublist hold_domains
+ list element: +not_queue_domains
+  start sublist not_queue_domains
+   test.ex in "test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex"? yes (matched "test.ex")
+  end sublist not_queue_domains
+ test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing userx@test.ex
 --------> r00 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
+test.ex in domains?
+ list element: +nocache
+  start sublist nocache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist nocache
+test.ex in domains? no (end of list)
 r00 router skipped: domains mismatch
 --------> r01 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
+test.ex in domains?
+ list element: +nocache
+  start sublist nocache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist nocache
+test.ex in domains? no (end of list)
 r01 router skipped: domains mismatch
 --------> r02 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
-test.ex in "+nocache2"? no (end of list)
+test.ex in domains?
+ list element: +nocache2
+  start sublist nocache2
+   test.ex in "+nocache"?
+   ╎list element: +nocache
+   ╎ start sublist nocache
+   ╎  test.ex in "userx"?
+   ╎   list element: userx
+   ╎  test.ex in "userx"? no (end of list)
+   ╎ end sublist nocache
+   test.ex in "+nocache"? no (end of list)
+  end sublist nocache2
+test.ex in domains? no (end of list)
 r02 router skipped: domains mismatch
 --------> r03 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
-test.ex in "+nocache2"? no (end of list)
+test.ex in domains?
+ list element: +nocache2
+  start sublist nocache2
+   test.ex in "+nocache"?
+   ╎list element: +nocache
+   ╎ start sublist nocache
+   ╎  test.ex in "userx"?
+   ╎   list element: userx
+   ╎  test.ex in "userx"? no (end of list)
+   ╎ end sublist nocache
+   test.ex in "+nocache"? no (end of list)
+  end sublist nocache2
+test.ex in domains? no (end of list)
 r03 router skipped: domains mismatch
 --------> r04 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+forcecache"? no (end of list)
+test.ex in domains?
+ list element: +forcecache
+  start sublist forcecache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist forcecache
+test.ex in domains? no (end of list)
 r04 router skipped: domains mismatch
 --------> r05 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached no match for +forcecache
-cached lookup data = NULL
-test.ex in "+forcecache"? no (end of list)
+test.ex in domains?
+ list element: +forcecache
+  start sublist forcecache
+ cached no match for +forcecache
+ cached lookup data = NULL
+test.ex in domains? no (end of list)
 r05 router skipped: domains mismatch
 --------> r1 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "never.ex"? no (end of list)
-test.ex in "never1.ex"? no (end of list)
-test.ex in "test.ex"? yes (matched "test.ex")
-data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
-test.ex in "+never_domains : +n1_domains : ! +local_domains"? no (matched "! +local_domains")
+test.ex in domains?
+ list element: +never_domains
+  start sublist never_domains
+   test.ex in "never.ex"?
+   ╎list element: never.ex
+   test.ex in "never.ex"? no (end of list)
+  end sublist never_domains
+ list element: +n1_domains
+  start sublist n1_domains
+   test.ex in "never1.ex"?
+   ╎list element: never1.ex
+   test.ex in "never1.ex"? no (end of list)
+  end sublist n1_domains
+ list element: !░+local_domains
+  start sublist local_domains
+   test.ex in "test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex"? yes (matched "test.ex")
+  end sublist local_domains
+ data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
+ test.ex in domains? no (matched "! +local_domains")
 r1 router skipped: domains mismatch
 --------> r2 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached no match for +never_domains
-cached lookup data = NULL
-cached no match for +n1_domains
-cached lookup data = NULL
-test.ex in "<; never2.ex ; +n1_domains"? no (end of list)
-cached yes match for +local_domains
-cached lookup data = test.ex
-test.ex in "+never_domains : +n2_domains : !+local_domains"? no (matched "!+local_domains" - cached)
+test.ex in domains?
+ list element: +never_domains
+  start sublist never_domains
+ cached no match for +never_domains
+ cached lookup data = NULL
+ list element: +n2_domains
+  start sublist n2_domains
+   list separator: ';'
+   test.ex in " never2.ex ; +n1_domains"?
+   ╎list element: never2.ex
+   ╎list element: +n1_domains
+   ╎ start sublist n1_domains
+   ╎cached no match for +n1_domains
+   ╎cached lookup data = NULL
+   test.ex in " never2.ex ; +n1_domains"? no (end of list)
+  end sublist n2_domains
+ list element: !+local_domains
+  start sublist local_domains
+ cached yes match for +local_domains
+ cached lookup data = test.ex
+ test.ex in domains? no (matched "!+local_domains" - cached)
 r2 router skipped: domains mismatch
 --------> r3 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached yes match for +local_domains
-cached lookup data = test.ex
-test.ex in "+local_domains"? yes (matched "+local_domains" - cached)
+test.ex in domains?
+ list element: +local_domains
+  start sublist local_domains
+ cached yes match for +local_domains
+ cached lookup data = test.ex
+ test.ex in domains? yes (matched "+local_domains" - cached)
 checking local_parts
-userx in "userx"? yes (matched "userx")
+userx in local_parts?
+ list element: userx
+ userx in local_parts? yes (matched "userx")
 calling r3 router
 r3 router called for userx@test.ex
   domain = test.ex
@@ -95,11 +182,12 @@ domain = test.ex
   errors_to=NULL
   domain_data=test.ex local_part_data=userx
 routed by r3 router
-  envelope to: userx@test.ex
-  transport: t1
+  envelope to:	userx@test.ex
+  transport:	t1
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 configuration file is TESTSUITE/test-config
@@ -120,34 +208,36 @@ search_tidyup called
 >>Headers received:
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
  rewrite_one_header: type=F:
    From: CALLER_NAME <CALLER@test.ex>
 search_tidyup called
 >>Headers after rewriting and local additions:
-I Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
-F From: CALLER_NAME <CALLER@test.ex>
-  Date: Tue, 2 Mar 1999 09:44:33 +0000
+ I Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
+ F From: CALLER_NAME <CALLER@test.ex>
+   Date: Tue, 2 Mar 1999 09:44:33 +0000
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@test.ex>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for userx@test.ex;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-0005vi-00
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-000000005vi-0000
 DSN: **** SPOOL_OUT - address: <userx@test.ex> errorsto: <NULL> orcpt: <NULL> dsn_flags: 0x0
-Renaming spool header file: TESTSUITE/spool//input//10HmaX-0005vi-00-H
+Renaming spool header file: TESTSUITE/spool//input//10HmaX-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
+receive_msg: tidyup
 search_tidyup called
-exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-0005vi-00
+exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-000000005vi-0000
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=EXIM_GID pid=p1236
 configuration file is TESTSUITE/test-config
@@ -157,9 +247,9 @@ dropping to exim gid; retaining priv uid
 seeking password data for user "CALLER": cache not available
 getpwnam() succeeded uid=CALLER_UID gid=CALLER_GID
 set_process_info: pppp delivering specified messages
-set_process_info: pppp delivering 10HmaX-0005vi-00
-Trying spool file TESTSUITE/spool//input//10HmaX-0005vi-00-D
-reading spool file 10HmaX-0005vi-00-H
+set_process_info: pppp delivering 10HmaX-000000005vi-0000
+Trying spool file TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+reading spool file 10HmaX-000000005vi-0000-H
 user=CALLER uid=CALLER_UID gid=CALLER_GID sender=CALLER@test.ex
 sender_local=1 ident=CALLER
 Non-recipients:
@@ -171,95 +261,183 @@ body_linecount=0 message_linecount=8
 DSN: set orcpt:   flags: 0x0
 Delivery address list:
   userx@test.ex 
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: userx@test.ex
-test.ex in "! *.ex"? no (matched "! *.ex")
-test.ex in "test.ex"? yes (matched "test.ex")
-test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
-cached no match for +hold_domains
+test.ex in percent_hack_domains?
+ list element: +hold_domains
+  start sublist hold_domains
+   test.ex in "! *.ex"?
+   ╎list element: !░*.ex
+   ╎test.ex in "! *.ex"? no (matched "! *.ex")
+  end sublist hold_domains
+ list element: +not_queue_domains
+  start sublist not_queue_domains
+   test.ex in "test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex"? yes (matched "test.ex")
+  end sublist not_queue_domains
+ test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
+test.ex in hold_domains?
+ list element: +hold_domains
+  start sublist hold_domains
+ cached no match for +hold_domains
 test.ex in hold_domains? no (end of list)
 unique = userx@test.ex
-no   domain  retry record
-no   address retry record
+checking router retry status
+ no   domain  retry record
+ no   address retry record
 userx@test.ex: queued for routing
-cached yes match for +not_queue_domains
-test.ex in queue_domains? no (matched "!+not_queue_domains" - cached)
+test.ex in queue_domains?
+ list element: !+not_queue_domains
+  start sublist not_queue_domains
+ cached yes match for +not_queue_domains
+ test.ex in queue_domains? no (matched "!+not_queue_domains" - cached)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing userx@test.ex
 --------> r00 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
+test.ex in domains?
+ list element: +nocache
+  start sublist nocache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist nocache
+test.ex in domains? no (end of list)
 r00 router skipped: domains mismatch
 --------> r01 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
+test.ex in domains?
+ list element: +nocache
+  start sublist nocache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist nocache
+test.ex in domains? no (end of list)
 r01 router skipped: domains mismatch
 --------> r02 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
-test.ex in "+nocache2"? no (end of list)
+test.ex in domains?
+ list element: +nocache2
+  start sublist nocache2
+   test.ex in "+nocache"?
+   ╎list element: +nocache
+   ╎ start sublist nocache
+   ╎  test.ex in "userx"?
+   ╎   list element: userx
+   ╎  test.ex in "userx"? no (end of list)
+   ╎ end sublist nocache
+   test.ex in "+nocache"? no (end of list)
+  end sublist nocache2
+test.ex in domains? no (end of list)
 r02 router skipped: domains mismatch
 --------> r03 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+nocache"? no (end of list)
-test.ex in "+nocache2"? no (end of list)
+test.ex in domains?
+ list element: +nocache2
+  start sublist nocache2
+   test.ex in "+nocache"?
+   ╎list element: +nocache
+   ╎ start sublist nocache
+   ╎  test.ex in "userx"?
+   ╎   list element: userx
+   ╎  test.ex in "userx"? no (end of list)
+   ╎ end sublist nocache
+   test.ex in "+nocache"? no (end of list)
+  end sublist nocache2
+test.ex in domains? no (end of list)
 r03 router skipped: domains mismatch
 --------> r04 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "userx"? no (end of list)
-test.ex in "+forcecache"? no (end of list)
+test.ex in domains?
+ list element: +forcecache
+  start sublist forcecache
+   test.ex in "userx"?
+   ╎list element: userx
+   test.ex in "userx"? no (end of list)
+  end sublist forcecache
+test.ex in domains? no (end of list)
 r04 router skipped: domains mismatch
 --------> r05 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached no match for +forcecache
-cached lookup data = NULL
-test.ex in "+forcecache"? no (end of list)
+test.ex in domains?
+ list element: +forcecache
+  start sublist forcecache
+ cached no match for +forcecache
+ cached lookup data = NULL
+test.ex in domains? no (end of list)
 r05 router skipped: domains mismatch
 --------> r1 router <--------
 local_part=userx domain=test.ex
 checking domains
-test.ex in "never.ex"? no (end of list)
-test.ex in "never1.ex"? no (end of list)
-test.ex in "test.ex"? yes (matched "test.ex")
-data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
-test.ex in "+never_domains : +n1_domains : ! +local_domains"? no (matched "! +local_domains")
+test.ex in domains?
+ list element: +never_domains
+  start sublist never_domains
+   test.ex in "never.ex"?
+   ╎list element: never.ex
+   test.ex in "never.ex"? no (end of list)
+  end sublist never_domains
+ list element: +n1_domains
+  start sublist n1_domains
+   test.ex in "never1.ex"?
+   ╎list element: never1.ex
+   test.ex in "never1.ex"? no (end of list)
+  end sublist n1_domains
+ list element: !░+local_domains
+  start sublist local_domains
+   test.ex in "test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex"? yes (matched "test.ex")
+  end sublist local_domains
+ data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
+ test.ex in domains? no (matched "! +local_domains")
 r1 router skipped: domains mismatch
 --------> r2 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached no match for +never_domains
-cached lookup data = NULL
-cached no match for +n1_domains
-cached lookup data = NULL
-test.ex in "<; never2.ex ; +n1_domains"? no (end of list)
-cached yes match for +local_domains
-cached lookup data = test.ex
-test.ex in "+never_domains : +n2_domains : !+local_domains"? no (matched "!+local_domains" - cached)
+test.ex in domains?
+ list element: +never_domains
+  start sublist never_domains
+ cached no match for +never_domains
+ cached lookup data = NULL
+ list element: +n2_domains
+  start sublist n2_domains
+   list separator: ';'
+   test.ex in " never2.ex ; +n1_domains"?
+   ╎list element: never2.ex
+   ╎list element: +n1_domains
+   ╎ start sublist n1_domains
+   ╎cached no match for +n1_domains
+   ╎cached lookup data = NULL
+   test.ex in " never2.ex ; +n1_domains"? no (end of list)
+  end sublist n2_domains
+ list element: !+local_domains
+  start sublist local_domains
+ cached yes match for +local_domains
+ cached lookup data = test.ex
+ test.ex in domains? no (matched "!+local_domains" - cached)
 r2 router skipped: domains mismatch
 --------> r3 router <--------
 local_part=userx domain=test.ex
 checking domains
-cached yes match for +local_domains
-cached lookup data = test.ex
-test.ex in "+local_domains"? yes (matched "+local_domains" - cached)
+test.ex in domains?
+ list element: +local_domains
+  start sublist local_domains
+ cached yes match for +local_domains
+ cached lookup data = test.ex
+ test.ex in domains? yes (matched "+local_domains" - cached)
 checking local_parts
-userx in "userx"? yes (matched "userx")
+userx in local_parts?
+ list element: userx
+ userx in local_parts? yes (matched "userx")
 calling r3 router
 r3 router called for userx@test.ex
   domain = test.ex
@@ -269,8 +447,8 @@ domain = test.ex
   errors_to=NULL
   domain_data=test.ex local_part_data=userx
 routed by r3 router
-  envelope to: userx@test.ex
-  transport: t1
+  envelope to:	userx@test.ex
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -281,17 +459,12 @@ After routing:
 search_tidyup called
 >>>>>>>>>>>>>>>> Local deliveries >>>>>>>>>>>>>>>>
 --------> userx@test.ex <--------
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 search_tidyup called
 changed uid/gid: local delivery to userx <userx@test.ex> transport=t1
   uid=CALLER_UID gid=CALLER_GID pid=p1237
   home=NULL current=/
-set_process_info: pppp delivering 10HmaX-0005vi-00 to userx using t1
+set_process_info: pppp delivering 10HmaX-000000005vi-0000 to userx using t1
 appendfile transport entered
 appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   file=/dev/null format=unix
@@ -300,6 +473,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   maildir_use_size_file=no
   locking by lockfile fcntl 
 search_tidyup called
+>>>>>>>>>>>>>>>> Exim pid=p1237 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 journalling userx@test.ex
 t1 transport returned OK for userx@test.ex
 post-process userx@test.ex (0)
@@ -309,12 +483,12 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> deliveries are done >>>>>>>>>>>>>>>>
 changed uid/gid: post-delivery tidying
   uid=EXIM_UID gid=EXIM_GID pid=p1236
-set_process_info: pppp tidying up after delivering 10HmaX-0005vi-00
+set_process_info: pppp tidying up after delivering 10HmaX-000000005vi-0000
 Processing retry items
-Succeeded addresses:
- userx@test.ex: no retry items
-Failed addresses:
-Deferred addresses:
+ Succeeded addresses:
+  userx@test.ex: no retry items
+ Failed addresses:
+ Deferred addresses:
 end of retry processing
 DSN: processing router : r3
 DSN: processing successful delivery address: userx@test.ex
@@ -326,13 +500,14 @@ DSN: Remote SMTP server supports DSN: 0
 DSN: not sending DSN success message
 LOG: MAIN
   Completed
-end delivery of 10HmaX-0005vi-00
+end delivery of 10HmaX-000000005vi-0000
 search_tidyup called
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1238
 configuration file is TESTSUITE/test-config
@@ -359,6 +534,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< HELO test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [127.0.0.1]
 sender_rcvhost = [127.0.0.1] (helo=test)
@@ -369,34 +547,54 @@ spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< RCPT TO:<error@test.ex>
-test.ex in "! *.ex"? no (matched "! *.ex")
-test.ex in "test.ex"? yes (matched "test.ex")
-test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
-processing "accept" (TESTSUITE/test-config 102)
+test.ex in percent_hack_domains?
+ list element: +hold_domains
+  start sublist hold_domains
+   test.ex in "! *.ex"?
+   ╎list element: !░*.ex
+   ╎test.ex in "! *.ex"? no (matched "! *.ex")
+  end sublist hold_domains
+ list element: +not_queue_domains
+  start sublist not_queue_domains
+   test.ex in "test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex"? yes (matched "test.ex")
+  end sublist not_queue_domains
+ test.ex in percent_hack_domains? yes (matched "+not_queue_domains")
+processing inline ACL "accept"
 check verify = recipient
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying error@test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering error@test.ex
-cached no match for +hold_domains
-cached yes match for +not_queue_domains
-test.ex in percent_hack_domains? yes (matched "+not_queue_domains" - cached)
+test.ex in percent_hack_domains?
+ list element: +hold_domains
+  start sublist hold_domains
+ cached no match for +hold_domains
+ list element: +not_queue_domains
+  start sublist not_queue_domains
+ cached yes match for +not_queue_domains
+ test.ex in percent_hack_domains? yes (matched "+not_queue_domains" - cached)
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing error@test.ex
 --------> r0f router <--------
 local_part=error domain=test.ex
 checking domains
+test.ex in domains?
+ list element: +no_such_list
+  start sublist no_such_list
 LOG: MAIN PANIC
   unknown named domain list "+no_such_list"
+  test.ex in domains? list match deferred for +no_such_list
 domains check lookup or other defer
------------ end verify ------------
-accept: condition test deferred in inline ACL
+  ----------- end verify ------------
+  accept: condition test deferred in inline ACL
 SMTP>> 451 Temporary local problem - please try later
 LOG: MAIN REJECT
   H=(test) [127.0.0.1] F=<test@test.ex> temporarily rejected RCPT <error@test.ex>: domains check lookup or other defer
 SMTP<< QUIT
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [127.0.0.1] closed by QUIT
-search_tidyup called
+  SMTP connection from (test) [127.0.0.1] D=qqs closed by QUIT
+  search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

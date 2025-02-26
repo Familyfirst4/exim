@@ -18,6 +18,8 @@ primary_hostname = myhost.test.ex
 # ----- Main settings -----
 
 dmarc_tld_file = DIR/aux-fixed/TESTNUM.tldfile
+dmarc_history_file = DIR/tmp/TESTNUM.hist.dmarc
+dkim_verify_hashes = sha256 : sha512 : sha1
 
 acl_smtp_rcpt = accept
 acl_smtp_data = check_data
@@ -34,6 +36,8 @@ check_data:
 		logwrite =	dmarc_status_text <$dmarc_status_text>
 		logwrite =	dmarc_used_domain <$dmarc_used_domain>
 		logwrite =	dmarc_domain_policy <$dmarc_domain_policy>
+		logwrite =	dmarc_alignment_spf <$dmarc_alignment_spf>
+		logwrite =	dmarc_alignment_dkim <$dmarc_alignment_dkim>
 		logwrite =	${authresults {$primary_hostname}}
 
 # End

@@ -6,10 +6,106 @@ Before a formal release, there may be quite a lot of detail so that people can
 test from the snapshots or the Git before the documentation is updated. Once
 the documentation is updated, this file is reduced to a short list.
 
+Version 4.98
+------------
+ 1. A sieve_inbox option for redirect routers
+
+ 2. A "connection_id" variable
+
+ 3. Events smtp:fail:protocol and smtp:fail:syntax
+
+ 4. Support for Exim- and Sieve filters can be omitted at build time
+
+ 5. JSON and LDAP lookup support, both filter types, PAM, RADIUS, perl, SPF,
+    DKIM, DMARC and ARC support, all the router and authenticator drivers,
+    and all the transport drivers except smtp, can now be built as loadable
+    modules
+
+ 6. A transport "socks_proxy" may expand to an empty string, specifying no
+    proxying
+
+ 7. Variables $dmarc_alignment_spf and $dmarc_alignment_dkim
+
+ 8. ATRN support, both provider and customer
+
+ 9. IPv6 address support for mysql and pgsql lookups
+
+ 10. Cutthrough deliveries and recipient verifies can use an envelope-from
+     specified by a transport
+
+ 11. Options hosts_randomize in manualroute router and smtp transport are
+     now expanded
+
+ 12. Options fallback_hosts in smtp transport and in all routers are now
+     expanded
+
+ 13. Support SRV records specifying TLS availability per
+     https://www.ietf.org/archive/id/draft-nurpmeso-smtp-tls-srv-00.html
+
+ 14. Main-section option "log_ports" to filter logged port numbers
+
+ 15. Additional delivery log line element, under the "protocol detail" control,
+     giving the smtp protocol startup sequence
+
+ 16. Log selector "tls_on_connect" to give distinguishable protocol labels
+     for that case in received log lines. Also affects $received_protocol
+
+Version 4.98
+------------
+ 1. The dkim_status ACL condition may now be used in data ACLs
+
+ 2. The dkim_verbose logging control also enables logging of signing
+
+ 3. The dkim_timestamps signing option now accepts zero to include a current
+    timestamp but no expiry timestamp.  Code by Simon Arlott; testsuite
+    additions by jgh
+
+ 4. The recipients_max main option is now expanded
+
+ 5. Setting variables for "exim -be" can set a tainted value
+
+ 6. A dns:fail event
+
+ 7. The dsearch lookup supports search for a sub-path
+
+ 8. Include mailtest utility for simple connection checking
+
+ 9. Add SMTP WELLKNOWN extension
+
+ 10. Sqlite3 can be used for the hints databases (vs. DBD, NDB, GBDM, TDB).
+     Add "USE_SQLITE = y" and "DBMLIB = -lsqlite3" in Local/Makefile, to
+     override the settings done in the OS/Makefile-<platform> file
+
 Version 4.97
 ------------
 
- 1. The expansion-test faciility (exim -be) can set variables.
+ 1. The expansion-test facility (exim -be) can set variables.
+
+ 2. An event on a failing SMTP AUTH, for both client and server operations.
+
+ 3. Variable $sender_helo_verified with the result of an ACL "verify = helo".
+
+ 4. Predefined macros for expansion items, operators, conditions and variables.
+
+ 5. The smtp transport option "max_rcpt" is now expanded before use.
+
+ 6. The tls_eccurve option for OpenSSL now takes a list of group names.
+
+ 7. Queue runners for several queues can now be started from one daemon.
+
+ 8. New utility exim_msgdate converts message-ids to human readable format.
+
+ 9. An expansion operator for wrapping long header lines.
+
+ 10. A commandline option to print just the message IDs of the queue
+
+ 11. An option for the ${readsocket } expansion to set an SNI for TLS.
+
+ 12. The ACL remove_header modifier can take a pattern.
+
+ 13. Variable $recipients_list, a properly-quoted exim list.
+
+ 14. A log_selector for an incoming connection ID.
 
 Version 4.96
 ------------
@@ -1164,7 +1260,7 @@ Version 4.68
 
  9. There is a new ACL, specified by acl_smtp_notquit, which is run in most
     cases when an SMTP session ends without sending QUIT. However, when Exim
-    itself is is bad trouble, such as being unable to write to its log files,
+    itself is in bad trouble, such as being unable to write to its log files,
     this ACL is not run, because it might try to do things (such as write to
     log files) that make the situation even worse.
 

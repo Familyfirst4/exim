@@ -2,9 +2,10 @@
 *                 Exim Monitor                   *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "em_hdr.h"
@@ -65,18 +66,16 @@ address is lowercased to start with, unless it begins with
 "*", which it does for error messages. */
 
 dest_item *
-find_dest(queue_item *q, uschar *name, int action, BOOL caseless)
+find_dest(queue_item * q, const uschar * name, int action, BOOL caseless)
 {
-dest_item *dd;
-dest_item **d = &(q->destinations);
+dest_item * dd;
+dest_item ** d = &q->destinations;
 
-while (*d != NULL)
+while (*d)
   {
   if ((caseless? strcmpic(name,(*d)->address) : Ustrcmp(name,(*d)->address))
         == 0)
     {
-    dest_item *ddd;
-
     if (action != dest_remove) return *d;
     dd = *d;
     *d = dd->next;
@@ -84,14 +83,12 @@ while (*d != NULL)
 
     /* Unset any parent pointers that were to this address */
 
-    for (ddd = q->destinations; ddd != NULL; ddd = ddd->next)
-      {
+    for (dest_item * ddd = q->destinations; ddd; ddd = ddd->next)
       if (ddd->parent == dd) ddd->parent = NULL;
-      }
 
     return NULL;
     }
-  d = &((*d)->next);
+  d = &(*d)->next;
   }
 
 if (action != dest_add) return NULL;
@@ -135,9 +132,9 @@ so this is a cut-down version, to save including the whole acl.c module (which
 would need conditional compilation to cut most of it out). */
 
 tree_node *
-acl_var_create(uschar *name)
+acl_var_create(const uschar * name)
 {
-tree_node *node, **root;
+tree_node * node, ** root;
 root = name[0] == 'c' ? &acl_var_c : &acl_var_m;
 node = store_get(sizeof(tree_node) + Ustrlen(name), GET_UNTAINTED);
 Ustrcpy(node->name, name);
@@ -153,7 +150,7 @@ return node;
 *************************************************/
 
 static queue_item *
-set_up(uschar *name, int dir_char)
+set_up(uschar * name, int dir_char)
 {
 int i, rc, save_errno;
 struct stat statdata;
@@ -166,7 +163,8 @@ uschar buffer[256];
 
 q->next = q->prev = NULL;
 q->destinations = NULL;
-Ustrncpy(q->name, name, sizeof(q->name));
+Ustrncpy(q->name, name, sizeof(q->name)-1);
+q->name[sizeof(q->name)-1] = '\0';
 q->seen = TRUE;
 q->frozen = FALSE;
 q->dir_char = dir_char;
@@ -206,8 +204,9 @@ if it's there. */
 else
   {
   q->update_time = q->input_time = received_time.tv_sec;
-  if ((p = strstric(sender_address+1, qualify_domain, FALSE)) != NULL &&
-    *(--p) == '@') *p = 0;
+  /* deconst ok; strstric is actually safe */
+  if ((p = strstric(US sender_address+1, qualify_domain, FALSE)) != NULL &&
+    *--p == '@') *p = 0;
   }
 
 /* If we didn't read the whole header successfully, generate an error
@@ -270,18 +269,19 @@ sender_address = NULL;
 snprintf(CS buffer, sizeof(buffer), "%s/input/%s/%s/%s-D",
   spool_directory, queue_name, message_subdir, name);
 if (Ustat(buffer, &statdata) == 0)
-  q->size = message_size + statdata.st_size - SPOOL_DATA_START_OFFSET + 1;
+  q->size = message_size + statdata.st_size - spool_data_start_offset(name) + 1;
 
 /* Scan and process the recipients list, skipping any that have already
 been delivered, and removing visible names. */
 
-if (recipients_list != NULL)
+if (recipients_list)
   for (i = 0; i < recipients_count; i++)
     {
-    uschar *r = recipients_list[i].address;
+    const uschar * r = recipients_list[i].address;
     if (tree_search(tree_nonrecipients, r) == NULL)
       {
-      if ((p = strstric(r+1, qualify_domain, FALSE)) != NULL &&
+      /* deconst ok; strstric is actually safe */
+      if ((p = strstric(US r+1, qualify_domain, FALSE)) != NULL &&
         *(--p) == '@') *p = 0;
       (void)find_dest(q, r, dest_add, FALSE);
       }
@@ -662,13 +662,14 @@ if (recipients_list)
   for (i = 0; i < recipients_count; i++)
     {
     uschar * pp;
-    uschar * r = recipients_list[i].address;
+    const uschar * r = recipients_list[i].address;
     tree_node * node;
 
     if (!(node = tree_search(tree_nonrecipients, r)))
       node = tree_search(tree_nonrecipients, string_copylc(r));
 
-    if ((pp = strstric(r+1, qualify_domain, FALSE)) && *(--pp) == '@')
+    /* deconst ok; strstric is actually safe */
+    if ((pp = strstric(US r+1, qualify_domain, FALSE)) && *(--pp) == '@')
        *pp = 0;
     if (!node)
       (void)find_dest(p, r, dest_add, FALSE);

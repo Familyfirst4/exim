@@ -1,424 +1,570 @@
 Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ USER=CALLER
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
- ╭considering: primary_hostname: $primary_hostname
- ├───────text: primary_hostname: 
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
+ ╭considering: primary_hostname:░$primary_hostname
+ ├───────text: primary_hostname:░
  ├considering: $primary_hostname
- ├──expanding: primary_hostname: $primary_hostname
- ╰─────result: primary_hostname: myhost.test.ex
- ╭considering: sender_address: $sender_address
- ├───────text: sender_address: 
+ ├──────value: myhost.test.ex
+ ├───expanded: primary_hostname:░$primary_hostname
+ ╰─────result: primary_hostname:░myhost.test.ex
+ ╭considering: sender_address:░$sender_address
+ ├───────text: sender_address:░
  ├considering: $sender_address
- ├──expanding: sender_address: $sender_address
- ╰─────result: sender_address: sndr@dom
+ ├──────value: sndr@dom
             ╰──(tainted)
- ╭considering: match:  ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
- ├───────text: match:  
- ├considering: ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ╭considering: abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├───────text: abcd
-  ├considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├──expanding: abcd
-  ╰─────result: abcd
-  ╭considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├──protected: ^([ab]+)(\w+)$
-  ├considering: }{$2$1}fail}
-  ├──expanding: \N^([ab]+)(\w+)$\N
-  ╰─────result: ^([ab]+)(\w+)$
- compiled RE '^([ab]+)(\w+)$' not found in local cache
- compiling RE '^([ab]+)(\w+)$'
- compiled RE '^([ab]+)(\w+)$' saved in local cache
+ ├───expanded: sender_address:░$sender_address
+ ╰─────result: sender_address:░sndr@dom
+            ╰──(tainted)
+ ╭considering: match:░░${if░match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+ ├───────text: match:░░
+ ├considering: ${if░match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+  cond: match
+   ╭considering: abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├───────text: abcd
+   ├considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├───expanded: abcd
+   ╰─────result: abcd
+   ╭considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├──protected: ^([ab]+)(\w+)$
+   ├considering: }{$2$1}fail}
+   ├───expanded: \N^([ab]+)(\w+)$\N
+   ╰─────result: ^([ab]+)(\w+)$
+  compiled RE '^([ab]+)(\w+)$' not found in local cache
+  compiling RE '^([ab]+)(\w+)$'
+  compiled RE '^([ab]+)(\w+)$' saved in local cache
  ├──condition: match{abcd}{\N^([ab]+)(\w+)$\N}
  ├─────result: true
   ╭considering: $2$1}fail}
+  ├──────value: cd
   ├considering: $1}fail}
+  ├──────value: ab
   ├considering: }fail}
-  ├──expanding: $2$1
+  ├───expanded: $2$1
   ╰─────result: cdab
  ├───item-res: cdab
- ├──expanding: match:  ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
- ╰─────result: match:  cdab
- ╭considering: match:  ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
- ├───────text: match:  
- ├considering: ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ╭considering: wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├───────text: wxyz
-  ├considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├──expanding: wxyz
-  ╰─────result: wxyz
-  ╭considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
-  ├──protected: ^([ab]+)(\w+)$
-  ├considering: }{$2$1}fail}
-  ├──expanding: \N^([ab]+)(\w+)$\N
-  ╰─────result: ^([ab]+)(\w+)$
- compiled RE '^([ab]+)(\w+)$' found in local cache
+ ├───expanded: match:░░${if░match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+ ╰─────result: match:░░cdab
+ ╭considering: match:░░${if░match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+ ├───────text: match:░░
+ ├considering: ${if░match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+  cond: match
+   ╭considering: wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├───────text: wxyz
+   ├considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├───expanded: wxyz
+   ╰─────result: wxyz
+   ╭considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
+   ├──protected: ^([ab]+)(\w+)$
+   ├considering: }{$2$1}fail}
+   ├───expanded: \N^([ab]+)(\w+)$\N
+   ╰─────result: ^([ab]+)(\w+)$
+  compiled RE '^([ab]+)(\w+)$' found in local cache
  ├──condition: match{wxyz}{\N^([ab]+)(\w+)$\N}
  ├─────result: false
   ╭───scanning: $2$1}fail}
   ├───scanning: $1}fail}
   ├───scanning: }fail}
-  ├──expanding: $2$1
-  ├─────result: 
+  ├───expanded: $2$1
+  ├─────result:  ◀skipped▶
   ╰───skipping: result is not used
  ├failed to expand: match:  ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
  ├───error message: "if" failed and "fail" requested
  ╰failure was forced
- ╭considering: ${if eq {1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  ╭considering: 1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  ├───────text: 1
-  ├considering: }{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  ├──expanding: 1
-  ╰─────result: 1
-  ╭considering: 1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  ├───────text: 1
-  ├considering: }{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  ├──expanding: 1
-  ╰─────result: 1
- ├──condition: eq {1}{1}
+ ╭considering: ${if░eq░{1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+  cond: eq
+   ╭considering: 1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   ├───────text: 1
+   ├considering: }{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   ├───expanded: 1
+   ╰─────result: 1
+   ╭considering: 1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   ├───────text: 1
+   ├considering: }{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   ├───expanded: 1
+   ╰─────result: 1
+ ├──condition: eq░{1}{1}
  ├─────result: true
   ╭considering: yes}{${lookup{xx}lsearch{/non/exist}}}}
   ├───────text: yes
   ├considering: }{${lookup{xx}lsearch{/non/exist}}}}
-  ├──expanding: yes
+  ├───expanded: yes
   ╰─────result: yes
   ╭───scanning: ${lookup{xx}lsearch{/non/exist}}}}
    ╭───scanning: xx}lsearch{/non/exist}}}}
    ├───────text: xx
    ├───scanning: }lsearch{/non/exist}}}}
-   ├──expanding: xx
-   ├─────result: xx
+   ├───expanded: xx
+   ├─────result:  ◀skipped▶
    ╰───skipping: result is not used
    ╭───scanning: /non/exist}}}}
    ├───────text: /non/exist
    ├───scanning: }}}}
-   ├──expanding: /non/exist
-   ├─────result: /non/exist
+   ├───expanded: /non/exist
+   ├─────result:  ◀skipped▶
    ╰───skipping: result is not used
   ├───scanning: }}
-  ├──expanding: ${lookup{xx}lsearch{/non/exist}}
-  ├─────result: 
+  ├───expanded: ${lookup{xx}lsearch{/non/exist}}
+  ├─────result:  ◀skipped▶
   ╰───skipping: result is not used
- ├──expanding: ${if eq {1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+ ├───expanded: ${if░eq░{1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
  ╰─────result: yes
- ╭considering: match_address:   ${if match_address{a.b.c}{a.b.c}{yes}{no}}
- ├───────text: match_address:   
- ├considering: ${if match_address{a.b.c}{a.b.c}{yes}{no}}
-  ╭considering: a.b.c}{a.b.c}{yes}{no}}
-  ├───────text: a.b.c
-  ├considering: }{a.b.c}{yes}{no}}
-  ├──expanding: a.b.c
-  ╰─────result: a.b.c
-  ╭considering: a.b.c}{yes}{no}}
-  ├───────text: a.b.c
-  ├considering: }{yes}{no}}
-  ├──expanding: a.b.c
-  ╰─────result: a.b.c
+ ╭considering: match_address:░░░${if░match_address{a.b.c}{a.b.c}{yes}{no}}
+ ├───────text: match_address:░░░
+ ├considering: ${if░match_address{a.b.c}{a.b.c}{yes}{no}}
+  cond: match_address
+   ╭considering: a.b.c}{a.b.c}{yes}{no}}
+   ├───────text: a.b.c
+   ├considering: }{a.b.c}{yes}{no}}
+   ├───expanded: a.b.c
+   ╰─────result: a.b.c
+   ╭considering: a.b.c}{yes}{no}}
+   ├───────text: a.b.c
+   ├considering: }{yes}{no}}
+   ├───expanded: a.b.c
+   ╰─────result: a.b.c
 LOG: MAIN PANIC
   no @ found in the subject of an address list match: subject="a.b.c" pattern="a.b.c"
+  a.b.c in "a.b.c"? no (end of list)
  ├──condition: match_address{a.b.c}{a.b.c}
  ├─────result: false
   ╭───scanning: yes}{no}}
   ├───────text: yes
   ├───scanning: }{no}}
-  ├──expanding: yes
-  ├─────result: yes
+  ├───expanded: yes
+  ├─────result:  ◀skipped▶
   ╰───skipping: result is not used
   ╭considering: no}}
   ├───────text: no
   ├considering: }}
-  ├──expanding: no
+  ├───expanded: no
   ╰─────result: no
  ├───item-res: no
- ├──expanding: match_address:   ${if match_address{a.b.c}{a.b.c}{yes}{no}}
- ╰─────result: match_address:   no
+ ├───expanded: match_address:░░░${if░match_address{a.b.c}{a.b.c}{yes}{no}}
+ ╰─────result: match_address:░░░no
+ ╭considering: protected:░${expand:\N░\N}
+ ├───────text: protected:░
+ ├considering: ${expand:\N░\N}
+  ╭considering: \N░\N}
+  ├──protected: ░
+  ├considering: }
+  ├───expanded: \N░\N
+  ╰─────result: ░
+  ╭considering: ░
+  ├───────text: ░
+  ├───expanded: ░
+  ╰─────result: ░
+ ├─────op-res:  
+ ├───expanded: protected:░${expand:\N░\N}
+ ╰─────result: protected:░░
+ ╭considering: expand:░SHOULD░FAIL░TAINT░${expand:$sender_address}
+ ├───────text: expand:░SHOULD░FAIL░TAINT░
+ ├considering: ${expand:$sender_address}
+  ╭considering: $sender_address}
+  ├──────value: sndr@dom
+             ╰──(tainted)
+  ├considering: }
+  ├───expanded: $sender_address
+  ╰─────result: sndr@dom
+             ╰──(tainted)
+LOG: MAIN PANIC
+  attempt to expand tainted string 'sndr@dom'
+  ├failed to expand: sndr@dom
+  ╰───error message: attempt to expand tainted string 'sndr@dom'
+ ├failed to expand: expand: SHOULD FAIL TAINT ${expand:$sender_address}
+ ╰───error message: internal expansion of "sndr@dom" failed: attempt to expand tainted string 'sndr@dom'
+ ╭considering: hash:░░░SHOULD░FAIL░TAINT░${hash{$sender_address}{monty}}
+ ├───────text: hash:░░░SHOULD░FAIL░TAINT░
+ ├considering: ${hash{$sender_address}{monty}}
+  ╭considering: $sender_address}{monty}}
+  ├──────value: sndr@dom
+             ╰──(tainted)
+  ├considering: }{monty}}
+  ├───expanded: $sender_address
+  ╰─────result: sndr@dom
+             ╰──(tainted)
+  ╭considering: monty}}
+  ├───────text: monty
+  ├considering: }}
+  ├───expanded: monty
+  ╰─────result: monty
+LOG: MAIN PANIC
+  attempt to use tainted string 'sndr@dom' for hash
+ ├failed to expand: hash:   SHOULD FAIL TAINT ${hash{$sender_address}{monty}}
+ ╰───error message: attempt to use tainted string 'sndr@dom' for hash
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ USER=CALLER
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
  /considering: primary_hostname: $primary_hostname
  |-------text: primary_hostname: 
  |considering: $primary_hostname
- |--expanding: primary_hostname: $primary_hostname
+ |------value: myhost.test.ex
+ |---expanded: primary_hostname: $primary_hostname
  \_____result: primary_hostname: myhost.test.ex
  /considering: match:  ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
  |-------text: match:  
  |considering: ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  /considering: abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |-------text: abcd
-  |considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |--expanding: abcd
-  \_____result: abcd
-  /considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |--protected: ^([ab]+)(\w+)$
-  |considering: }{$2$1}fail}
-  |--expanding: \N^([ab]+)(\w+)$\N
-  \_____result: ^([ab]+)(\w+)$
- compiled RE '^([ab]+)(\w+)$' not found in local cache
- compiling RE '^([ab]+)(\w+)$'
- compiled RE '^([ab]+)(\w+)$' saved in local cache
+  cond: match
+   /considering: abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |-------text: abcd
+   |considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |---expanded: abcd
+   \_____result: abcd
+   /considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |--protected: ^([ab]+)(\w+)$
+   |considering: }{$2$1}fail}
+   |---expanded: \N^([ab]+)(\w+)$\N
+   \_____result: ^([ab]+)(\w+)$
+  compiled RE '^([ab]+)(\w+)$' not found in local cache
+  compiling RE '^([ab]+)(\w+)$'
+  compiled RE '^([ab]+)(\w+)$' saved in local cache
  |--condition: match{abcd}{\N^([ab]+)(\w+)$\N}
  |-----result: true
   /considering: $2$1}fail}
+  |------value: cd
   |considering: $1}fail}
+  |------value: ab
   |considering: }fail}
-  |--expanding: $2$1
+  |---expanded: $2$1
   \_____result: cdab
  |---item-res: cdab
- |--expanding: match:  ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+ |---expanded: match:  ${if match{abcd}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
  \_____result: match:  cdab
  /considering: match:  ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
  |-------text: match:  
  |considering: ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  /considering: wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |-------text: wxyz
-  |considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |--expanding: wxyz
-  \_____result: wxyz
-  /considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
-  |--protected: ^([ab]+)(\w+)$
-  |considering: }{$2$1}fail}
-  |--expanding: \N^([ab]+)(\w+)$\N
-  \_____result: ^([ab]+)(\w+)$
- compiled RE '^([ab]+)(\w+)$' found in local cache
+  cond: match
+   /considering: wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |-------text: wxyz
+   |considering: }{\N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |---expanded: wxyz
+   \_____result: wxyz
+   /considering: \N^([ab]+)(\w+)$\N}{$2$1}fail}
+   |--protected: ^([ab]+)(\w+)$
+   |considering: }{$2$1}fail}
+   |---expanded: \N^([ab]+)(\w+)$\N
+   \_____result: ^([ab]+)(\w+)$
+  compiled RE '^([ab]+)(\w+)$' found in local cache
  |--condition: match{wxyz}{\N^([ab]+)(\w+)$\N}
  |-----result: false
   /---scanning: $2$1}fail}
   |---scanning: $1}fail}
   |---scanning: }fail}
-  |--expanding: $2$1
-  |-----result: 
+  |---expanded: $2$1
+  |-----result:  <skipped>
   \___skipping: result is not used
  |failed to expand: match:  ${if match{wxyz}{\N^([ab]+)(\w+)$\N}{$2$1}fail}
  |---error message: "if" failed and "fail" requested
  \failure was forced
  /considering: ${if eq {1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  /considering: 1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  |-------text: 1
-  |considering: }{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  |--expanding: 1
-  \_____result: 1
-  /considering: 1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  |-------text: 1
-  |considering: }{yes}{${lookup{xx}lsearch{/non/exist}}}}
-  |--expanding: 1
-  \_____result: 1
+  cond: eq
+   /considering: 1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   |-------text: 1
+   |considering: }{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   |---expanded: 1
+   \_____result: 1
+   /considering: 1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   |-------text: 1
+   |considering: }{yes}{${lookup{xx}lsearch{/non/exist}}}}
+   |---expanded: 1
+   \_____result: 1
  |--condition: eq {1}{1}
  |-----result: true
   /considering: yes}{${lookup{xx}lsearch{/non/exist}}}}
   |-------text: yes
   |considering: }{${lookup{xx}lsearch{/non/exist}}}}
-  |--expanding: yes
+  |---expanded: yes
   \_____result: yes
   /---scanning: ${lookup{xx}lsearch{/non/exist}}}}
    /---scanning: xx}lsearch{/non/exist}}}}
    |-------text: xx
    |---scanning: }lsearch{/non/exist}}}}
-   |--expanding: xx
-   |-----result: xx
+   |---expanded: xx
+   |-----result:  <skipped>
    \___skipping: result is not used
    /---scanning: /non/exist}}}}
    |-------text: /non/exist
    |---scanning: }}}}
-   |--expanding: /non/exist
-   |-----result: /non/exist
+   |---expanded: /non/exist
+   |-----result:  <skipped>
    \___skipping: result is not used
   |---scanning: }}
-  |--expanding: ${lookup{xx}lsearch{/non/exist}}
-  |-----result: 
+  |---expanded: ${lookup{xx}lsearch{/non/exist}}
+  |-----result:  <skipped>
   \___skipping: result is not used
- |--expanding: ${if eq {1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
+ |---expanded: ${if eq {1}{1}{yes}{${lookup{xx}lsearch{/non/exist}}}}
  \_____result: yes
  /considering: match_address:   ${if match_address{a.b.c}{a.b.c}{yes}{no}}
  |-------text: match_address:   
  |considering: ${if match_address{a.b.c}{a.b.c}{yes}{no}}
-  /considering: a.b.c}{a.b.c}{yes}{no}}
-  |-------text: a.b.c
-  |considering: }{a.b.c}{yes}{no}}
-  |--expanding: a.b.c
-  \_____result: a.b.c
-  /considering: a.b.c}{yes}{no}}
-  |-------text: a.b.c
-  |considering: }{yes}{no}}
-  |--expanding: a.b.c
-  \_____result: a.b.c
+  cond: match_address
+   /considering: a.b.c}{a.b.c}{yes}{no}}
+   |-------text: a.b.c
+   |considering: }{a.b.c}{yes}{no}}
+   |---expanded: a.b.c
+   \_____result: a.b.c
+   /considering: a.b.c}{yes}{no}}
+   |-------text: a.b.c
+   |considering: }{yes}{no}}
+   |---expanded: a.b.c
+   \_____result: a.b.c
 LOG: MAIN PANIC
   no @ found in the subject of an address list match: subject="a.b.c" pattern="a.b.c"
+  a.b.c in "a.b.c"? no (end of list)
  |--condition: match_address{a.b.c}{a.b.c}
  |-----result: false
   /---scanning: yes}{no}}
   |-------text: yes
   |---scanning: }{no}}
-  |--expanding: yes
-  |-----result: yes
+  |---expanded: yes
+  |-----result:  <skipped>
   \___skipping: result is not used
   /considering: no}}
   |-------text: no
   |considering: }}
-  |--expanding: no
+  |---expanded: no
   \_____result: no
  |---item-res: no
- |--expanding: match_address:   ${if match_address{a.b.c}{a.b.c}{yes}{no}}
+ |---expanded: match_address:   ${if match_address{a.b.c}{a.b.c}{yes}{no}}
  \_____result: match_address:   no
+ /considering: protected: ${expand:\N \N}
+ |-------text: protected: 
+ |considering: ${expand:\N \N}
+  /considering: \N \N}
+  |--protected:  
+  |considering: }
+  |---expanded: \N \N
+  \_____result:  
+  /considering:  
+  |-------text:  
+  |---expanded:  
+  \_____result:  
+ |-----op-res:  
+ |---expanded: protected: ${expand:\N \N}
+ \_____result: protected:  
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ USER=CALLER
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
- ╭considering: -oMa  sender_host_address = $sender_host_address
- ├───────text: -oMa  sender_host_address = 
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
+ ╭considering: -oMa░░sender_host_address░=░$sender_host_address
+ ├───────text: -oMa░░sender_host_address░=░
  ├considering: $sender_host_address
- ├──expanding: -oMa  sender_host_address = $sender_host_address
- ╰─────result: -oMa  sender_host_address = V4NET.0.0.1
+ ├──────value: V4NET.0.0.1
             ╰──(tainted)
- ╭considering:       sender_host_port = $sender_host_port
- ├───────text:       sender_host_port = 
+ ├───expanded: -oMa░░sender_host_address░=░$sender_host_address
+ ╰─────result: -oMa░░sender_host_address░=░V4NET.0.0.1
+            ╰──(tainted)
+ ╭considering: ░░░░░░sender_host_port░=░$sender_host_port
+ ├───────text: ░░░░░░sender_host_port░=░
  ├considering: $sender_host_port
- ├──expanding:       sender_host_port = $sender_host_port
- ╰─────result:       sender_host_port = 1234
- ╭considering: -oMaa sender_host_authenticated = $sender_host_authenticated
- ├───────text: -oMaa sender_host_authenticated = 
+ ├──────value: 1234
+ ├───expanded: ░░░░░░sender_host_port░=░$sender_host_port
+ ╰─────result: ░░░░░░sender_host_port░=░1234
+ ╭considering: -oMaa░sender_host_authenticated░=░$sender_host_authenticated
+ ├───────text: -oMaa░sender_host_authenticated░=░
  ├considering: $sender_host_authenticated
- ├──expanding: -oMaa sender_host_authenticated = $sender_host_authenticated
- ╰─────result: -oMaa sender_host_authenticated = AAA
+ ├──────value: AAA
             ╰──(tainted)
- ╭considering: -oMai authenticated_id = $authenticated_id
- ├───────text: -oMai authenticated_id = 
+ ├───expanded: -oMaa░sender_host_authenticated░=░$sender_host_authenticated
+ ╰─────result: -oMaa░sender_host_authenticated░=░AAA
+            ╰──(tainted)
+ ╭considering: -oMai░authenticated_id░=░$authenticated_id
+ ├───────text: -oMai░authenticated_id░=░
  ├considering: $authenticated_id
- ├──expanding: -oMai authenticated_id = $authenticated_id
- ╰─────result: -oMai authenticated_id = philip
+ ├──────value: philip
             ╰──(tainted)
- ╭considering: -oMas authenticated_sender = $authenticated_sender
- ├───────text: -oMas authenticated_sender = 
+ ├───expanded: -oMai░authenticated_id░=░$authenticated_id
+ ╰─────result: -oMai░authenticated_id░=░philip
+            ╰──(tainted)
+ ╭considering: -oMas░authenticated_sender░=░$authenticated_sender
+ ├───────text: -oMas░authenticated_sender░=░
  ├considering: $authenticated_sender
- ├──expanding: -oMas authenticated_sender = $authenticated_sender
- ╰─────result: -oMas authenticated_sender = xx@yy.zz
+ ├──────value: xx@yy.zz
             ╰──(tainted)
- ╭considering: -oMi  interface_address = $interface_address
- ├───────text: -oMi  interface_address = 
+ ├───expanded: -oMas░authenticated_sender░=░$authenticated_sender
+ ╰─────result: -oMas░authenticated_sender░=░xx@yy.zz
+            ╰──(tainted)
+ ╭considering: -oMi░░interface_address░=░$interface_address
+ ├───────text: -oMi░░interface_address░=░
  ├considering: $interface_address
- ├──expanding: -oMi  interface_address = $interface_address
- ╰─────result: -oMi  interface_address = 1.1.1.1
+ ├──────value: 1.1.1.1
             ╰──(tainted)
- ╭considering:       interface_port = $interface_port
- ├───────text:       interface_port = 
+ ├───expanded: -oMi░░interface_address░=░$interface_address
+ ╰─────result: -oMi░░interface_address░=░1.1.1.1
+            ╰──(tainted)
+ ╭considering: ░░░░░░interface_port░=░$interface_port
+ ├───────text: ░░░░░░interface_port░=░
  ├considering: $interface_port
- ├──expanding:       interface_port = $interface_port
- ╰─────result:       interface_port = 99
- ╭considering: -oMr  received_protocol = $received_protocol
- ├───────text: -oMr  received_protocol = 
+ ├──────value: 99
+ ├───expanded: ░░░░░░interface_port░=░$interface_port
+ ╰─────result: ░░░░░░interface_port░=░99
+ ╭considering: -oMr░░received_protocol░=░$received_protocol
+ ├───────text: -oMr░░received_protocol░=░
  ├considering: $received_protocol
- ├──expanding: -oMr  received_protocol = $received_protocol
- ╰─────result: -oMr  received_protocol = special
+ ├──────value: special
             ╰──(tainted)
- ╭considering: -oMt  sender_ident = $sender_ident
- ├───────text: -oMt  sender_ident = 
+ ├───expanded: -oMr░░received_protocol░=░$received_protocol
+ ╰─────result: -oMr░░received_protocol░=░special
+            ╰──(tainted)
+ ╭considering: -oMt░░sender_ident░=░$sender_ident
+ ├───────text: -oMt░░sender_ident░=░
  ├considering: $sender_ident
- ├──expanding: -oMt  sender_ident = $sender_ident
- ╰─────result: -oMt  sender_ident = me
+ ├──────value: me
+            ╰──(tainted)
+ ├───expanded: -oMt░░sender_ident░=░$sender_ident
+ ╰─────result: -oMt░░sender_ident░=░me
             ╰──(tainted)
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 1999-03-02 09:44:33 no host name found for IP address V4NET.11.12.13
 Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ USER=CALLER
 configuration file is TESTSUITE/test-config
 admin user
 dropping to exim gid; retaining priv uid
- ╭considering: -oMa  sender_host_address = $sender_host_address
- ├───────text: -oMa  sender_host_address = 
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
+ ╭considering: -oMa░░sender_host_address░=░$sender_host_address
+ ├───────text: -oMa░░sender_host_address░=░
  ├considering: $sender_host_address
- ├──expanding: -oMa  sender_host_address = $sender_host_address
- ╰─────result: -oMa  sender_host_address = V4NET.0.0.1
+ ├──────value: V4NET.0.0.1
             ╰──(tainted)
- ╭considering:       sender_host_port = $sender_host_port
- ├───────text:       sender_host_port = 
+ ├───expanded: -oMa░░sender_host_address░=░$sender_host_address
+ ╰─────result: -oMa░░sender_host_address░=░V4NET.0.0.1
+            ╰──(tainted)
+ ╭considering: ░░░░░░sender_host_port░=░$sender_host_port
+ ├───────text: ░░░░░░sender_host_port░=░
  ├considering: $sender_host_port
- ├──expanding:       sender_host_port = $sender_host_port
- ╰─────result:       sender_host_port = 1234
- ╭considering: -oMaa sender_host_authenticated = $sender_host_authenticated
- ├───────text: -oMaa sender_host_authenticated = 
+ ├──────value: 1234
+ ├───expanded: ░░░░░░sender_host_port░=░$sender_host_port
+ ╰─────result: ░░░░░░sender_host_port░=░1234
+ ╭considering: -oMaa░sender_host_authenticated░=░$sender_host_authenticated
+ ├───────text: -oMaa░sender_host_authenticated░=░
  ├considering: $sender_host_authenticated
- ├──expanding: -oMaa sender_host_authenticated = $sender_host_authenticated
- ╰─────result: -oMaa sender_host_authenticated = AAA
+ ├──────value: AAA
             ╰──(tainted)
- ╭considering: -oMai authenticated_id = $authenticated_id
- ├───────text: -oMai authenticated_id = 
+ ├───expanded: -oMaa░sender_host_authenticated░=░$sender_host_authenticated
+ ╰─────result: -oMaa░sender_host_authenticated░=░AAA
+            ╰──(tainted)
+ ╭considering: -oMai░authenticated_id░=░$authenticated_id
+ ├───────text: -oMai░authenticated_id░=░
  ├considering: $authenticated_id
- ├──expanding: -oMai authenticated_id = $authenticated_id
- ╰─────result: -oMai authenticated_id = philip
+ ├──────value: philip
             ╰──(tainted)
- ╭considering: -oMas authenticated_sender = $authenticated_sender
- ├───────text: -oMas authenticated_sender = 
+ ├───expanded: -oMai░authenticated_id░=░$authenticated_id
+ ╰─────result: -oMai░authenticated_id░=░philip
+            ╰──(tainted)
+ ╭considering: -oMas░authenticated_sender░=░$authenticated_sender
+ ├───────text: -oMas░authenticated_sender░=░
  ├considering: $authenticated_sender
- ├──expanding: -oMas authenticated_sender = $authenticated_sender
- ╰─────result: -oMas authenticated_sender = xx@yy.zz
+ ├──────value: xx@yy.zz
             ╰──(tainted)
- ╭considering: -oMi  interface_address = $interface_address
- ├───────text: -oMi  interface_address = 
+ ├───expanded: -oMas░authenticated_sender░=░$authenticated_sender
+ ╰─────result: -oMas░authenticated_sender░=░xx@yy.zz
+            ╰──(tainted)
+ ╭considering: -oMi░░interface_address░=░$interface_address
+ ├───────text: -oMi░░interface_address░=░
  ├considering: $interface_address
- ├──expanding: -oMi  interface_address = $interface_address
- ╰─────result: -oMi  interface_address = 1.1.1.1
+ ├──────value: 1.1.1.1
             ╰──(tainted)
- ╭considering:       interface_port = $interface_port
- ├───────text:       interface_port = 
+ ├───expanded: -oMi░░interface_address░=░$interface_address
+ ╰─────result: -oMi░░interface_address░=░1.1.1.1
+            ╰──(tainted)
+ ╭considering: ░░░░░░interface_port░=░$interface_port
+ ├───────text: ░░░░░░interface_port░=░
  ├considering: $interface_port
- ├──expanding:       interface_port = $interface_port
- ╰─────result:       interface_port = 99
- ╭considering: -oMr  received_protocol = $received_protocol
- ├───────text: -oMr  received_protocol = 
+ ├──────value: 99
+ ├───expanded: ░░░░░░interface_port░=░$interface_port
+ ╰─────result: ░░░░░░interface_port░=░99
+ ╭considering: -oMr░░received_protocol░=░$received_protocol
+ ├───────text: -oMr░░received_protocol░=░
  ├considering: $received_protocol
- ├──expanding: -oMr  received_protocol = $received_protocol
- ╰─────result: -oMr  received_protocol = special
+ ├──────value: special
             ╰──(tainted)
- ╭considering: ----> No lookup yet: ${if eq{black}{white}{$sender_host_name}{No}}
- ├───────text: ----> No lookup yet: 
- ├considering: ${if eq{black}{white}{$sender_host_name}{No}}
-  ╭considering: black}{white}{$sender_host_name}{No}}
-  ├───────text: black
-  ├considering: }{white}{$sender_host_name}{No}}
-  ├──expanding: black
-  ╰─────result: black
-  ╭considering: white}{$sender_host_name}{No}}
-  ├───────text: white
-  ├considering: }{$sender_host_name}{No}}
-  ├──expanding: white
-  ╰─────result: white
+ ├───expanded: -oMr░░received_protocol░=░$received_protocol
+ ╰─────result: -oMr░░received_protocol░=░special
+            ╰──(tainted)
+ ╭considering: ---->░No░lookup░yet:░${if░eq{black}{white}{$sender_host_name}{No}}
+ ├───────text: ---->░No░lookup░yet:░
+ ├considering: ${if░eq{black}{white}{$sender_host_name}{No}}
+  cond: eq
+   ╭considering: black}{white}{$sender_host_name}{No}}
+   ├───────text: black
+   ├considering: }{white}{$sender_host_name}{No}}
+   ├───expanded: black
+   ╰─────result: black
+   ╭considering: white}{$sender_host_name}{No}}
+   ├───────text: white
+   ├considering: }{$sender_host_name}{No}}
+   ├───expanded: white
+   ╰─────result: white
  ├──condition: eq{black}{white}
  ├─────result: false
   ╭───scanning: $sender_host_name}{No}}
+  ├──────value: 
   ├───scanning: }{No}}
-  ├──expanding: $sender_host_name
-  ├─────result: 
+  ├───expanded: $sender_host_name
+  ├─────result:  ◀skipped▶
   ╰───skipping: result is not used
   ╭considering: No}}
   ├───────text: No
   ├considering: }}
-  ├──expanding: No
+  ├───expanded: No
   ╰─────result: No
  ├───item-res: No
- ├──expanding: ----> No lookup yet: ${if eq{black}{white}{$sender_host_name}{No}}
- ╰─────result: ----> No lookup yet: No
- ╭considering: -oMs  sender_host_name = $sender_host_name
- ├───────text: -oMs  sender_host_name = 
+ ├───expanded: ---->░No░lookup░yet:░${if░eq{black}{white}{$sender_host_name}{No}}
+ ╰─────result: ---->░No░lookup░yet:░No
+ ╭considering: -oMs░░sender_host_name░=░$sender_host_name
+ ├───────text: -oMs░░sender_host_name░=░
  ├considering: $sender_host_name
-looking up host name for V4NET.0.0.1
-IP address lookup yielded "ten-1.test.ex"
-ten-1.test.ex V4NET.0.0.1 mx=-1 sort=xx 
-checking addresses for ten-1.test.ex
+ looking up host name for V4NET.0.0.1
+  IP address lookup yielded "ten-1.test.ex"
+  check dnssec require list
+  check dnssec request list
+  ten-1.test.ex V4NET.0.0.1 mx=-1 sort=xx 
+  checking addresses for ten-1.test.ex
   V4NET.0.0.1 OK
-sender_fullhost = ten-1.test.ex [V4NET.0.0.1]
-sender_rcvhost = ten-1.test.ex ([V4NET.0.0.1] ident=me)
- ├──expanding: -oMs  sender_host_name = $sender_host_name
- ╰─────result: -oMs  sender_host_name = ten-1.test.ex
+ sender_fullhost = ten-1.test.ex [V4NET.0.0.1]
+ sender_rcvhost = ten-1.test.ex ([V4NET.0.0.1] ident=me)
+ ├──────value: ten-1.test.ex
             ╰──(tainted)
- ╭considering: -oMt  sender_ident = $sender_ident
- ├───────text: -oMt  sender_ident = 
+ ├───expanded: -oMs░░sender_host_name░=░$sender_host_name
+ ╰─────result: -oMs░░sender_host_name░=░ten-1.test.ex
+            ╰──(tainted)
+ ╭considering: -oMt░░sender_ident░=░$sender_ident
+ ├───────text: -oMt░░sender_ident░=░
  ├considering: $sender_ident
- ├──expanding: -oMt  sender_ident = $sender_ident
- ╰─────result: -oMt  sender_ident = me
+ ├──────value: me
+            ╰──(tainted)
+ ├───expanded: -oMt░░sender_ident░=░$sender_ident
+ ╰─────result: -oMt░░sender_ident░=░me
             ╰──(tainted)
 >>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1238
 configuration file is TESTSUITE/test-config
@@ -441,44 +587,54 @@ host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
 host in helo_accept_junk_hosts? no (option unset)
 using ACL "connect1"
-processing "deny" (TESTSUITE/test-config 45)
+processing ACL connect1 "deny" (TESTSUITE/test-config 45)
 check hosts = <\n partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch \n 1.2.3.4
-sender host name required, to match against partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch
-looking up host name for V4NET.0.0.1
-DNS lookup of 1.0.0.V4NET.in-addr.arpa (PTR) using fakens
-DNS lookup of 1.0.0.V4NET.in-addr.arpa (PTR) succeeded
-IP address lookup yielded "ten-1.test.ex"
-DNS lookup of ten-1.test.ex (A) using fakens
-DNS lookup of ten-1.test.ex (A) succeeded
-ten-1.test.ex V4NET.0.0.1 mx=-1 sort=xx 
-checking addresses for ten-1.test.ex
-Forward DNS security status: unverified
+list separator: '↩
+'
+host in " partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch 
+ 1.2.3.4"?
+ list element: partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch
+ sender host name required, to match against partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch
+  looking up host name for V4NET.0.0.1
+   DNS lookup of 1.0.0.V4NET.in-addr.arpa (PTR) using fakens
+   DNS lookup of 1.0.0.V4NET.in-addr.arpa (PTR) succeeded
+   Reverse DNS security status: unverified
+   IP address lookup yielded "ten-1.test.ex"
+   check dnssec require list
+   ╎ten-1.test.ex not in empty list (option unset? cannot trace name)
+   check dnssec request list
+   ╎ten-1.test.ex not in empty list (option unset? cannot trace name)
+   DNS lookup of ten-1.test.ex (A) using fakens
+   DNS lookup of ten-1.test.ex (A) succeeded
+   ten-1.test.ex V4NET.0.0.1 mx=-1 sort=xx 
+   checking addresses for ten-1.test.ex
+   Forward DNS security status: unverified
   V4NET.0.0.1 OK
-sender_fullhost = ten-1.test.ex [V4NET.0.0.1]
-sender_rcvhost = ten-1.test.ex ([V4NET.0.0.1])
-search_open: lsearch "TESTSUITE/aux-fixed/0002.lsearch"
-search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
-  key="ten-1.test.ex" partial=2 affix=*. starflags=0 opts=NULL
-LRU list:
-  0TESTSUITE/aux-fixed/0002.lsearch
-  End
-internal_search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
-  type=lsearch key="ten-1.test.ex" opts=NULL
-file lookup required for ten-1.test.ex
-  in TESTSUITE/aux-fixed/0002.lsearch
-creating new cache entry
-lookup yielded: 
-host in "<
- partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch 
- 1.2.3.4"? yes (matched "partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch")
-deny: condition test succeeded in ACL "connect1"
-end of ACL "connect1": DENY
+ sender_fullhost = ten-1.test.ex [V4NET.0.0.1]
+ sender_rcvhost = ten-1.test.ex ([V4NET.0.0.1])
+ search_open: lsearch "TESTSUITE/aux-fixed/0002.lsearch"
+ search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
+   key="ten-1.test.ex" partial=2 affix=*. starflags=0 opts=NULL
+ LRU list:
+   0TESTSUITE/aux-fixed/0002.lsearch
+   End
+ internal_search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
+   type=lsearch key="ten-1.test.ex" opts=NULL
+ file lookup required for ten-1.test.ex
+   in TESTSUITE/aux-fixed/0002.lsearch
+ creating new cache entry
+ lookup yielded: 
+  host in " partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch 
+  1.2.3.4"? yes (matched "partial-lsearch;TESTSUITE/aux-fixed/0002.lsearch")
+deny: condition test succeeded in ACL connect1
+end of ACL connect1: DENY
 SMTP>> 550 Administrative prohibition
 LOG: connection_reject MAIN REJECT
   H=ten-1.test.ex [V4NET.0.0.1] rejected connection in "connect" ACL
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1239
 configuration file is TESTSUITE/test-config
@@ -501,23 +657,25 @@ host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
 host in helo_accept_junk_hosts? no (option unset)
 using ACL "connect2"
-processing "deny" (TESTSUITE/test-config 48)
+processing ACL connect2 "deny" (TESTSUITE/test-config 48)
 check hosts = net-lsearch;TESTSUITE/aux-fixed/0002.lsearch
-search_open: lsearch "TESTSUITE/aux-fixed/0002.lsearch"
-search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
-  key="V4NET.0.0.2" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-  0TESTSUITE/aux-fixed/0002.lsearch
-  End
-internal_search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
-  type=lsearch key="V4NET.0.0.2" opts=NULL
-file lookup required for V4NET.0.0.2
-  in TESTSUITE/aux-fixed/0002.lsearch
-creating new cache entry
-lookup failed
+host in "net-lsearch;TESTSUITE/aux-fixed/0002.lsearch"?
+ list element: net-lsearch;TESTSUITE/aux-fixed/0002.lsearch
+ search_open: lsearch "TESTSUITE/aux-fixed/0002.lsearch"
+ search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
+   key="V4NET.0.0.2" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+   0TESTSUITE/aux-fixed/0002.lsearch
+   End
+ internal_search_find: file="TESTSUITE/aux-fixed/0002.lsearch"
+   type=lsearch key="V4NET.0.0.2" opts=NULL
+ file lookup required for V4NET.0.0.2
+   in TESTSUITE/aux-fixed/0002.lsearch
+ creating new cache entry
+ lookup failed
 host in "net-lsearch;TESTSUITE/aux-fixed/0002.lsearch"? no (end of list)
-deny: condition test failed in ACL "connect2"
-end of ACL "connect2": implicit DENY
+deny: condition test failed in ACL connect2
+end of ACL connect2: implicit DENY
 SMTP>> 550 Administrative prohibition
 LOG: connection_reject MAIN REJECT
   H=[V4NET.0.0.2] rejected connection in "connect" ACL
@@ -532,84 +690,90 @@ search_tidyup called
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
 >>> using ACL "connect0"
->>> processing "accept" (TESTSUITE/test-config 42)
->>> accept: condition test succeeded in ACL "connect0"
->>> end of ACL "connect0": ACCEPT
+>>> processing ACL connect0 "accept" (TESTSUITE/test-config 42)
+>>> check logwrite = connection_id: $connection_id
+>>>                = connection_id: conn1111
+LOG: connection_id: conn1111
+>>> accept: condition test succeeded in ACL connect0
+>>> end of ACL connect0: ACCEPT
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: ""
-LOG: 10HmaX-0005vi-00 Subject is: ""
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmaX-000000005vi-0000 Subject is: ""
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmaX-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
->>> processing "accept" (TESTSUITE/test-config 70)
->>> accept: condition test succeeded in inline ACL
->>> end of inline ACL: ACCEPT
->>> host in ignore_fromline_hosts? no (option unset)
->>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
->>> check logwrite = Subject is: "$h_subject:"
->>>                = Subject is: ""
-LOG: 10HmaY-0005vi-00 Subject is: ""
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
->>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmaY-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<a@b>
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmaX-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> host in ignore_fromline_hosts? no (option unset)
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: ""
-LOG: 10HmaZ-0005vi-00 Subject is: ""
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmaY-000000005vi-0000 Subject is: ""
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmaZ-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<c@d>
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmaY-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<a@b>
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> host in ignore_fromline_hosts? no (option unset)
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: ""
-LOG: 10HmbA-0005vi-00 Subject is: ""
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmaZ-000000005vi-0000 Subject is: ""
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmbA-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmaZ-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<c@d>
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> host in ignore_fromline_hosts? no (option unset)
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: ""
-LOG: 10HmbB-0005vi-00 Subject is: ""
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmbA-000000005vi-0000 Subject is: ""
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmbB-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<x@y>
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmbA-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
+>>> processing inline ACL "accept"
+>>> accept: condition test succeeded in inline ACL
+>>> end of inline ACL: ACCEPT
+>>> host in ignore_fromline_hosts? no (option unset)
+>>> using ACL "check_data"
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
+>>> check logwrite = Subject is: "$h_subject:"
+>>>                = Subject is: ""
+LOG: 10HmbB-000000005vi-0000 Subject is: ""
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
+>>>   message: reply_address=<$reply_address>
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmbB-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<x@y>
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -619,25 +783,31 @@ LOG: 10HmbB-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_add
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
 >>> using ACL "connect0"
->>> processing "accept" (TESTSUITE/test-config 42)
->>> accept: condition test succeeded in ACL "connect0"
->>> end of ACL "connect0": ACCEPT
+>>> processing ACL connect0 "accept" (TESTSUITE/test-config 42)
+>>> check logwrite = connection_id: $connection_id
+>>>                = connection_id: conn1112
+LOG: connection_id: conn1112
+>>> accept: condition test succeeded in ACL connect0
+>>> end of ACL connect0: ACCEPT
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> host in ignore_fromline_hosts? no (option unset)
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: "=?iso-8859-8?Q?_here_we_go=3A_a_string_that_is_going_to_be_encoded=3A_it_will_go_over_the_75-char_limit_by_a_long_way=3B_in_fact_this_one_will_go_over_the_150_character_limit?="
-LOG: 10HmbC-0005vi-00 Subject is: "=?iso-8859-8?Q?_here_we_go=3A_a_string_that_is_going_to_be_encoded=3A_it_will_go_over_the_75-char_limit_by_a_long_way=3B_in_fact_this_one_will_go_over_the_150_character_limit?="
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmbC-000000005vi-0000 Subject is: "=?iso-8859-8?Q?_here_we_go=3A_a_string_that_is_going_to_be_encoded=3A_it_will_go_over_the_75-char_limit_by_a_long_way=3B_in_fact_this_one_will_go_over_the_150_character_limit?="
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmbC-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmbC-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -647,26 +817,33 @@ LOG: 10HmbC-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_add
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
 >>> using ACL "connect0"
->>> processing "accept" (TESTSUITE/test-config 42)
->>> accept: condition test succeeded in ACL "connect0"
->>> end of ACL "connect0": ACCEPT
+>>> processing ACL connect0 "accept" (TESTSUITE/test-config 42)
+>>> check logwrite = connection_id: $connection_id
+>>>                = connection_id: conn1113
+LOG: connection_id: conn1113
+>>> accept: condition test succeeded in ACL connect0
+>>> end of ACL connect0: ACCEPT
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
->>> processing "accept" (TESTSUITE/test-config 70)
+>>> processing inline ACL "accept"
 >>> accept: condition test succeeded in inline ACL
 >>> end of inline ACL: ACCEPT
 >>> host in ignore_fromline_hosts? no (option unset)
 >>> using ACL "check_data"
->>> processing "warn" (TESTSUITE/test-config 51)
+>>> processing ACL check_data "warn" (TESTSUITE/test-config 51)
 >>> check logwrite = Subject is: "$h_subject:"
 >>>                = Subject is: " here we go: a string that is going to be encoded: it will go over the 75-char limit by a long way; in fact this one will go over the 150 character limit"
-LOG: 10HmbD-0005vi-00 Subject is: " here we go: a string that is going to be encoded: it will go over the 75-char limit by a long way; in fact this one will go over the 150 character limit"
->>> warn: condition test succeeded in ACL "check_data"
->>> processing "deny" (TESTSUITE/test-config 52)
+LOG: 10HmbD-000000005vi-0000 Subject is: " here we go: a string that is going to be encoded: it will go over the 75-char limit by a long way; in fact this one will go over the 150 character limit"
+>>> warn: condition test succeeded in ACL check_data
+>>> processing ACL check_data "deny" (TESTSUITE/test-config 52)
 >>>   message: reply_address=<$reply_address>
->>> deny: condition test succeeded in ACL "check_data"
->>> end of ACL "check_data": DENY
-LOG: 10HmbD-0005vi-00 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
+>>> deny: condition test succeeded in ACL check_data
+>>> end of ACL check_data: DENY
+LOG: 10HmbD-000000005vi-0000 H=(test) [V4NET.0.0.0] F=<> rejected after DATA: reply_address=<>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: -C, -D, -be or -bf forces real uid
   uid=CALLER_UID gid=CALLER_GID pid=p1240
 configuration file is TESTSUITE/test-config
@@ -674,7 +851,61 @@ admin user
 dropping to exim gid; retaining priv uid
 originator: uid=CALLER_UID gid=CALLER_GID login=CALLER name=CALLER_NAME
 sender address = CALLER@myhost.test.ex
- 1.2.3.4 in "1.2.3"? no (malformed IPv4 address or address mask)
- 1.2.3.4 in "1.2.3.4/abc"? no (malformed IPv4 address or address mask)
-search_tidyup called
+set_process_info: pppp expansion-test
+  1.2.3.4 in "1.2.3"?
+   list element: 1.2.3
+   1.2.3.4 in "1.2.3"? no (malformed IPv4 address or address mask: 1.2.3)
+   1.2.3.4 in "1.2.3.4/abc"?
+   ╎list element: 1.2.3.4/abc
+   ╎1.2.3.4 in "1.2.3.4/abc"? no (malformed IPv4 address or address mask: 1.2.3.4)
+   ╎::1 in "<; aaaa:bbbb"?
+   ╎ list element: aaaa:bbbb
+   ╎ ::1 in "<; aaaa:bbbb"? no (malformed IPv6 address or address mask: aaaa:bbbb)
+   search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1240 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
+Exim version x.yz ....
+Hints DB:
+environment after trimming:
+ USER=CALLER
+configuration file is TESTSUITE/test-config
+admin user
+dropping to exim gid; retaining priv uid
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
+ ╭considering: '\${listextract░{2}░{$acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├───────text: '
+ ├considering: \${listextract░{2}░{$acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├backslashed: '\$'
+ ├considering: {listextract░{2}░{$acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├───────text: {listextract░{2
+ ├considering: }░{$acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├───────text: }░{
+ ├considering: $acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├──────value: my:target:string:list
+            ╰──(tainted)
+ ├considering: }}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├───────text: }
+ ├considering: }'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ├───────text: }'░░=>░░░'
+ ├considering: ${listextract░{2}░{$acl_m0}}'
+  ╭considering: 2}░{$acl_m0}}'
+  ├───────text: 2
+  ├considering: }░{$acl_m0}}'
+  ├───expanded: 2
+  ╰─────result: 2
+  ╭considering: $acl_m0}}'
+  ├──────value: my:target:string:list
+             ╰──(tainted)
+  ├considering: }}'
+  ├───expanded: $acl_m0
+  ╰─────result: my:target:string:list
+             ╰──(tainted)
+ ├───item-res: target
+            ╰──(tainted)
+ ├considering: '
+ ├───────text: '
+ ├───expanded: '\${listextract░{2}░{$acl_m0}}'░░=>░░░'${listextract░{2}░{$acl_m0}}'
+ ╰─────result: '${listextract░{2}░{my:target:string:list}}'░░=>░░░'target'
+            ╰──(tainted)
+>>>>>>>>>>>>>>>> Exim pid=p1241 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

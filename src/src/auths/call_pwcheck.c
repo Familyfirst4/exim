@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This module contains interface functions to the two Cyrus authentication
 daemons. The original one was "pwcheck", which gives its name to the source
@@ -36,10 +37,9 @@ Returns:   OK if authentication succeeded
 int
 auth_call_pwcheck(uschar *s, uschar **errptr)
 {
-uschar *reply = NULL;
-uschar *pw = Ustrrchr(s, ':');
+uschar * reply = NULL, * pw = Ustrrchr(s, ':');
 
-if (pw == NULL)
+if (!pw)
   {
   *errptr = US"pwcheck: malformed input - missing colon";
   return ERROR;

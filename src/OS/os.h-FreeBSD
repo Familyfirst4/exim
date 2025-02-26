@@ -1,6 +1,7 @@
 /* Exim: OS-specific C header file for FreeBSD */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /* See the file NOTICE for conditions of use and distribution. */
 
 
@@ -77,5 +78,7 @@ extern ssize_t os_sendfile(int, int, off_t *, size_t);
 /*******************/
 
 #define EXIM_HAVE_KEVENT
+#define EXIM_HAVE_STRCHRNUL
+
 
 /* End */

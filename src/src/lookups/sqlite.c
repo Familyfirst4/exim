@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "lf_functions.h"
@@ -33,7 +34,7 @@ if (!filename || *filename != '/')
   *errmsg = US"absolute file name expected for \"sqlite\" lookup";
 else if ((ret = sqlite3_open(CCS filename, &db)) != 0)
   {
-  *errmsg = (void *)sqlite3_errmsg(db);
+  *errmsg = string_copy(US sqlite3_errmsg(db));
   sqlite3_close(db);
   db = NULL;
   DEBUG(D_lookup) debug_printf_indent("Error opening database: %s\n", *errmsg);
@@ -142,7 +143,7 @@ if (opt) return NULL;     /* No options recognized */
 while ((c = *t++)) if (c == '\'') count++;
 count += t - s;
 
-t = quoted = store_get_quoted(count + 1, s, idx);
+t = quoted = store_get_quoted(count + 1, s, idx, US"sqlite");
 
 while ((c = *s++))
   {

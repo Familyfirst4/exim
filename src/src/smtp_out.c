@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* A number of functions for driving outgoing SMTP calls. */
 
@@ -27,7 +28,8 @@ Arguments:
                which case the function does nothing
   host_af    AF_INET or AF_INET6 for the outgoing IP address
   addr       the mail address being handled (for setting errors)
-  interface  point this to the interface if there is one defined
+  interface  point this to the interface if there is one defined,
+	     otherwise leave untouched
   msg        to add to any error message
 
 Returns:     TRUE on success, FALSE on failure, with error message
@@ -35,11 +37,11 @@ Returns:     TRUE on success, FALSE on failure, with error message
 */
 
 BOOL
-smtp_get_interface(uschar *istring, int host_af, address_item *addr,
-  uschar **interface, uschar *msg)
+smtp_get_interface(const uschar * istring, int host_af, address_item * addr,
+  const uschar ** interface, const uschar * msg)
 {
 const uschar * expint;
-uschar *iface;
+uschar * iface;
 int sep = 0;
 
 if (!istring) return TRUE;
@@ -100,17 +102,17 @@ produces the number in network byte order.
 Arguments:
   rstring     raw (unexpanded) string representation of the port
   addr        the mail address being handled (for setting errors)
-  port        stick the port in here
   msg         for adding to error message
 
-Returns:      TRUE on success, FALSE on failure, with error message set
+Returns:      port on success, -1 on failure, with error message set
                 in addr, and transport_return set to PANIC
 */
 
-BOOL
-smtp_get_port(uschar *rstring, address_item *addr, int *port, uschar *msg)
+int
+smtp_get_port(const uschar * rstring, address_item * addr, const uschar * msg)
 {
-uschar *pstring = expand_string(rstring);
+const uschar * pstring = expand_string(rstring);
+int port;
 
 if (!pstring)
   {
@@ -122,31 +124,31 @@ if (!pstring)
 
 if (isdigit(*pstring))
   {
-  uschar *end;
-  *port = Ustrtol(pstring, &end, 0);
+  uschar * end;
+  port = Ustrtol(pstring, &end, 0);
   if (end != pstring + Ustrlen(pstring))
     {
     addr->transport_return = PANIC;
     addr->message = string_sprintf("invalid port number for %s: %s", msg,
       pstring);
-    return FALSE;
+    return -1;
     }
   }
 
 else
   {
-  struct servent *smtp_service = getservbyname(CS pstring, "tcp");
+  struct servent *smtp_service = getservbyname(CCS pstring, "tcp");
   if (!smtp_service)
     {
     addr->transport_return = PANIC;
     addr->message = string_sprintf("TCP port \"%s\" is not defined for %s",
       pstring, msg);
-    return FALSE;
+    return -1;
     }
-  *port = ntohs(smtp_service->s_port);
+  port = ntohs(smtp_service->s_port);
   }
 
-return TRUE;
+return port;
 }
 
 
@@ -155,96 +157,111 @@ return TRUE;
 #ifdef TCP_FASTOPEN
 /* Try to record if TFO was attmepted and if it was successfully used.  */
 
-static void
+void
 tfo_out_check(int sock)
 {
 static BOOL done_once = FALSE;
 
 if (done_once) return;
-done_once = TRUE;
 
 # ifdef __FreeBSD__
-struct tcp_info tinfo;
-socklen_t len = sizeof(tinfo);
-
-/* A getsockopt TCP_FASTOPEN unfortunately returns "was-used" for a TFO/R as
-well as a TFO/C.  Use what we can of the Linux hack below; reliability issues ditto. */
-switch (tcp_out_fastopen)
   {
-  case TFO_ATTEMPTED_NODATA:
-    if (  getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) == 0
-       && tinfo.tcpi_state == TCPS_SYN_SENT
-       && tinfo.__tcpi_unacked > 0
-       )
-      {
-      DEBUG(D_transport|D_v)
-       debug_printf("TCP_FASTOPEN tcpi_unacked %d\n", tinfo.__tcpi_unacked);
-      tcp_out_fastopen = TFO_USED_NODATA;
-      }
-    break;
-  /*
-  case TFO_ATTEMPTED_DATA:
-  case TFO_ATTEMPTED_DATA:
-       if (tinfo.tcpi_options & TCPI_OPT_SYN_DATA)   XXX no equvalent as of 12.2
-  */
-  }
+  struct tcp_info tinfo;
+  socklen_t len = sizeof(tinfo);
 
-switch (tcp_out_fastopen)
-  {
-  case TFO_ATTEMPTED_DATA:	tcp_out_fastopen = TFO_USED_DATA; break;
-  default: break; /* compiler quietening */
+  /* A getsockopt TCP_FASTOPEN unfortunately returns "was-used" for a TFO/R as
+  well as a TFO/C.  Use what we can of the Linux hack below; reliability issues
+  ditto. */
+  switch (tcp_out_fastopen)
+    {
+    case TFO_ATTEMPTED_NODATA:
+      if (  getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) == 0
+	 && tinfo.tcpi_state == TCPS_SYN_SENT
+	 && tinfo.__tcpi_unacked > 0
+	 )
+	{
+	DEBUG(D_transport|D_v)
+	 debug_printf("TCP_FASTOPEN tcpi_unacked %d\n", tinfo.__tcpi_unacked);
+	tcp_out_fastopen = TFO_USED_NODATA;
+	}
+      break;
+    /*
+    case TFO_ATTEMPTED_DATA:
+    case TFO_ATTEMPTED_DATA:
+	 if (tinfo.tcpi_options & TCPI_OPT_SYN_DATA)   XXX no equvalent as of 12.2
+    */
+    }
+
+  switch (tcp_out_fastopen)
+    {
+    case TFO_ATTEMPTED_DATA:	tcp_out_fastopen = TFO_USED_DATA; break;
+    default: break; /* compiler quietening */
+    }
+
+  done_once = TRUE;
   }
 
 # else	/* Linux & Apple */
 #  if defined(TCP_INFO) && defined(EXIM_HAVE_TCPI_UNACKED)
-struct tcp_info tinfo;
-socklen_t len = sizeof(tinfo);
-
-switch (tcp_out_fastopen)
   {
-    /* This is a somewhat dubious detection method; totally undocumented so likely
-    to fail in future kernels.  There seems to be no documented way.  What we really
-    want to know is if the server sent smtp-banner data before our ACK of his SYN,ACK
-    hit him.  What this (possibly?) detects is whether we sent a TFO cookie with our
-    SYN, as distinct from a TFO request.  This gets a false-positive when the server
-    key is rotated; we send the old one (which this test sees) but the server returns
-    the new one and does not send its SMTP banner before we ACK his SYN,ACK.
-     To force that rotation case:
-     '# echo -n "00000000-00000000-00000000-0000000" >/proc/sys/net/ipv4/tcp_fastopen_key'
+  struct tcp_info tinfo;
+  socklen_t len = sizeof(tinfo);
+
+  switch (tcp_out_fastopen)
+    {
+    /* This is a somewhat dubious detection method; totally undocumented so
+    likely to fail in future kernels.  There seems to be no documented way.
+    What we really want to know is if the server sent smtp-banner data before
+    our ACK of his SYN,ACK hit him.  What this (possibly?) detects is whether we
+    sent a TFO cookie with our SYN, as distinct from a TFO request.  This gets a
+    false-positive when the server key is rotated; we send the old one (which
+    this test sees) but the server returns the new one and does not send its
+    SMTP banner before we ACK his SYN,ACK.  To force that rotation case:
+     '# echo -n "00000000-00000000-00000000-0000000"
+		  >/proc/sys/net/ipv4/tcp_fastopen_key'
     The kernel seems to be counting unack'd packets. */
 
-  case TFO_ATTEMPTED_NODATA:
-    if (  getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) == 0
-       && tinfo.tcpi_state == TCP_SYN_SENT
-       && tinfo.tcpi_unacked > 1
-       )
-      {
-      DEBUG(D_transport|D_v)
-	debug_printf("TCP_FASTOPEN tcpi_unacked %d\n", tinfo.tcpi_unacked);
-      tcp_out_fastopen = TFO_USED_NODATA;
-      }
-    break;
-
-    /* When called after waiting for received data we should be able
-    to tell if data we sent was accepted. */
-
-  case TFO_ATTEMPTED_DATA:
-    if (  getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) == 0
-       && tinfo.tcpi_state == TCP_ESTABLISHED
-       )
-      if (tinfo.tcpi_options & TCPI_OPT_SYN_DATA)
+    case TFO_ATTEMPTED_NODATA:
+      if (  getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) == 0
+	 && tinfo.tcpi_state == TCP_SYN_SENT
+	 && tinfo.tcpi_unacked > 1
+	 )
 	{
-	DEBUG(D_transport|D_v) debug_printf("TFO: data was acked\n");
-	tcp_out_fastopen = TFO_USED_DATA;
+	DEBUG(D_transport|D_v)
+	  debug_printf("TCP_FASTOPEN tcpi_unacked %d\n", tinfo.tcpi_unacked);
+	tcp_out_fastopen = TFO_USED_NODATA;
 	}
-      else
-	{
-	DEBUG(D_transport|D_v) debug_printf("TFO: had to retransmit\n");
-	tcp_out_fastopen = TFO_NOT_USED;
-	}
-    break;
+      done_once = TRUE;
+      break;
 
-  default: break; /* compiler quietening */
+      /* When called after waiting for received data we should be able
+      to tell if data we sent was accepted. Keep checking until we have hit
+      ESTABLISHED state. */
+
+    case TFO_ATTEMPTED_DATA:
+      if (getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tinfo, &len) != 0)
+	done_once = TRUE;
+      else if (  tinfo.tcpi_state == TCP_ESTABLISHED
+	      || tinfo.tcpi_state == TCP_FIN_WAIT1
+	      || tinfo.tcpi_state == TCP_FIN_WAIT2
+	      )
+	{
+	if (tinfo.tcpi_options & TCPI_OPT_SYN_DATA)
+	  {
+	  DEBUG(D_transport|D_v) debug_printf("TFO: data was acked\n");
+	  tcp_out_fastopen = TFO_USED_DATA;
+	  }
+	else
+	  {
+	  DEBUG(D_transport|D_v) debug_printf("TFO: had to retransmit\n");
+	  tcp_out_fastopen = TFO_NOT_USED;
+	  }
+	done_once = TRUE;
+	}
+      break;
+
+    default: break; /* compiler quietening */
+    }
   }
 #  endif
 # endif	/* Linux & Apple */
@@ -260,8 +277,7 @@ int
 smtp_boundsock(smtp_connect_args * sc)
 {
 transport_instance * tb = sc->tblock;
-smtp_transport_options_block * ob =
-  (smtp_transport_options_block *)tb->options_block;
+smtp_transport_options_block * ob = tb->drinst.options_block;
 const uschar * dscp = ob->dscp;
 int sock, dscp_value, dscp_level, dscp_option;
 
@@ -277,6 +293,7 @@ if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, US &on, sizeof(on)))
 /* Set DSCP value, if we can. For now, if we fail to set the value, we don't
 bomb out, just log it and continue in default traffic class. */
 
+GET_OPTION("dscp");
 if (dscp && dscp_lookup(dscp, sc->host_af, &dscp_level, &dscp_option, &dscp_value))
   {
   HDEBUG(D_transport|D_acl|D_v)
@@ -304,7 +321,7 @@ if (sc->interface)
      )
     {
     HDEBUG(D_transport|D_acl|D_v)
-      debug_printf_indent("unable to bind outgoing SMTP call to %s: %s", sc->interface,
+      debug_printf_indent("unable to bind outgoing SMTP call to %s: %s\n", sc->interface,
 	strerror(errno));
     close(sock);
     return -1;
@@ -318,12 +335,8 @@ return sock;
 
 
 /* Arguments:
-  host        host item containing name and address and port
-  host_af     AF_INET or AF_INET6
-  port	      TCP port number
-  interface   outgoing interface address or NULL
-  tb          transport
-  timeout     timeout value or 0
+  sc		details for making connection: host, af, interface, transport
+  timeout	timeout value or 0
   early_data	if non-NULL, idempotent data to be sent -
 		preferably in the TCP SYN segment
 	      Special case: non-NULL but with NULL blob.data - caller is
@@ -336,12 +349,10 @@ Returns:      connected socket number, or -1 with errno set
 int
 smtp_sock_connect(smtp_connect_args * sc, int timeout, const blob * early_data)
 {
-smtp_transport_options_block * ob =
-  (smtp_transport_options_block *)sc->tblock->options_block;
+const smtp_transport_options_block * ob = sc->tblock->drinst.options_block;
 int sock;
 int save_errno = 0;
 const blob * fastopen_blob = NULL;
-
 
 #ifndef DISABLE_EVENT
 deliver_host_address = sc->host->address;
@@ -363,6 +374,7 @@ if (!save_errno)
   {
 #ifdef TCP_FASTOPEN
   /* See if TCP Fast Open usable.  Default is a traditional 3WHS connect */
+  expand_level++;
   if (verify_check_given_host(CUSS &ob->hosts_try_fastopen, sc->host) == OK)
     {
     if (!early_data)
@@ -372,12 +384,14 @@ if (!save_errno)
 # ifdef TCP_FASTOPEN_CONNECT
     else
       {						/* expecting client data */
-      debug_printf(" set up lazy-connect\n");
+      DEBUG(D_transport|D_acl|D_v) debug_printf(" set up lazy-connect\n");
       setsockopt(sock, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, US &on, sizeof(on));
       /* fastopen_blob = NULL;		 lazy TFO, triggered by data write */
+      tcp_out_fastopen = TFO_ATTEMPTED_DATA;
       }
 # endif
     }
+  expand_level--;
 #endif
 
   if (ip_connect(sock, sc->host_af, sc->host->address, sc->host->port, timeout, fastopen_blob) < 0)
@@ -410,7 +424,7 @@ if (!save_errno)
 
   /* Both bind() and connect() succeeded, and any early-data */
 
-  HDEBUG(D_transport|D_acl|D_v) debug_printf_indent(" connected\n");
+  HDEBUG(D_transport|D_acl|D_v) debug_printf_indent("connected\n");
   if (getsockname(sock, (struct sockaddr *)(&interface_sock), &size) == 0)
     sending_ip_address = host_ntoa(-1, &interface_sock, NULL, &sending_port);
   else
@@ -447,16 +461,14 @@ return -1;
 
 
 void
-smtp_port_for_connect(host_item * host, int port)
+smtp_port_for_connect(host_item * host, int tpt_port)
 {
-if (host->port != PORT_NONE)
-  {
-  HDEBUG(D_transport|D_acl|D_v) if (port != host->port)
-    debug_printf_indent("Transport port=%d replaced by host-specific port=%d\n", port,
-      host->port);
-  port = host->port;
-  }
-else host->port = port;    /* Set the port actually used */
+if (host->port == PORT_NONE)
+  host->port = tpt_port;    /* Set the port actually used */
+
+else HDEBUG(D_transport|D_acl|D_v) if (tpt_port != host->port)
+  debug_printf_indent("Transport port=%d replaced by host-specific port=%d\n",
+		      tpt_port, host->port);
 }
 
 
@@ -482,48 +494,36 @@ Returns:      connected socket number, or -1 with errno set
 int
 smtp_connect(smtp_connect_args * sc, const blob * early_data)
 {
-int port = sc->host->port;
 smtp_transport_options_block * ob = sc->ob;
 
-callout_address = string_sprintf("[%s]:%d", sc->host->address, port);
+callout_address = string_sprintf("[%s]:%d", sc->host->address, sc->host->port);
 
 HDEBUG(D_transport|D_acl|D_v)
   {
-  uschar * s = US" ";
-  if (sc->interface) s = string_sprintf(" from %s ", sc->interface);
+  gstring * g = sc->interface
+    ? string_fmt_append(NULL, " from %s", sc->interface)
+    : string_get(20);
 #ifdef SUPPORT_SOCKS
-  if (ob->socks_proxy) s = string_sprintf("%svia proxy ", s);
+  if (ob->socks_proxy) g = string_cat(g, US" (proxy option set)");
 #endif
-  debug_printf_indent("Connecting to %s %s%s... ", sc->host->name, callout_address, s);
+  debug_printf_indent("Connecting to %s %s%Y ...\n",
+		      sc->host->name, callout_address, g);
   }
 
 /* Create and connect the socket */
 
 #ifdef SUPPORT_SOCKS
+GET_OPTION("socks_proxy");
 if (ob->socks_proxy)
   {
-  int sock = socks_sock_connect(sc->host, sc->host_af, port, sc->interface,
-				sc->tblock, ob->connect_timeout);
-  
-  if (sock >= 0)
+  if (!(ob->socks_proxy = expand_string(ob->socks_proxy)))
     {
-    if (early_data && early_data->data && early_data->len)
-      if (send(sock, early_data->data, early_data->len, 0) < 0)
-	{
-	int save_errno = errno;
-	HDEBUG(D_transport|D_acl|D_v)
-	  {
-	  debug_printf_indent("failed: %s", CUstrerror(save_errno));
-	  if (save_errno == ETIMEDOUT)
-	    debug_printf(" (timeout=%s)", readconf_printtime(ob->connect_timeout));
-	  debug_printf("\n");
-	  }
-	(void)close(sock);
-	sock = -1;
-	errno = save_errno;
-	}
+    log_write(0, LOG_MAIN|LOG_PANIC, "Bad expansion for socks_proxy in %s",
+      sc->tblock->drinst.name);
+    return -1;
     }
-  return sock;
+  if (*ob->socks_proxy)
+    return socks_sock_connect(sc, early_data);
   }
 #endif
 
@@ -549,10 +549,10 @@ Returns:     TRUE if OK, FALSE on error, with errno set
 static BOOL
 flush_buffer(smtp_outblock * outblock, int mode)
 {
-int rc;
-int n = outblock->ptr - outblock->buffer;
+int n = outblock->ptr - outblock->buffer, rc;
 BOOL more = mode == SCMD_MORE;
 client_conn_ctx * cctx;
+const uschar * where;
 
 HDEBUG(D_transport|D_acl) debug_printf_indent("cmd buf flush %d bytes%s\n", n,
   more ? " (more expected)" : "");
@@ -565,6 +565,7 @@ if (!(cctx = outblock->cctx))
   }
 
 #ifndef DISABLE_TLS
+where = US"tls_write";
 if (cctx->tls_ctx)		/*XXX have seen a null cctx here, rvfy sending QUIT, hence check above */
   rc = tls_write(cctx->tls_ctx, outblock->buffer, n, more);
 else
@@ -580,6 +581,7 @@ else
     requirement: TFO with data can, in rare cases, replay the data to the
     receiver. */
 
+    where = US"smtp_connect";
     if (  (cctx->sock = smtp_connect(outblock->conn_args, &early_data))
        < 0)
       return FALSE;
@@ -588,6 +590,7 @@ else
     }
   else
     {
+    where = US"send";
     rc = send(cctx->sock, outblock->buffer, n,
 #ifdef MSG_MORE
 	      more ? MSG_MORE : 0
@@ -602,6 +605,7 @@ else
     This is despite NODELAY being active.
     https://bugzilla.redhat.com/show_bug.cgi?id=1803806 */
 
+    where = US"cork";
     if (!more)
       setsockopt(cctx->sock, IPPROTO_TCP, TCP_CORK, &off, sizeof(off));
 #endif
@@ -610,7 +614,8 @@ else
 
 if (rc <= 0)
   {
-  HDEBUG(D_transport|D_acl) debug_printf_indent("send failed: %s\n", strerror(errno));
+  HDEBUG(D_transport|D_acl) debug_printf_indent("%s (fd %d) failed: %s\n",
+    where, cctx->sock, strerror(errno));
   return FALSE;
   }
 
@@ -619,22 +624,6 @@ outblock->cmd_count = 0;
 return TRUE;
 }
 
-
-
-/* This might be called both due to callout and then from delivery.
-Use memory that will not be released between those phases.
-*/
-static void
-smtp_debug_resp(const uschar * buf)
-{
-#ifndef DISABLE_CLIENT_CMD_LOG
-int old_pool = store_pool;
-store_pool = POOL_PERM;
-client_cmd_log = string_append_listele_n(client_cmd_log, ':', buf,
-  buf[3] == ' ' ? 3 : 4);
-store_pool = old_pool;
-#endif
-}
 
 
 /*************************************************
@@ -648,7 +637,7 @@ Arguments:
   sx	     SMTP connection, contains buffer for pipelining, and socket
   mode       buffer, write-with-more-likely, write
   format     a format, starting with one of
-             of HELO, MAIL FROM, RCPT TO, DATA, ".", or QUIT.
+             of HELO, MAIL FROM, RCPT TO, DATA, BDAT, ".", or QUIT.
 	     If NULL, flush pipeline buffer only.
   ...        data for the format
 
@@ -676,13 +665,12 @@ if (format)
 
   va_start(ap, format);
   if (!string_vformat(&gs, SVFMT_TAINT_NOCHK, CS format, ap))
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "overlong write_command in outgoing "
+    log_write_die(0, LOG_MAIN, "overlong write_command in outgoing "
       "SMTP");
   va_end(ap);
-  string_from_gstring(&gs);
 
   if (gs.ptr > outblock->buffersize)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "overlong write_command in outgoing "
+    log_write_die(0, LOG_MAIN, "overlong write_command in outgoing "
       "SMTP");
 
   if (gs.ptr > outblock->buffersize - (outblock->ptr - outblock->buffer))
@@ -703,13 +691,13 @@ if (format)
 
   if (outblock->authenticating)
     {
-    uschar *p = big_buffer;
+    uschar * p = big_buffer;
     if (Ustrncmp(big_buffer, "AUTH ", 5) == 0)
       {
       p += 5;
-      while (isspace(*p)) p++;
-      while (!isspace(*p)) p++;
-      while (isspace(*p)) p++;
+      Uskip_whitespace(&p);
+      Uskip_nonwhite(&p);
+      Uskip_whitespace(&p);
       }
     while (*p) *p++ = '*';
     }
@@ -749,11 +737,11 @@ Returns:    length of a line that has been put in the buffer
 */
 
 static int
-read_response_line(smtp_inblock *inblock, uschar *buffer, int size, time_t timelimit)
+read_response_line(smtp_inblock * inblock, uschar * buffer, int size,
+  time_t timelimit)
 {
-uschar *p = buffer;
-uschar *ptr = inblock->ptr;
-uschar *ptrend = inblock->ptrend;
+uschar * p = buffer, * ptr = inblock->ptr;
+const uschar * ptrend = inblock->ptrend;
 client_conn_ctx * cctx = inblock->cctx;
 
 /* Loop for reading multiple packets or reading another packet after emptying

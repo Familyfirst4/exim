@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -18,24 +19,30 @@ local_part=userx domain=alias-eximtesthost
 calling dns router
 dns router called for userx@alias-eximtesthost
   domain = alias-eximtesthost
-alias-eximtesthost in "*"? yes (matched "*")
-DNS lookup of alias-eximtesthost (MX) using fakens
-DNS lookup of alias-eximtesthost (MX) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (MX) using fakens
-DNS lookup of eximtesthost.test.ex (MX) gave NO_DATA
-returning DNS_NODATA
-faking res_search(MX) response length as 65535
- writing neg-cache entry for eximtesthost.test.ex-MX-xxxx, ttl 3000
-alias-eximtesthost (MX resp) DNSSEC
-DNS lookup of alias-eximtesthost (A) using fakens
-DNS lookup of alias-eximtesthost (A) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (A) using fakens
-DNS lookup of eximtesthost.test.ex (A) succeeded
-local host found for non-MX address
-fully qualified name = alias-eximtesthost.test.ex
-eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
+main lookup for domain
+ check dnssec require list
+  alias-eximtesthost in dnssec_require_domains? no (option unset)
+ check dnssec request list
+  alias-eximtesthost in dnssec_request_domains?
+   list element: *
+   alias-eximtesthost in dnssec_request_domains? yes (matched "*")
+ DNS lookup of alias-eximtesthost (MX) using fakens
+ DNS lookup of alias-eximtesthost (MX) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (MX) using fakens
+ DNS lookup of eximtesthost.test.ex (MX) gave NO_DATA
+ returning DNS_NODATA
+ faking res_search(MX) response length as 65535
+  writing neg-cache entry for eximtesthost.test.ex-MX-xxxx, ttl 3000
+ alias-eximtesthost (MX resp) DNSSEC
+ DNS lookup of alias-eximtesthost (A) using fakens
+ DNS lookup of alias-eximtesthost (A) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (A) using fakens
+ DNS lookup of eximtesthost.test.ex (A) succeeded
+ local host found for non-MX address
+ fully qualified name = alias-eximtesthost.test.ex
+ eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
 domain changed to alias-eximtesthost.test.ex
 rewriting header lines
 re-routed to userx@alias-eximtesthost.test.ex
@@ -48,19 +55,25 @@ local_part=userx domain=alias-eximtesthost.test.ex
 calling dns router
 dns router called for userx@alias-eximtesthost.test.ex
   domain = alias-eximtesthost.test.ex
-alias-eximtesthost.test.ex in "*"? yes (matched "*")
-DNS lookup of alias-eximtesthost.test.ex (MX) using fakens
-DNS lookup of alias-eximtesthost.test.ex (MX) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (MX): using cached value DNS_NODATA
-DNS lookup of alias-eximtesthost.test.ex (A) using fakens
-DNS lookup of alias-eximtesthost.test.ex (A) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (A) using fakens
-DNS lookup of eximtesthost.test.ex (A) succeeded
-local host found for non-MX address
-fully qualified name = alias-eximtesthost.test.ex
-eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
+main lookup for domain
+ check dnssec require list
+  alias-eximtesthost.test.ex in dnssec_require_domains? no (option unset)
+ check dnssec request list
+  alias-eximtesthost.test.ex in dnssec_request_domains?
+   list element: *
+   alias-eximtesthost.test.ex in dnssec_request_domains? yes (matched "*")
+ DNS lookup of alias-eximtesthost.test.ex (MX) using fakens
+ DNS lookup of alias-eximtesthost.test.ex (MX) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (MX): using cached value DNS_NODATA
+ DNS lookup of alias-eximtesthost.test.ex (A) using fakens
+ DNS lookup of alias-eximtesthost.test.ex (A) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (A) using fakens
+ DNS lookup of eximtesthost.test.ex (A) succeeded
+ local host found for non-MX address
+ fully qualified name = alias-eximtesthost.test.ex
+ eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
 remote host address is the local host: alias-eximtesthost.test.ex: configured to try delivery anyway
 set transport smtp
 queued for smtp transport: local_part = userx
@@ -68,12 +81,13 @@ domain = alias-eximtesthost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by dns router
-  envelope to: userx@alias-eximtesthost.test.ex
-  transport: smtp
+  envelope to:	userx@alias-eximtesthost.test.ex
+  transport:	smtp
   host eximtesthost.test.ex [ip4.ip4.ip4.ip4]
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 configuration file is TESTSUITE/test-config
@@ -93,24 +107,30 @@ local_part=userx domain=alias-eximtesthost.test.ex
 calling dns router
 dns router called for userx@alias-eximtesthost.test.ex
   domain = alias-eximtesthost.test.ex
-alias-eximtesthost.test.ex in "*"? yes (matched "*")
-DNS lookup of alias-eximtesthost.test.ex (MX) using fakens
-DNS lookup of alias-eximtesthost.test.ex (MX) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (MX) using fakens
-DNS lookup of eximtesthost.test.ex (MX) gave NO_DATA
-returning DNS_NODATA
-faking res_search(MX) response length as 65535
- writing neg-cache entry for eximtesthost.test.ex-MX-xxxx, ttl 3000
-alias-eximtesthost.test.ex (MX resp) DNSSEC
-DNS lookup of alias-eximtesthost.test.ex (A) using fakens
-DNS lookup of alias-eximtesthost.test.ex (A) succeeded
-CNAME found: change to eximtesthost.test.ex
-DNS lookup of eximtesthost.test.ex (A) using fakens
-DNS lookup of eximtesthost.test.ex (A) succeeded
-local host found for non-MX address
-fully qualified name = alias-eximtesthost.test.ex
-eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
+main lookup for domain
+ check dnssec require list
+  alias-eximtesthost.test.ex in dnssec_require_domains? no (option unset)
+ check dnssec request list
+  alias-eximtesthost.test.ex in dnssec_request_domains?
+   list element: *
+   alias-eximtesthost.test.ex in dnssec_request_domains? yes (matched "*")
+ DNS lookup of alias-eximtesthost.test.ex (MX) using fakens
+ DNS lookup of alias-eximtesthost.test.ex (MX) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (MX) using fakens
+ DNS lookup of eximtesthost.test.ex (MX) gave NO_DATA
+ returning DNS_NODATA
+ faking res_search(MX) response length as 65535
+  writing neg-cache entry for eximtesthost.test.ex-MX-xxxx, ttl 3000
+ alias-eximtesthost.test.ex (MX resp) DNSSEC
+ DNS lookup of alias-eximtesthost.test.ex (A) using fakens
+ DNS lookup of alias-eximtesthost.test.ex (A) succeeded
+ CNAME found: change to eximtesthost.test.ex
+ DNS lookup of eximtesthost.test.ex (A) using fakens
+ DNS lookup of eximtesthost.test.ex (A) succeeded
+ local host found for non-MX address
+ fully qualified name = alias-eximtesthost.test.ex
+ eximtesthost.test.ex ip4.ip4.ip4.ip4 mx=-1 sort=xx 
 remote host address is the local host: alias-eximtesthost.test.ex: configured to try delivery anyway
 set transport smtp
 queued for smtp transport: local_part = userx
@@ -118,8 +138,8 @@ domain = alias-eximtesthost.test.ex
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by dns router
-  envelope to: userx@alias-eximtesthost.test.ex
-  transport: smtp
+  envelope to:	userx@alias-eximtesthost.test.ex
+  transport:	smtp
   host eximtesthost.test.ex [ip4.ip4.ip4.ip4]
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

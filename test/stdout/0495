@@ -1,6 +1,7 @@
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at a.b
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -8,11 +9,12 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbJ-0005vi-00
+250 OK id=10HmbJ-000000005vi-0000
 221 myhost.test.ex closing connection
 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 250-myhost.test.ex Hello CALLER at a.b
 250-SIZE 52428800
+250-LIMITS MAILMAX=1000 RCPTMAX=50000
 250-8BITMIME
 250-PIPELINING
 250 HELP
@@ -20,10 +22,10 @@
 250 Accepted
 250 Accepted
 354 Enter message, ending with "." on a line by itself
-250 OK id=10HmbK-0005vi-00
+250 OK id=10HmbK-000000005vi-0000
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -40,9 +42,9 @@ DATA
 354 OK
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaZ-0005vi-00;
+	id 10HmaZ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaZ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaZ-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -50,7 +52,7 @@ This should succeed
 .
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -66,7 +68,7 @@ RCPT TO:<b@x.y>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -82,7 +84,7 @@ RCPT TO:<b@x.y>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -98,7 +100,7 @@ RCPT TO:<b@x.y>
 QUIT
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -115,9 +117,9 @@ DATA
 354 OK
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmbD-0005vi-00;
+	id 10HmbD-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbD-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbD-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -125,7 +127,7 @@ This should succeed (alias to normal address)
 .
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -143,9 +145,9 @@ DATA
 Received: from CALLER (helo=a.b)
 	by myhost.test.ex with local-esmtp (Exim x.yz)
 	(envelope-from <sen@der>)
-	id 10HmbJ-0005vi-00;
+	id 10HmbJ-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmbJ-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmbJ-000000005vi-0000@myhost.test.ex>
 From: sen@der
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -153,7 +155,7 @@ This should succeed.
 .
 250 OK
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex
@@ -167,7 +169,7 @@ RCPT TO:<a@x.y>
 RCPT TO:<b@x.y>
 *sleep 2
 >*eof
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [ip4.ip4.ip4.ip4]
 220 Server ready
 EHLO myhost.test.ex
@@ -181,7 +183,7 @@ RCPT TO:<a@x.y>
 RCPT TO:<b@x.y>
 *sleep 2
 End of script
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220 Server ready
 EHLO myhost.test.ex

@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2012 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 
@@ -30,9 +32,9 @@ Returns:
 */
 
 int
-auth_check_serv_cond(auth_instance *ablock)
+auth_check_serv_cond(auth_instance * ablock)
 {
-  return auth_check_some_cond(ablock,
+return auth_check_some_cond(ablock,
       US"server_condition", ablock->server_condition, OK);
 }
 
@@ -57,14 +59,14 @@ Returns:
 */
 
 int
-auth_check_some_cond(auth_instance *ablock,
-    uschar *label, uschar *condition, int unset)
+auth_check_some_cond(auth_instance * ablock,
+    uschar * label, uschar * condition, int unset)
 {
-uschar *cond;
+uschar * cond;
 
 HDEBUG(D_auth)
   {
-  debug_printf("%s authenticator %s:\n", ablock->name, label);
+  debug_printf("%s authenticator %s:\n", ablock->drinst.name, label);
   for (int i = 0; i < AUTH_VARS; i++) if (auth_vars[i])
     debug_printf("  $auth%d = %s\n", i + 1, auth_vars[i]);
   for (int i = 1; i <= expand_nmax; i++)

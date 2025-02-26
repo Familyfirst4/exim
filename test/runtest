@@ -2,6 +2,9 @@
 # We use env, because in some environments of our build farm
 # the Perl 5.010 interpreter is only reachable via $PATH
 
+# Copyright (c) The Exim Maintainers 2024
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 ###############################################################################
 # This is the controlling script for the "new" test suite for Exim. It should #
 # be possible to export this suite for running on a wide variety of hosts, in #
@@ -18,7 +21,6 @@
 #use strict;
 use v5.10.1;
 use warnings;
-use if $^V >= v5.19.11, experimental => 'smartmatch';
 
 use Errno;
 use FileHandle;
@@ -36,7 +38,7 @@ use Exim::Runtest;
 use Exim::Utils qw(uniq numerically cp);
 
 use if $ENV{DEBUG} && scalar($ENV{DEBUG} =~ /\bruntest\b/) => 'Smart::Comments' => '####';
-use if $ENV{DEBUG} && scalar($ENV{DEBUG} =~ /\bruntest\b/) => 'Data::Dumper';
+use Data::Dumper;
 
 use constant TEST_TOP => 8999;
 use constant TEST_SPECIAL_TOP => 9999;
@@ -92,7 +94,7 @@ my @test_list = ();
 my $parm_ipv4_test_net = 224;
 my $parm_ipv6_test_net = 'ff00';
 
-# Port numbers are currently hard-wired
+# Port numbers are currently hard-wired, unless a cmdline option changes them
 
 my $parm_port_n = 1223;         # Nothing listening on this port
 my $parm_port_s = 1224;         # Used for the "server" command
@@ -115,6 +117,14 @@ $ENV{USER} = getpwuid($>) if not exists $ENV{USER};
 my ($parm_configure_owner, $parm_configure_group);
 my ($parm_ipv4, $parm_ipv6, $parm_ipv6_stripped);
 my $parm_hostname;
+
+# Convenience for regex'
+# for tighter, see https://metacpan.org/dist/IO-Socket-IP/source/lib/IO/Socket/IP.pm#L37
+my $re_ipv4 = qr/\d{1,3}(?:\.\d{1,3}){3}/;
+my $re_6g = qr/[[:xdigit:]]{1,4}/;
+my $re_6s = qr/${re_6g}:/;
+my $re_ipv6 = qr/${re_6s}{0,7}${re_6g}(?:::${re_6s}{0,5}${re_6g})?/;
+my $re_ip = qr/(?:${re_ipv4}|${re_ipv6})/;
 
 ###############################################################################
 ###############################################################################
@@ -155,7 +165,7 @@ s?\bEXIMUSER\b?$parm_eximuser?g;
 s?\bHOSTIPV4\b?$parm_ipv4?g;
 s?\bHOSTIPV6\b?$parm_ipv6?g;
 s?\bHOSTNAME\b?$parm_hostname?g;
-s?\bPORT_D\b?$parm_port_d?g;
+s?(\b|_)PORT_D\b?$1$parm_port_d?g;
 s?\bPORT_D2\b?$parm_port_d2?g;
 s?\bPORT_D3\b?$parm_port_d3?g;
 s?\bPORT_D4\b?$parm_port_d4?g;
@@ -254,9 +264,11 @@ die "** runtest error: $_[1]\n";
 sub new_value {
 my($oldid, $base, $sequence) = @_;
 my($newid) = $cache{$oldid};
+print ">> replace  $oldid -> $newid\n" if ($debug && defined $newid);
 if (! defined $newid)
   {
   $newid = sprintf($base, $$sequence++);
+  print ">> new      $oldid -> $newid\n" if $debug;
   $cache{$oldid} = $newid;
   }
 return $newid;
@@ -342,7 +354,7 @@ return @yield;
 # into the same standard values throughout the data from a single test.
 # Message ids get this treatment (can't be made reliable for times), and
 # times in dumped retry databases are also handled in a special way, as are
-# incoming port numbers.
+# incoming port numbers and PIDs.
 
 # On entry to the subroutine, the file to write to is already opened with the
 # name MUNGED. The input file name is the only argument to the subroutine.
@@ -358,6 +370,7 @@ my(@saved) = ();
 
 local $_;
 
+print "<< munge $file\n" if $debug;
 open(IN, "$file") || tests_exit(-1, "Failed to open $file: $!");
 
 my($is_log) = $file =~ /log/;
@@ -371,7 +384,7 @@ $date = "\\d{2}-\\w{3}-\\d{4}\\s\\d{2}:\\d{2}:\\d{2}";
 
 # Debug time & pid
 
-$time_pid = "(?:\\d{2}:\\d{2}:\\d{2}\\s+\\d+\\s)";
+$time_pid = "(?:(?:\\d{2}:\\d{2}:\\d{2}\\s+)?\\d+\\s)";
 
 # Pattern for matching pids at start of stderr lines; initially something
 # that won't match.
@@ -385,11 +398,24 @@ $spid = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 LINE: while(<IN>)
   {
 RESET_AFTER_EXTRA_LINE_READ:
+#  print "<< $_" if $debug;
+  if ($munge_skip)
+    {
+    # Munging is a no-op, except for exim_msgdate specials.
+    # Useful when testing exim_msgdate so that
+    # we compare unmunged dates and message-ids.
+    s%^localhost \d+ from message-id != given number \d+ at \K/.+(?=/test/eximdir/exim_msgdate line \d+\.$)%DIR%;
+
+    print MUNGED;
+    next;
+    }
+
   # Custom munges
   if ($extra)
     {
     next if $extra =~ m%^/%  &&  eval $extra;
     eval $extra if $extra =~ m/^s/;
+    eval substr($extra, 1) if $extra =~ m/^R/;
     }
 
   # Check for "*** truncated ***"
@@ -411,9 +437,12 @@ RESET_AFTER_EXTRA_LINE_READ:
   # patchexim should have fixed this for us
   #s/Exim \K\d+[._]\d+[\w_-]*/x.yz/i;
 
-  # Replace Exim message ids by a unique series
+  # Replace Exim message ids by a unique series.
+  # Both old and new formats, with separate replace series, for now.
   s/(\d[^\W_]{5}-[^\W_]{6}-[^\W_]{2})
-    /new_value($1, "10Hm%s-0005vi-00", \$next_msgid)/egx;
+    /new_value($1, "10Hm%s-0005vi-00", \$next_msgid_old)/egx;
+  s/(\d[^\W_]{5}-[^\W_]{11}-[^\W_]{4})
+    /new_value($1, "10Hm%s-000000005vi-0000", \$next_msgid)/egx;
 
   # The names of lock files appear in some error and debug messages
   s/\.lock(\.[-\w]+)+(\.[\da-f]+){2}/.lock.test.ex.dddddddd.pppppppp/;
@@ -442,13 +471,13 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/forced fail after \d seconds/forced fail after d seconds/;
 
   # This message may contain a different DBM library name
-  s/Failed to open \S+( \([^\)]+\))? file/Failed to open DBM file/;
+  s/Failed to open \S+( \([^\)]+\))? file/Failed to open hintsdb file/;
 
   # The message for a non-listening FIFO varies
   s/:[^:]+: while opening named pipe/: Error: while opening named pipe/;
 
   # Debugging output of lists of hosts may have different sort keys
-  s/sort=\S+/sort=xx/ if /^\S+ (?:\d+\.){3}\d+ mx=\S+ sort=\S+/;
+  s/^\s*\S+ (?:\d+\.){3}\d+ mx=\S+ sort=\K\S+/xx/;
 
   # Random local part in callout cache testing
   s/myhost.test.ex-\d+-testing/myhost.test.ex-dddddddd-testing/;
@@ -468,8 +497,10 @@ RESET_AFTER_EXTRA_LINE_READ:
     my($date1,$date2,$date3,$expired) = ($1,$2,$3,$4);
     $expired = '' if !defined $expired;
 
-    # Round the time-difference up to nearest even value
-    my($increment) = ((date_seconds($date3) - date_seconds($date2) + 1) >> 1) << 1;
+    # Make time-difference minimum 2, and rounded up to even value
+    my($increment) = date_seconds($date3) - date_seconds($date2) + 1;
+    $increment = 2 if ($increment == 0);
+    $increment = ($increment >> 1) << 1;
 
     # We used to use globally unique replacement values, but timing
     # differences make this impossible. Just show the increment on the
@@ -480,11 +511,14 @@ RESET_AFTER_EXTRA_LINE_READ:
     next;
     }
 
-  # more_errno values in exim_dumpdb output which are times
+  # more_errno values in retry dumpdb output which are times
   s/T:(\S+)\s-22\s(\S+)\s/T:$1 -22 xxxx /;
 
-  # port numbers in dumpdb output
-  s/T:([a-z.]+(:[0-9.]+)?):$parm_port_n /T:$1:PORT_N /;
+  # port numbers in retry dumpdb output
+  s/T:([a-z0-9.]+(:[0-9.]+|:\[[^]]+])?):$parm_port_n /T:$1:PORT_N /;
+  s/T:([a-z0-9.[\]]+(:[0-9.]+|:\[[^]]+])?):$parm_port_s /T:$1:PORT_S /;
+  # and exinext
+  s/Transport: (?:[a-z0-9.]+|\[[^\]]+]) (?:[0-9.]+|\[[^\]]+]):\K$parm_port_s /PORT_S /;
 
   # port numbers in stderr
   s/^set_process_info: .*\]:\K$parm_port_d /PORT_D /;
@@ -499,15 +533,25 @@ RESET_AFTER_EXTRA_LINE_READ:
   # time used was fixed when I first started running automatic Exim tests.
 
   # Date/time in header lines and SMTP responses
-  s/[A-Z][a-z]{2},\s\d\d?\s[A-Z][a-z]{2}\s\d{4}\s\d\d\:\d\d:\d\d\s[-+]\d{4}
-    /Tue, 2 Mar 1999 09:44:33 +0000/gx;
+  s/[A-Z][a-z]{2},
+      (\s|\xE2\x96\x91)
+      \d\d?
+      (\s|\xE2\x96\x91)
+      [A-Z][a-z]{2}
+      (\s|\xE2\x96\x91)
+      \d{4}
+      (\s|\xE2\x96\x91)
+      \d\d\:\d\d:\d\d
+      (\s|\xE2\x96\x91)
+      [-+]\d{4}
+    /Tue,${1}2${2}Mar${3}1999${4}09:44:33${5}+0000/gx;
   # and in a French locale
   s/\S{4},\s\d\d?\s[^,]+\s\d{4}\s\d\d\:\d\d:\d\d\s[-+]\d{4}
     /dim., 10 f\xE9vr 2019 20:05:49 +0000/gx;
 
   # Date/time in logs and in one instance of a filter test
   s/^\d{4}-\d\d-\d\d\s\d\d:\d\d:\d\d(\s[+-]\d\d\d\d)?\s/1999-03-02 09:44:33 /gx;
-  s/^\d{4}-\d\d-\d\d\s\d\d:\d\d:\d\d\.\d{3}(\s[+-]\d\d\d\d)?\s/2017-07-30 18:51:05.712 /gx;
+  s/^\d{4}-\d\d-\d\d\s\d\d:\d\d:\d\d\.\d{3}(?:\s(?:[+-]\d\d\d\d|[A-Z]{2}T))?\s/2017-07-30 18:51:05.712 /gx;
   s/^Logwrite\s"\d{4}-\d\d-\d\d\s\d\d:\d\d:\d\d/Logwrite "1999-03-02 09:44:33/gx;
   # Date/time in syslog test
   s/^SYSLOG:\s\'\K\d{4}-\d\d-\d\d\s\d\d:\d\d:\d\d\s/2017-07-30 18:51:05 /gx;
@@ -519,8 +563,14 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/((D|[RQD]T)=)\d\.\d{3}s/$1q.qqqs/g;
 
   # Date/time in message separators
-  s/(?:[A-Z][a-z]{2}\s){2}\d\d\s\d\d:\d\d:\d\d\s\d\d\d\d
-    /Tue Mar 02 09:44:33 1999/gx;
+  s/(?:[A-Z][a-z]{2}
+      (\s|\xE2\x96\x91)
+    ){2}\d\d
+      (\s|\xE2\x96\x91)
+      \d\d:\d\d:\d\d
+      (\s|\xE2\x96\x91)
+      \d\d\d\d
+    /Tue${1}Mar${1}02${2}09:44:33${3}1999/gx;
 
   # Date of message arrival in spool file as shown by -Mvh
   s/^\d{9,10}\s0$/ddddddddd 0/;
@@ -529,13 +579,13 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/\d\d-\w\w\w-\d\d\d\d\s\d\d:\d\d:\d\d\s[-+]\d\d\d\d,/06-Sep-1999 15:52:48 +0100,/gx;
 
   # Dates/times in debugging output for writing retry records
-  if (/^  first failed=(\d+) last try=(\d+) next try=(\d+) (.*)$/)
+  if (/^(.+)first failed=(\d+) last try=(\d+) next try=(\d+) (.*)$/)
     {
-    my($next) = $3 - $2;
-    $_ = "  first failed=dddd last try=dddd next try=+$next $4\n";
+    my($next) = $4 - $3;
+    $_ = "$1first failed=dddd last try=dddd next try=+$next $5\n";
     }
-  s/^(\s*)now=\d+ first_failed=\d+ next_try=\d+ expired=(\w)/$1now=tttt first_failed=tttt next_try=tttt expired=$2/;
-  s/^(\s*)received_time=\d+ diff=\d+ timeout=(\d+)/$1received_time=tttt diff=tttt timeout=$2/;
+  s/^(.*)now=\d+ first_failed=\d+ next_try=\d+ expired=(\w)/$1now=tttt first_failed=tttt next_try=tttt expired=$2/;
+  s/^(.*)received_time=\d+ diff=\d+ timeout=(\d+)/$1received_time=tttt diff=tttt timeout=$2/;
 
   # Time to retry may vary
   s/time to retry = \S+/time to retry = tttt/;
@@ -678,7 +728,7 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/TLS error on connection \(gnutls_handshake\): Error in the pull function\./a TLS session is required but an attempt to start TLS failed/g;
 
   # (replace old with new, hoping that old only happens in one situation)
-  s/TLS error on connection to \d{1,3}(.\d{1,3}){3} \[\d{1,3}(.\d{1,3}){3}\] \(gnutls_handshake\): A TLS packet with unexpected length was received./a TLS session is required for ip4.ip4.ip4.ip4 [ip4.ip4.ip4.ip4], but an attempt to start TLS failed/g;
+  s/TLS error on connection to ${re_ipv4} \[${re_ipv4}\] \(gnutls_handshake\): A TLS packet with unexpected length was received./a TLS session is required for ip4.ip4.ip4.ip4 [ip4.ip4.ip4.ip4], but an attempt to start TLS failed/g;
   s/TLS error on connection from \[127.0.0.1\] \(recv\): A TLS packet with unexpected length was received./TLS error on connection from [127.0.0.1] (recv): The TLS connection was non-properly terminated./g;
 
   # signature algorithm names
@@ -748,6 +798,7 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/\bgid=\d+/gid=gggg/;
   s/\begid=\d+/egid=gggg/;
   s/\b(?:pid=|pid\s|PID:\s|Process\s|child\s)\K(\d+)/new_value($1, "p%s", \$next_pid)/gxe;
+  s/ Ci=\K(\d+)/new_value($1, "p%s", \$next_pid)/gxe;
   s/\buid=\d+/uid=uuuu/;
   s/\beuid=\d+/euid=uuuu/;
   s/set_process_info:\s+\d+/set_process_info: pppp/;
@@ -787,11 +838,12 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/\(port=(\d+)/"(port=" . new_value($1, "%s", \$next_port)/e;
 
   # This handles "connection from" and the like, when the port is given
-  if (!/listening for SMTP on/ && !/Connecting to/ && !/=>/ && !/->/
-      && !/\*>/&& !/==/  && !/\*\*/ && !/Connection refused/ && !/in response to/)
-    {
-    s/\[([a-z\d:]+|\d+(?:\.\d+){3})\]:(\d+)/"[".$1."]:".new_value($2,"%s",\$next_port)/ie;
-    }
+  s/(\[${re_ip}\]:)(\d+)/$1.new_value($2,"%s",\$next_port)/ie
+    unless (  /listening for SMTP on/ || /Connecting to/
+	   || /[=*-]>/ || /==/ || /\*\*/
+	   || /Connection refused/ || /in response to/
+	   || /T(?:ransport)?:/
+	   );
 
   # Port in host address in spool file output from -Mvh
   s/^(--?host_address) (.*[:.])\d+$/$1 ${2}9999/;
@@ -835,10 +887,10 @@ RESET_AFTER_EXTRA_LINE_READ:
 
   # ======== IP error numbers and messages ========
   # These vary between operating systems
-  s/Can(no|')t assign requested address/Network Error/;
+  s/(?:Can(?:no|')t assign requested address|Address not available)/Netwk addr not available/;
   s/Operation timed out/Connection timed out/;
   s/Address family not supported by protocol family/Network Error/;
-  s/Network( is)? unreachable/Network Error/;
+  s/Network(?: is)? unreachable/Network Error/;
   s/Invalid argument/Network Error/;
 
   s/\(\d+\): Network/(dd): Network/;
@@ -874,7 +926,7 @@ RESET_AFTER_EXTRA_LINE_READ:
 
   s/([\s,])S=\d+\b/$1S=sss/;
   s/:S\d+\b/:Ssss/;
-  s/^(\s*\d+m\s+)\d+(\s+[a-z0-9-]{16} <)/$1sss$2/i if $is_stdout;
+  s/^(\s*\d+[mhd]\s+)\d+(\s+(?:[[:alnum:]-]{23}|[[:alnum:]-]{16}) <)/TTT   sss$2/i if $is_stdout;
   s/\sSIZE=\d+\b/ SIZE=ssss/;
   s/\ssize=\d+\b/ size=sss/ if $is_stderr;
   s/old size = \d+\b/old size = sssss/;
@@ -915,8 +967,17 @@ RESET_AFTER_EXTRA_LINE_READ:
   s/(TLS error on connection from .* \(SSL_\w+\): error:)(.*)/$1 <<detail omitted>>/;
   next if /SSL verify error: depth=0 error=certificate not trusted/;
 
+  # OpenSSL 3.2.1
   # OpenSSL 3.0.0
-  s/TLS error \(D-H param setting .* error:\K.*dh key too small/xxxxxxxx:SSL routines::dh key too small/;
+  s/TLS\ error\ \(D-H\ param\ setting\ .*\ error:\K
+    .*
+    (?:dh\ key\ too\ small|unknown\ security\ bits)
+   /xxxxxxxx:SSL routines::dh key too small/x;
+
+  # OpenSSL 1.1.1
+  s/error:\K0B080074:x509 certificate routines:X509_check_private_key(?=:key values mismatch$)/05800074:x509 certificate routines:/;
+  s/error:\K02001002:system library:fopen(?=:No such file or directory$)/80000002:system library:/;
+  s/error:\K0909006C:PEM routines:get_name(?=:no start line$)/0480006C:PEM routines:/;
 
   # ======== Maildir things ========
   # timestamp output in maildir processing
@@ -999,8 +1060,47 @@ RESET_AFTER_EXTRA_LINE_READ:
         }
       }
 
+    # port numbers
+    {
+    my $re = "((Listening on|Connecting to (127\\.0\\.0\\.1|(ip4\\.){3}ip4|(ip6:){7}ip6)) port |host host .+ port=)";
+    s/$re\K$parm_port_n/PORT_N/n;
+    s/$re\K$parm_port_s/PORT_S/n;
+    s/$re\K$parm_port_d/PORT_D/n;
+    s/$re\K$parm_port_d2/PORT_D2/n;
+    s/$re\K$parm_port_d3/PORT_D3/n;
+    s/$re\K$parm_port_d4/PORT_D4/n;
+
+    $re = "T:.*:(127\\.0\\.0\\.1|.::1.):";
+    s/$re\K$parm_port_n/PORT_N/n;
+    s/$re\K$parm_port_s/PORT_S/n;
+    s/$re\K$parm_port_d/PORT_D/n;
+    s/$re\K$parm_port_d2/PORT_D2/n;
+    s/$re\K$parm_port_d3/PORT_D3/n;
+    s/$re\K$parm_port_d4/PORT_D4/n;
+
+    $re = "^\\s*port = ";
+    s/$re\K$parm_port_n/PORT_N/;
+    s/$re\K$parm_port_s/PORT_S/;
+    s/$re\K$parm_port_d/PORT_D/;
+    s/$re\K$parm_port_d2/PORT_D2/;
+    s/$re\K$parm_port_d3/PORT_D3/;
+    s/$re\K$parm_port_d4/PORT_D4/;
+
+    $re = "lookup of .*127.0.0.1::";
+    s/$re\K$parm_port_n/PORT_N/;
+    $re = "postgres .* \"";
+    s/$re\K$parm_port_n/PORT_N/;
+
+    # port number in misc dumpdb output, for early-pipe
+    $re = "^$date [^:]+:";
+    s/$re\K$parm_port_d/PORT_D/;
+    }
+
     # remote IPv6 addrs vary
     s/^(Connection request from) \[.*:.*:.*\]$/$1 \[ipv6\]/;
+
+    # Hints DB use of lockfiles is provider-dependent
+    s/Failed to open \K(?:hintsdb|database lock) file (.*\/spool\/db\/[^. ]*)(?:.lockfile)?(?: for reading)?(?=: No such file or directory$)/hintsdb $1/;
 
     # openssl version variances
   # Error lines on stdout from SSL contain process id values and file names.
@@ -1011,13 +1111,29 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if /SSL verify error: depth=0 error=certificate not trusted/;
     s/SSL3_READ_BYTES/ssl3_read_bytes/i;
     s/CONNECT_CR_FINISHED/ssl3_read_bytes/i;
-    s/^[[:xdigit:]]+:error:[[:xdigit:]]+(?:E[[:xdigit:]]+)?(:SSL routines:ssl3_read_bytes:[^:]+:).*(:SSL alert number \d\d)$/pppp:error:dddddddd$1\[...\]$2/;
+    s/^[[:xdigit:]]+:error:[[:xdigit:]]+(?:E[[:xdigit:]]+)?
+      (:SSL\ routines:ssl3_read_bytes:)
+      ssl(?:v3|\/tls)
+      ([^:]+:)
+      .*
+      (:SSL\ alert\ number\ \d\d)$
+     /pppp:error:dddddddd$1sslv3$2\[...\]$3/x;
     s/^error:\K[^:]*:(SSL routines:ssl3_read_bytes:(tls|ssl)v\d+ alert)/dddddddd:$1/;
     s/^error:\K[[:xdigit:]]+:SSL routines::(tlsv13 alert certificate required)$/dddddddd:SSL routines:ssl3_read_bytes:$1/;
-    s/^error:\K[[:xdigit:]]+:SSL routines::((tlsv1|sslv3) alert (unknown ca|certificate revoked))$/dddddddd:SSL routines:ssl3_read_bytes:$1/;
+    s/^error:\K
+      [[:xdigit:]]+:SSL\ routines::
+      ((?:tlsv1|sslv3)\ alert\ (?:unknown\ ca|certificate\ revoked))$
+     /dddddddd:SSL routines:ssl3_read_bytes:$1/x;
+    s/^error:\K
+      [[:xdigit:]]+:SSL\ routines::
+      ssl\/tls\ (alert\ (?:unknown\ ca|certificate\ revoked))$
+     /dddddddd:SSL routines:ssl3_read_bytes:sslv3 $1/x;
 
     # gnutls version variances
     next if /^Error in the pull function./;
+
+    # Retry DB record gets truncated when TESTDIR is a long string
+    s/T:.*\(MTA-imposed quota exceeded while writing to\K.*$/ <elided>)/;
 
     # optional IDN2 variant conversions.  Accept either IDN1 or IDN2
     s/conversion  strasse.de/conversion  xn--strae-oqa.de/;
@@ -1033,6 +1149,8 @@ RESET_AFTER_EXTRA_LINE_READ:
 
     # DMARC is not always supported by the build
     next if /^dmarc_tld_file =/;
+    # timestamp in dmarc history file
+    s/received \K\d{10}$/1692480217/;
 
     # ARC is not always supported by the build
     next if /^arc_sign =/;
@@ -1040,12 +1158,30 @@ RESET_AFTER_EXTRA_LINE_READ:
     # LIMITS is not always supported by the build
     next if /^limits_advertise_hosts =/;
 
+    # PRDR
+    next if /^hosts_try_prdr = \*$/;
+
     # TLS resumption is not always supported by the build
     next if /^tls_resumption_hosts =/;
     next if /^-tls_resumption/;
+    next if /^host_name_extract = /;
 
     # gsasl library version may not support some methods
     s/250-AUTH ANONYMOUS PLAIN SCRAM-SHA-1\K SCRAM-SHA-256//;
+
+    # mailq times change with when the run is done, vs. static-source spoolfiles
+    s/\s*\d*[hd](?=   317 (?:[-0-9A-Za-z]{23}|[-0-9A-Za-z]{16}) <nobody\@test.ex>)/DDd/;
+    # mailq sizes change with caller running the test
+    s/\s[01]m   [34]\d\d(?= (?:[-0-9A-Za-z]{23}|[-0-9A-Za-z]{16}) <CALLER\@the.local.host.name>)/ 1m    396/;
+
+    # Not all builds include EXPERIMENTAL_DSN_INFO (1 of 2)
+    if (/^X-Exim-Diagnostic:/)
+      {
+      while (<IN>) {
+	last if (/^$/ || !/^\s/);
+        }
+      goto RESET_AFTER_EXTRA_LINE_READ;
+      }
     }
 
   # ======== stderr ========
@@ -1059,14 +1195,14 @@ RESET_AFTER_EXTRA_LINE_READ:
     # because they will be different in different binaries.
 
     next if /^$time_pid?
-		(?: Berkeley\ DB:\s
-		  | Probably\ (?:Berkeley\ DB|ndbm|GDBM)
-		  | Using\ tdb
-		  | Authenticators:
+		(?: .*\sBerkeley\ DB
+		  | \sProbably\ (?:Berkeley\ DB|ndbm|GDBM)
+		  | \sUsing\ (?:tdb|sqlite3)
+		  | Authenticators\ \((?:built-in|dynamic)\):
 		  | Lookups(?:\(built-in\))?:
 		  | Support\ for:
-		  | Routers:
-		  | Transports:
+		  | Routers\ \((?:built-in|dynamic)\):
+		  | Transports\ \((?:built-in|dynamic)\):
 		  | Malware:
 		  | log\ selectors\ =
 		  | cwd=
@@ -1076,12 +1212,45 @@ RESET_AFTER_EXTRA_LINE_READ:
 		)
 	      /x;
 
-    # Lines with a leading pid
-    s/^(\d+)\s(?!(?:previous message|in\s))/new_value($1, "p%s", \$next_pid) . ' '/e;
+    # It seems unreliable whether this line appears or not before a daemon
+    # is killed; likely a timing issue
+    next if /^(\d+ )?Listening...$/n ;
+
+    # Hints DB use of lockfiles is provider-dependent
+    next if /lock(?:ing|ed) .*\/spool\/db\/[^.]+\.lockfile$/;
+    s/closed hints database\K and lockfile$//;
+
+    # Hints DBs with transactions are provider-dependent, and flow changes
+    # to take advantage of them need different opens and different flags.
+    # Drop all the debug output for opens and closes.
+    if (/EXIM_DBOPEN(_MULTI)?: file <.*spool\/db\/retry>/)
+      {
+      $_ = <IN>;
+      next if (/returned from EXIM_DBOPEN(_MULTI)?: 0x[[:xdigit:]]+$/);
+      $_ = <IN>;
+      <IN> if (/returned from EXIM_DBOPEN(_MULTI)?: \(nil\)$/);
+      next;
+      }
+    if (/EXIM_DBCLOSE(_MULTI)?/) { <IN>; next; }
+    next if /retaining retry hintsdb handle$/;
+    next if /using cached retry hintsdb (?:handle|nonpresence)$/;
+    if (/final close of cached retry db$/) { <IN>; <IN>; next; }
+    next if /dbfn_transaction_(?:start|commit)$/;
+
+    # Various hintsdb backends
+    s/(?:bdb|tdb|gdbm|ndbm|sqlite)
+      _open\(flags\ 0x(\d)
+      \ mode\ 0640\)
+      \ (?:No\ such\ file\ or\ directory|unable\ to\ open\ database\ file)$
+     /hintsdb_open(flags 0x$1 mode 0640) No such file or directory/x;
+
+    # Lines with a leading pid.  Only handle >= 4-digit PIDs to avoid converting SMTP respose codes
+    s/^\s*(\d{4,})\s(?!(?:previous message|in\s|bytes remain in|SMTP accept process running))/new_value($1, "p%s", \$next_pid) . ' '/e;
+
+    # Connection IDs
+    s/connection_id: \K(\d+)$/new_value($1, "conn%s", \$next_conn)/e;
 
     # Debugging lines for Exim terminations and process-generation
-
-    s/^\s*\K(\d+)(?=\sexec\s.*\s-oPX$)/new_value($1, "%s", \$next_pid)/xe;
     next if /(?:postfork: | fork(?:ing|ed) for )/;
 
     # IP address lookups use gethostbyname() when IPv6 is not supported,
@@ -1096,18 +1265,72 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if /^Reset TZ to/;
 
     # port numbers
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_d/PORT_D/;
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_d2/PORT_D2/;
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_d3/PORT_D3/;
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_d4/PORT_D4/;
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_s/PORT_S/;
-    s/(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ])\K$parm_port_n/PORT_N/;
+      {
+      my $re = "(?:\[[^\]]*\]:|V4NET\.0\.0\.0:|localhost::?|127\.0\.0\.1[.:]:?|port[= ](?:[^:]+:)?)";
+      s/$re\K$parm_port_d/PORT_D/;
+      s/$re\K$parm_port_d2/PORT_D2/;
+      s/$re\K$parm_port_d3/PORT_D3/;
+      s/$re\K$parm_port_d4/PORT_D4/;
+      s/$re\K$parm_port_s/PORT_S/;
+      s/$re\K$parm_port_n/PORT_N/;
+
+      $re = "listening for SMTP on [^:]+:.*";
+      s/$re\K$parm_port_d/PORT_D/;
+      s/$re\K$parm_port_d2/PORT_D2/;
+      s/$re\K$parm_port_d3/PORT_D3/;
+      s/$re\K$parm_port_d4/PORT_D4/;
+
+      $re = "listening for SMTP on .* port ";
+      s/$re\K$parm_port_d/PORT_D/g;
+      s/$re\K$parm_port_d2/PORT_D2/g;
+      s/$re\K$parm_port_d3/PORT_D3/g;
+      s/$re\K$parm_port_d4/PORT_D4/g;
+
+      # $re = "<[:;].* ";
+      if (/<[:;] /)
+	{
+	s/(?<!p)$parm_port_d/PORT_D/g;
+	s/(?<!p)$parm_port_d2/PORT_D2/g;
+	s/(?<!p)$parm_port_d3/PORT_D3/g;
+	s/(?<!p)$parm_port_d4/PORT_D4/g;
+	s/(?<!p)$parm_port_s/PORT_S/g;
+	s/(?<!p)$parm_port_n/PORT_N/g;
+	}
+
+      $re = "Connecting to .*]:";
+      s/$re\K$parm_port_d/PORT_D/;
+      s/$re\K$parm_port_d2/PORT_D2/;
+      s/$re\K$parm_port_d3/PORT_D3/;
+      s/$re\K$parm_port_d4/PORT_D4/;
+      s/$re\K$parm_port_s/PORT_S/;
+      s/$re\K$parm_port_n/PORT_N/;
+
+      $re = "=[>=] .*\\[[^\\]]+\\]:";
+      s/$re\K$parm_port_s/PORT_S/;
+      s/$re\K$parm_port_d/PORT_D/g;
+      s/$re\K$parm_port_d2/PORT_D2/g;
+      s/$re\K$parm_port_d3/PORT_D3/g;
+      s/$re\K$parm_port_d4/PORT_D4/g;
+
+      $re = "key=.*servers=.*\.";
+      s/$re\K$parm_port_n/PORT_N/;
+      $re = "(?:database lookup required for |(?:My|Postgre)SQL query: .*)servers=.*\.";
+      s/$re\K$parm_port_n/PORT_N/;
+      $re = "(?:using cached connection for|close (?:MY|PG)SQL connection:) .*\.";
+      s/$re\K$parm_port_n/PORT_N/;
+      $re = "(?:PGSQL new connection|PostgreSQL query): .*PGSQL\.";
+      s/$re\K$parm_port_n/PORT_N/;
+      $re = "(?:DEFER:|list match deferred for).*:";
+      s/$re\K$parm_port_n/PORT_N/;
+      $re = "POSTGRES .*\"";
+      s/$re\K$parm_port_n/PORT_N/;
+      }
 
     # ========= Exim lookups ==================
     # Lookups have a char which depends on the number of lookup types compiled in,
     # in stderr output.  Replace with a "0".  Recognising this while avoiding
     # other output is fragile; perhaps the debug output should be revised instead.
-    s%^\s+(:?closing )?\K[0-?]TESTSUITE/aux-fixed/%0TESTSUITE/aux-fixed/%g;
+    s%^\s+(?:closing )?\K[0-Z]TESTSUITE/aux-fixed/%0TESTSUITE/aux-fixed/%g;
 
     # drop gnutls version strings
     next if /GnuTLS compile-time version: \d+[\.\d]+$/;
@@ -1115,6 +1338,8 @@ RESET_AFTER_EXTRA_LINE_READ:
     # and unwanted debug
     next if /^GnuTLS<2>: FIPS140-2 (context is not set|operation mode switched from initial to not-approved)$/;
     next if /^GnuTLS<3>: ASSERT: sign.c\[_gnutls_sign_is_secure2\]:\d+$/;
+    next if /^GnuTLS<3>: ASSERT: \.\.\/\.\.\/lib\/pkcs11.c\[find_multi_objs_cb\]:/;
+    next if /^GnuTLS<3>: ASSERT: \.\.\/\.\.\/lib\/pkcs11.c\[gnutls_pkcs11_obj_list_import_url3\]:/;
 
     # drop openssl version strings
     next if /OpenSSL compile-time version: OpenSSL \d+[\.\da-z]+/;
@@ -1126,13 +1351,15 @@ RESET_AFTER_EXTRA_LINE_READ:
 
     # TLS preload
     # only OpenSSL speaks of these
-    next if /^TLS: (preloading (DH params|ECDH curve|CA bundle) for server|generating selfsigned server cert)/;
-    next if /^Diffie-Hellman initialized from default/;
-    next if /^ECDH OpenSSL (< )?[\d.+]+: temp key parameter settings:/;
-    next if /^ECDH: .*'prime256v1'/;
+    next if /^TLS: (preloading (DH params \S+|ECDH curve \S+|CA bundle) for server|generating selfsigned server cert)/;
+    next if /^ Diffie-Hellman initialized from default/;
+    next if /^ ECDH OpenSSL (< )?[\d.+]+: temp key parameter settings:/;
+    next if /^ ECDH: .*'prime256v1'/;
     next if /^tls_verify_certificates: system$/;
     next if /^tls_set_watch: .*\/cert.pem/;
     next if /^Generating 2048 bit RSA key/;
+    # and some systems have no system certs
+    next if /(tls_set_one_watch|tls_set_watch).*No such file or directory$/n;
 
     # TLS preload
     # only GnuTLS speaks of these
@@ -1164,11 +1391,20 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if /^TLS: not preloading (CA bundle|cipher list) for server$/;
     next if /^TLS: not preloading server certs$/;
 
+    # some platforms are missing the standard CA bundle file
+    next if /^tls_set_watch\(\) fail on '\/usr\/(?:lib\/ssl|local\/openssl3\/etc\/pki\/tls)\/cert.pem': No such file or directory$/;
+
     # drop lookups
-    next if /^$time_pid?(?: Lookups\ \(built-in\):
-					| Loading\ lookup\ modules\ from
-					| Loaded\ \d+\ lookup\ modules
-					| Total\ \d+\ lookups)/x;
+    next if /(?: Lookups\ \((?:built-in|dynamic)\):
+	      | searchtype\ \w+\ not\ initially\ found
+	      | Loaded\ "\w+"\ \(\d+\ lookup\ types?\)
+	      | Loading\ lookup\ modules\ from
+	      | Loaded\ \d+\ lookup\ modules
+	      | Total\ \d+\ built-in\ lookups)/x;
+
+    # drop loads of dyn-module drivers
+    next if /^$time_pid?(?:Loading\ \w+\ (?:router|transport|auth)\ driver\ from
+			  | Loaded\ \w+\ (?:router|transport|auth)$)/x;
 
     # drop compiler information
     next if /^$time_pid?Compiler:/;
@@ -1177,11 +1413,14 @@ RESET_AFTER_EXTRA_LINE_READ:
     # different libraries will have different numbers (possibly 0) of follow-up
     # lines, indenting with more data
     if (/^$time_pid?Library version:/) {
-      while (1) {
+      $_ = <IN>;
+      if (/^$time_pid?\s/) {
 	$_ = <IN>;
-	next if /^$time_pid?\s/;
-	goto RESET_AFTER_EXTRA_LINE_READ;
+	if (/^$time_pid?\s/) {
+	  $_ = <IN>;
+	}
       }
+      goto RESET_AFTER_EXTRA_LINE_READ;
     }
 
     # drop other build-time controls emitted for debugging
@@ -1212,20 +1451,30 @@ RESET_AFTER_EXTRA_LINE_READ:
       if (/looked up these IP addresses/);
     next if /name=localhost address=::1/;
 
-    # drop pdkim debugging header
+    # DKIM: Not all builds include
     next if /^DKIM( <<<<<<<<<<<<<<<<<<<<<<<<<<<<<+|: no signatures)$/;
+    next if /try option acl_smtp_dkim$/;
 
-    # Some platforms have TIOCOUTome do not
+    # Some platforms have TIOCOUT, some do not
     next if /\d+ bytes remain in socket output buffer$/;
     # Various other IPv6 lines must be omitted too
 
     next if /using host_fake_gethostbyname for \S+ \(IPv6\)/;
     next if /get\[host\|ipnode\]byname\[2\]\(af=inet6\)/;
     next if /DNS lookup of \S+ \(AAAA\) using fakens/;
-    next if / in dns_ipv4_lookup?/;
     next if / writing neg-cache entry for .*AAAA/;
-    next if /^faking res_search\(AAAA\) response length as 65535/;
+    next if /^ *faking res_search\(AAAA\) response length as 65535/;
 
+    if (/ in dns_ipv4_lookup\?$/)
+      {
+      $_= <IN>;
+      if (/ list element: \*$/)
+	{
+	$_= <IN>;
+	next if / in dns_ipv4_lookup\? yes \(matched "\*"\)/;
+	}
+      goto RESET_AFTER_EXTRA_LINE_READ;
+      }
     if (/DNS lookup of \S+ \(AAAA\) gave NO_DATA/)
       {
       $_= <IN>;     # Gets "returning DNS_NODATA"
@@ -1248,8 +1497,13 @@ RESET_AFTER_EXTRA_LINE_READ:
     # Skip tls_advertise_hosts and hosts_require_tls checks when the options
     # are unset, because tls ain't always there.
 
+    next if /^((>>>)?\s*host)? in tls_advertise_hosts\?$/;
     next if /in\s(?:tls_advertise_hosts\?|hosts_require_tls\?)
                 \sno\s\((option\sunset|end\sof\slist)\)/x;
+
+    # non-TLS builds cannot have DANE
+
+    next if /lack of DNSSEC traceability precludes DANE$/;
 
     # Skip auxiliary group lists because they will vary.
 
@@ -1269,19 +1523,6 @@ RESET_AFTER_EXTRA_LINE_READ:
     # to load, there will be an extra debug line. Omit it.
 
     next if /failed to load readline:/;
-
-    # Some DBM libraries seem to make DBM files on opening with O_RDWR without
-    # O_CREAT; other's don't. In the latter case there is some debugging output
-    # which is not present in the former. Skip the relevant lines (there are
-    # three of them).
-
-    if (/returned from EXIM_DBOPEN: \(nil\)/)
-      {
-      $_ .= <IN>;
-      s?\Q$parm_cwd\E?TESTSUITE?g;
-      if (/TESTSUITE\/spool\/db\/\S+ appears not to exist: trying to create/)
-	{ $_ = <IN>; next; }
-      }
 
     # Some tests turn on +expand debugging to check on expansions.
     # Unfortunately, the Received: expansion varies, depending on whether TLS
@@ -1306,7 +1547,7 @@ RESET_AFTER_EXTRA_LINE_READ:
     s/unexpected disconnection while reading SMTP command from \[127.0.0.1\] \K\(error: Connection reset by peer\) //;
 
     # Platform-dependent resolver option bits
-    s/^ (?:writing|update) neg-cache entry for [^,]+-\K[0-9a-f]+, ttl/xxxx, ttl/;
+    s/(?:writing|update) neg-cache entry for [^,]+-\K[0-9a-f]+, ttl/xxxx, ttl/;
 
     # timing variance, run-to-run
     s/^time on queue = \K1s/0s/;
@@ -1319,9 +1560,7 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if /in\shosts_require_dane\?\sno\s\(option\sunset\)/x;
 
     # daemon notifier socket
-    s/^(\s*\d+|ppppp) (creating notifier socket)$/ppppp $2/;
-    s/^ \@(.*exim_daemon_notify)$/ $1/;
-    s/^(\s*\d+|ppppp)  \@?(.*exim_daemon_notify)$/ppppp  $2/;
+    s% \@(?=[^ @]+/spool/exim_daemon_notify$)% %;
     next if /unlinking notifier socket/;
 
     # daemon notifier socket
@@ -1334,16 +1573,43 @@ RESET_AFTER_EXTRA_LINE_READ:
       }
 
     # Different builds will have different lookup types included
-    s/^\s*search_type \K\d+ \((\w+)\) quoting -1 \(none\)$/NN ($1) quoting -1 (none)/;
+    # and different numbers of lookup types result in different type-code letters,
+    # so convert them all to "0"
+    s%(?<!lsearch)[^ ](?=TESTSUITE/aux-fixed/(?:0414.list[12]|0464.domains)$)%0%;
+
+    # Environment cleaning
+    next if /\w+ in keep_environment\? (yes|no)/;
+
+    # Sizes vary with test hostname
+    s/^cmd buf flush \d+ bytes/cmd buf flush ddd bytes/;
+
+    # Different platforms put different error messages into retry records
+    s/dbfn_write: key=.* datalen \K\d{2,3}$/nn/;
+    s/dbfn_read: size \K\d{2,3}(?= return$)/nnn/;
+
+    # Spool filesystem free space changes on different systems.
+    s/((?:spool|log) directory space =) -?\d+K (inodes =)\s*-?\d+/$1 nnnnnK $2 nnnnn/;
+
+    # CONTENT_SCAN
+    next if /try option acl_(?:not_)?smtp_mime$/;
 
     # DISABLE_OCSP
     next if /in hosts_requ(est|ire)_ocsp\? (no|yes)/;
+
+    # WELLKNOWN
+    next if / in wellknown_advertise_hosts\?/;
 
     # SUPPORT_PROXY
     next if /host in hosts_proxy\?/;
 
     # PIPE_CONNECT
-    next if / in (pipelining_connect_advertise_hosts|hosts_pipe_connect)?\? no /;
+    if ( /^(>>>)?\s*host in pipelining_connect_advertise_hosts\?$/ )
+      {
+      $_ = <IN>;
+      while ( /^(>>>)?\s*list element:/ ) { $_ = <IN>; }
+      goto RESET_AFTER_EXTRA_LINE_READ;
+      }
+    next if / in (?:pipelining_connect_advertise_hosts|hosts_pipe_connect)?\? no /;
 
     # Experimental_International
     next if / in smtputf8_advertise_hosts\? no \(option unset\)/;
@@ -1352,19 +1618,27 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if / in tls_advertise_requiretls?\? no \(end of list\)/;
 
     # Experimental_LIMITS
+    if ( /^((>>>)?\s*host)? in limits_advertise_hosts\?$/ )
+      {
+      $_ = <IN>;
+      while ( /^(>>>)?\s*list element: !\*$/ ) { $_ = <IN>; }
+      goto RESET_AFTER_EXTRA_LINE_READ;
+      }
     next if / in limits_advertise_hosts?\? no \(matched "!\*"\)/;
+
+    # Experimental_XCLIENT
+    next if / in hosts_xclient\? no \(option unset\)/;
+
+    # Experimental_WELLKNOWN
+    next if / in hosts_wellknown\? no \(option unset\)/;
 
     # TCP Fast Open
     next if /^(ppppp )?setsockopt FASTOPEN: Network Error/;
 
-    # Environment cleaning
-    next if /\w+ in keep_environment\? (yes|no)/;
-
-    # Sizes vary with test hostname
-    s/^cmd buf flush \d+ bytes/cmd buf flush ddd bytes/;
-
-    # Spool filesystem free space changes on different systems.
-    s/^((?:spool|log) directory space =) -?\d+K (inodes =)\s*-?\d+/$1 nnnnnK $2 nnnnn/;
+    # DISABLE_TLS_RESUME
+    # TLS resumption is not always supported by the build
+    next if /in tls_resumption_hosts\?/;
+    next if /RE '.outlook.com/;
 
     # Non-TLS builds have different expansions for received_header_text
     if (s/(with \$received_protocol)\}\} \$\{if def:tls_cipher \{\(\$tls_cipher\)\n$/$1/)
@@ -1378,11 +1652,19 @@ RESET_AFTER_EXTRA_LINE_READ:
       <IN>; <IN>; <IN>; <IN>; <IN>; next;
       }
 
+    # various features can be built as dynamic-load modules
+    next if /loading module '(?:arc|exim_filter|dkim|dmarc|pam|perl|radius|sieve_filter|spf)'$/;
+
     # Not all platforms build with DKIM enabled
     next if /^DKIM >> Body data for hash, canonicalized/;
 
+    # Not all platforms build with SOCKS enabled
+    next if /^try option socks_proxy$/;
+
     # Not all platforms build with SPF enabled
-    next if /^(spf_conn_init|SPF_dns_exim_new|spf_compile\.c)/;
+    next if /(^$time_pid?spf_conn_init|spf_compile\.c)/;
+    next if /try option spf_smtp_comment_template$/;
+    next if /^$time_pid?Loaded "(?:dkim|dmarc|exim_filter|spf)"$/;
 
     # Not all platforms have sendfile support
     next if /^cannot use sendfile for body: no support$/;
@@ -1392,37 +1674,43 @@ RESET_AFTER_EXTRA_LINE_READ:
     next if /^DKIM \[[^[]+\] (Header hash|b) computed:/;
 
     # Not all platforms support TCP Fast Open, and the compile omits the check
-    if (s/\S+ in hosts_try_fastopen\? (no \(option unset\)|no \(end of list\)|yes \(matched "\*"\))\n$//)
+    if (/ in hosts_try_fastopen\?$/)
       {
-      chomp;
-      $_ .= <IN>;
-      s/ \.\.\. >>> / ... /;
+      $_ = <IN>;
+      next if /list element:\s*$/;
+      }
+
+    next if /\S+ in hosts_try_fastopen\? (no \(option unset\)|no \(end of list\)|yes \(matched "\*"\))\n$/ ;
+
+#    if (s/\S+ in hosts_try_fastopen\? (no \(option unset\)|no \(end of list\)|yes \(matched "\*"\))\n$//)
+#      {
+#      chomp;
+#      $_ .= <IN>;
+#      s/ \.\.\. >>> / ... /;
+
       if (s/ non-TFO mode connection attempt to 224.0.0.0, 0 data\b$//) { chomp; $_ .= <IN>; }
       s/Address family not supported by protocol family/Network Error/;
-      s/Network is unreachable/Network Error/;
-      }
+      s/Network(?: is)? unreachable/Network Error/;
+#      }
     next if /^(ppppp |\d+ )?setsockopt FASTOPEN: Protocol not available$/;
-    s/^(Connecting to .* \.\.\. sending) \d+ (nonTFO early-data)$/$1 dd $2/;
+    s/^(sending) \d+ (nonTFO early-data)$/$1 dd $2/;
 
-    if (/^([0-9: ]*						# possible timestamp
-	Connecting\ to\ [^ ]+\ [^ ]+(\ from\ [^ ]+)?)\ \.\.\.
+    if (/^[0-9: ]*						# possible timestamp
 	\ .*TFO\ mode\x20
 	(sendto,\ no\ data:\ EINPROGRESS			# Linux
 	|connection\ attempt\ to\ [^,]+,\ 0\ data)		# MacOS & no-support
 	$/x)
       {
-      $_ = $1 . " ... " . <IN>;
-      s/^(.* \.\.\.) [0-9: ]*connected$/$1  connected/;
-
-      if (/^Connecting to .* \.\.\.  connected$/)
+      $_ = <IN>;
+      if (/^connected$/)
 	{
 	$_ .= <IN>;
-	if (/^(Connecting to .* \.\.\.  )connected\n\s+SMTP(\(close\)>>|\(Connection refused\)<<)$/)
+	if (/^connected\n\s+SMTP(\(close\)>>|\(Connection refused\)<<)$/)
 	  {
-	  $_ = $1 . "failed: Connection refused\n" . <IN>;
-	  s/^(Connecting .*)\n\s+SMTP\(close\)>>$/$1/;
+	  $_ = "failed: Connection refused\n" . <IN>;
+	  s/^\n\s+SMTP\(close\)>>$/$1/;
 	  }
-	elsif (/^(Connecting to .* \.\.\.  connected\n)read response data: size=/)
+	elsif (/^(connected\n)read response data: size=/)
 	  { $_ = $1; }
 
 	# Date/time in SMTP banner
@@ -1431,9 +1719,12 @@ RESET_AFTER_EXTRA_LINE_READ:
 	}
       }
 
+    # Not all systems can monitor the listen queue size
+    next if /listen backlog/;
+
     # Specific pointer values reported for DB operations change from run to run
-    s/^(\s*returned from EXIM_DBOPEN: )(0x)?[0-9a-f]+/${1}0xAAAAAAAA/;
-    s/^(\s*EXIM_DBCLOSE.)(0x)?[0-9a-f]+/${1}0xAAAAAAAA/;
+    s/(returned from EXIM_DBOPEN: )(0x)?[0-9a-f]+/${1}0xAAAAAAAA/;
+    s/(EXIM_DBCLOSE.)(0x)?[0-9a-f]+/${1}0xAAAAAAAA/;
 
     # Platform-dependent output during MySQL startup
     next if /PerconaFT file system space/;
@@ -1442,12 +1733,12 @@ RESET_AFTER_EXTRA_LINE_READ:
 
     # Postgres version-dependent differences
     s/^initdb: warning: (enabling "trust" authentication for local connections)$/\nWARNING: $1/;
+    # Postgre DB server PID
+    s/ \[\d+\] (?=(LOG:  redirecting log|HINT:  Future log output))/ [pppp] /;
 
     # Not all builds include DMARC
+    next if /try option dmarc_tld_file$/;
     next if /^DMARC: no (dmarc_tld_file|sender_host_address)$/ ;
-
-    # TLS resumption is not always supported by the build
-    next if /in tls_resumption_hosts\?/;
 
     # Platform differences in errno strings
     s/  SMTP\(Operation timed out\)<</  SMTP(Connection timed out)<</;
@@ -1463,6 +1754,13 @@ RESET_AFTER_EXTRA_LINE_READ:
     # pid in debug lines
     s/^(\d\d:\d\d:\d\d\s+)(\d+)/$1 . new_value($2, "p%s", \$next_pid) . " "/mgxe;
     s/(?<!post-)[Pp]rocess\K(\s\d+ )/new_value($1, "p%s", \$next_pid) . " "/gxe;
+
+    # Path in environment varies
+    s/ PATH=\K.*$/<munged>/;
+
+    # Many system will not have "tc", which we want for packet-capture-level
+    # observation of sequencing when doing performance development
+    next if /^sudo: tc: command not found$/ ;
 
     # When Exim is checking the size of directories for maildir, it uses
     # the check_dir_size() function to scan directories. Of course, the order
@@ -1490,24 +1788,81 @@ RESET_AFTER_EXTRA_LINE_READ:
 
     next;
     }
+    # $is_stderr
 
   # ======== log ========
 
   elsif ($is_log)
     {
+      # port numbers
+      {
+      my $re = "listening for SMTP on [^:]+:.*";
+      s/$re\K$parm_port_n/PORT_N/;
+      s/$re\K$parm_port_s/PORT_S/;
+      s/$re\K$parm_port_d/PORT_D/;
+      s/$re\K$parm_port_d2/PORT_D2/;
+      s/$re\K$parm_port_d3/PORT_D3/;
+      s/$re\K$parm_port_d4/PORT_D4/;
+
+      $re = "(listening|and) for .*? port ";
+      s/$re\K$parm_port_d/PORT_D/ng;
+      s/$re\K$parm_port_d2/PORT_D2/ng;
+      s/$re\K$parm_port_d3/PORT_D3/ng;
+      s/$re\K$parm_port_d4/PORT_D4/ng;
+      s/$re\K$parm_port_s/PORT_S/ng;
+      s/$re\K$parm_port_n/PORT_N/ng;
+
+      $re = " I=\\[[^\\]]+\\]:";
+      s/$re\K$parm_port_d/PORT_D/n;
+      s/$re\K$parm_port_d2/PORT_D2/n;
+
+      $re = "Received from .* I=\\[[^\\]]+\\]:";
+      s/$re\K$parm_port_d/PORT_D/n;
+
+      $re = " \\[(127\\.0\\.0\\.1|(ip4\\.){3}ip4)\\]:";
+      my $trail = "(?= Connection refused)";
+      s/$re\K$parm_port_n$trail/PORT_N/n;
+      s/$re\K$parm_port_s$trail/PORT_S/n;
+      s/$re\K$parm_port_d$trail/PORT_D/n;
+      s/$re\K$parm_port_d2$trail/PORT_D2/n;
+      s/$re\K$parm_port_d3$trail/PORT_D3/n;
+      s/$re\K$parm_port_d4$trail/PORT_D4/n;
+
+      $re = "(=>|->|==) .* (PRX=)?\\[[^\\]]+\\]:";
+      s/$re\K$parm_port_d/PORT_D/n;
+      s/$re\K$parm_port_d2/PORT_D2/n;
+      s/$re\K$parm_port_d3/PORT_D3/n;
+      s/$re\K$parm_port_d4/PORT_D4/n;
+
+      $re = ".*\\]:";
+      s/$re\K$parm_port_s/PORT_S/g;
+      $re = "port <";
+      s/$re\K$parm_port_s/PORT_S/g;
+      $re = "plp ";
+      s/$re\K$parm_port_d/PORT_D/g;
+
+      $re = "Expansion of .*received_port\\}\\{";
+      s/$re\K$parm_port_d4/PORT_D4/g;
+      }
+
+    # ephem port numbers
+    s/I=\[[^\]]*\]:\K\d+/new_value($0, "%s", \$next_port)/e;
+
     # Berkeley DB version differences
     next if / Berkeley DB error: /;
 
     # CHUNKING: exact sizes depend on hostnames in headers
-    s/(=>.* K C="250- \d)\d+ (byte chunk, total \d)\d+/$1nn $2nn/;
+    s/=>.* K (?:DKIM=\S+ )?C="250- \K\d+ (byte chunk, total )\d+/3nn ${1}3nn/;
 
-    # openssl version variances
-    s/(TLS error on connection [^:]*: error:)[0-9A-F]{8}(:system library):(?:fopen|func\(4095\)):(No such file or directory)$/$1xxxxxxxx$2:fopen:$3/;
-    s/(DANE attempt failed.*error:)[0-9A-F]{8}(:SSL routines:)(?:(?i)ssl3_get_server_certificate|tls_process_server_certificate|CONNECT_CR_CERT)(?=:certificate verify failed$)/$1xxxxxxxx$2ssl3_get_server_certificate/;
+    # OpenSSL version variances
+    s/(TLS error on connection [^:]*: error:)[0-9A-F]{8}(:system library):(?:fopen|func\(4095\)|):(No such file or directory)$/$1xxxxxxxx$2:fopen:$3/;
+    next if /TLS error \(SSL_read\): .*error:0A000126:SSL routines::unexpected eof while reading$/ ;
+    s/EVDATA: \K\(SSL_accept\): error:0A000126:SSL routines::unexpected eof while reading/SSL_accept: TCP connection closed by peer/;
+    s/(DANE attempt failed.*error:)[0-9A-F]{8}(:SSL routines:)(?:(?i)ssl3_get_server_certificate|tls_process_server_certificate|CONNECT_CR_CERT|)(?=:certificate verify failed$)/$1xxxxxxxx$2ssl3_get_server_certificate/;
     s/(DKIM: validation error: )error:[0-9A-F]{8}:rsa routines:(?:(?i)int_rsa_verify|CRYPTO_internal):(?:bad signature|algorithm mismatch)$/$1Public key signature verification has failed./;
     s/ARC: AMS signing: privkey PEM-block import: error:\K[0-9A-F]{8}:(PEM routines):get_name:(no start line)/0906D06C:$1:PEM_read_bio:$2/;
 
-    # gnutls version variances
+    # GnuTLS version variances
     if (/TLS error on connection \(recv\): .* (Decode error|peer did not send any certificate)/)
       {
       my $prev = $_;
@@ -1520,27 +1875,25 @@ RESET_AFTER_EXTRA_LINE_READ:
       else
 	{ $_ = $prev; }
       }
-    # translate gnutls error into the openssl one
+    # translate GnuTLS error into the OpenSSL one
     s/ARC: AMS signing: privkey PEM-block import: \KThe requested data were not available.$/error:0906D06C:PEM routines:PEM_read_bio:no start line/;
+    # and then both into the OpenSSL 3.x one
+    s/ARC: AMS signing: privkey PEM-block import: error:\K[0-9A-F]{8}:PEM routines:PEM_read_bio:no start line$/1E08010C:DECODER routines::unsupported/;
 
     # DKIM timestamps
-    if ( /(DKIM: d=.*) t=([0-9]*) x=([0-9]*) / )
+    if ( /(DKIM: d=.*) t=([0-9]*) x=([0-9]*) \[/ )
       {
       my ($prefix, $t_diff) = ($1, $3 - $2);
       s/DKIM: d=.* t=[0-9]* x=[0-9]* /${prefix} t=T x=T+${t_diff} /;
       }
+    else
+      { s/DKIM: d=.* \Kt=[0-9]* \[/t=T [/; }
     # GnuTLS reports a different keysize vs. OpenSSL, for ed25519 keys
     s/signer: [^ ]* bits:\K 256/ 253/;
     s/public key too short:\K 256 bits/ 253 bits/;
 
-    # port numbers
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_d/PORT_D/;
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_d2/PORT_D2/;
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_d3/PORT_D3/;
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_d4/PORT_D4/;
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_s/PORT_S/;
-    s/(?:\[[^\]]*\]:|port )\K$parm_port_n/PORT_N/;
-    s/I=\[[^\]]*\]:\K\d+/ppppp/;
+    # with GnuTLS we cannot log single bad ALPN.  So ignore the with-OpenSSL log line.
+    # next if /TLS ALPN (http) rejected$/;
 
     # Platform differences for errno values (eg. Hurd).  Leave 0 and negative numbers alone.
     s/R=\w+ T=\w+ defer\K \([1-9]\d*\): / (EEE): /;
@@ -1552,14 +1905,29 @@ RESET_AFTER_EXTRA_LINE_READ:
     s/session: \K\((SSL_connect|gnutls_handshake)\): timed out/(tls lib connect fn): timed out/;
     s/TLS error on connection from .*\K\((SSL_accept|gnutls_handshake)\): timed out/(tls lib accept fn): timed out/;
     s/TLS error on connection from .*\K(SSL_accept: TCP connection closed by peer|\(gnutls_handshake\): The TLS connection was non-properly terminated.)/(tls lib accept fn): TCP connection closed by peer/;
-    s/TLS session: \K\(gnutls_handshake\): No supported application protocol could be negotiated/(SSL_connect): error: <<detail omitted>>/;
-    s/\(gnutls_handshake\): No common application protocol could be negotiated./(SSL_accept): error: <<detail omitted>>/;
+
+    s/TLS session: \K\(gnutls_handshake\): rxd alert: No supported application protocol could be negotiated/(tls lib connect): error: <<ALPN>>/;
+    s/\(gnutls_handshake\): No common application protocol could be negotiated./(tls lib connect): error: <<ALPN>>/;
+
+    # Not all buildfarm animals have ipv6
+    next if /<dns:fail> <DNS_(?:NOMATCH|AGAIN):.*:AAAA>$/ ;
     }
 
   # ======== mail ========
 
   elsif ($is_mail)
     {
+    # port numbers
+      {
+      my $re = "(interface|received)-port:\\s+";
+      s/$re\K$parm_port_n/PORT_N/;
+      s/$re\K$parm_port_s/PORT_S/;
+      s/$re\K$parm_port_d/PORT_D/;
+      s/$re\K$parm_port_d2/PORT_D2/;
+      s/$re\K$parm_port_d3/PORT_D3/;
+      s/$re\K$parm_port_d4/PORT_D4/;
+      }
+
     # DKIM timestamps, and signatures depending thereon
     if ( /^(\s+)t=([0-9]*); x=([0-9]*); b=[A-Za-z0-9+\/]+$/ )
       {
@@ -1567,6 +1935,22 @@ RESET_AFTER_EXTRA_LINE_READ:
       s/.*/${indent}t=T; x=T+${t_diff}; b=bbbb;/;
       <IN>;
       <IN>;
+      }
+    elsif ( /^(\s+)t=([0-9]*); b=[A-Za-z0-9+\/]+$/ )
+      {
+      my $indent = $1;
+      s/.*/${indent}t=T; b=bbbb;/;
+      <IN>;
+      <IN>;
+      }
+
+    # Not all builds include EXPERIMENTAL_DSN_INFO (2 of 2)
+    if (/^X-Exim-Diagnostic:/)
+      {
+      while (<IN>) {
+	last if (/^$/ || !/^\s/);
+        }
+      goto RESET_AFTER_EXTRA_LINE_READ;
       }
     }
 
@@ -1804,13 +2188,13 @@ if (-e $sf_current)
 
     for (my $i = 0; $i < @munged; $i++)
       {
-      if ($munged[$i] =~ /^[-\d]{10}\s[:\d]{8}\s[-A-Za-z\d]{16}\s[-=*]>/)
+      if ($munged[$i] =~ /^[-\d]{10}\s[:\d]{8}(\.\d{3})?\s[-A-Za-z\d]{23}\s[-=*]>/)
         {
         my $j;
         for ($j = $i + 1; $j < @munged; $j++)
           {
           last if $munged[$j] !~
-            /^[-\d]{10}\s[:\d]{8}\s[-A-Za-z\d]{16}\s[-=*]>/;
+            /^[-\d]{10}\s[:\d]{8}(\.\d{3})?\s[-A-Za-z\d]{23}\s[-=*]>/;
           }
         @temp = splice(@munged, $i, $j - $i);
         @temp = sort(@temp);
@@ -1880,7 +2264,8 @@ return 2;
 # Usable files are:
 #  paniclog, rejectlog, mainlog, stdout, stderr, msglog, mail
 # Search strings starting with 's' do substitutions;
-# with '/' do line-skips.
+# with '/' do line-skips,
+# with 'R' run given code.
 # Triggered by a scriptfile line "munge <name>"
 ##################################################
 $munges =
@@ -1927,7 +2312,13 @@ $munges =
     },
 
     'optional_dsn_info' =>
-    { 'mail' => '/^(X-(Remote-MTA-(smtp-greeting|helo-response)|Exim-Diagnostic|(body|message)-linecount):|Remote-MTA: X-ip;)/'
+    { 'mail' => 'Rif (/^(X-(Remote-MTA-(smtp-greeting|helo-response)|Exim-Diagnostic|(body|message)-linecount):|Remote-MTA: X-ip;)/) {
+		    while (1) {
+		      $_ = <IN>;
+		      next if /^ /;
+		      goto RESET_AFTER_EXTRA_LINE_READ;
+		    }
+		  }'
     },
 
     'optional_config' =>
@@ -1955,7 +2346,7 @@ $munges =
     'timeout_errno' =>		# actual errno differs Solaris vs. Linux
     { 'mainlog' => 's/((?:host|message) deferral .* errno) <\d+> /$1 <EEE> /' },
 
-    'peer_terminated_conn' =>	# actual error differs FreedBSD vs. Linux
+    'peer_terminated_conn' =>	# actual error differs FreedBS/Solaris vs. Linux
     { 'stderr' => 's/^(  SMTP\()Connection reset by peer(\)<<)$/$1closed$2/' },
 
     'perl_variants' =>		# result of hash-in-scalar-context changed from bucket-fill to keycount
@@ -2136,9 +2527,15 @@ if (! $msglog_skip)
     foreach $msglog (@msglogs)
       {
       next if ($msglog eq "." || $msglog eq ".." || $msglog eq "CVS");
+
       ($munged_msglog = $msglog) =~
         s/((?:[^\W_]{6}-){2}[^\W_]{2})
-          /new_value($1, "10Hm%s-0005vi-00", \$next_msgid)/egx;
+          /new_value($1, "10Hm%s-0005vi-00", \$next_msgid_old)/egx;
+
+      $munged_msglog =~
+        s/([^\W_]{6}-[^\W_]{11}-[^\W_]{4})
+          /new_value($1, "10Hm%s-000000005vi-0000", \$next_msgid)/egx;
+
       $yield = max($yield,  check_file("spool/msglog/$msglog", undef,
         "test-msglog-munged", "msglog/$testno.$munged_msglog", 0,
         $munge->{msglog}));
@@ -2229,6 +2626,7 @@ system($cmd);
 # Arguments: the current test number
 #            reference to the subtest number, holding previous value
 #            reference to the expected return code value
+#            reference to flag for not-expected return value
 #            reference to where to put the command name (for messages)
 #            auxiliary information returned from a previous run
 #
@@ -2244,16 +2642,18 @@ system($cmd);
 sub run_command{
 my($testno) = $_[0];
 my($subtestref) = $_[1];
-my($commandnameref) = $_[3];
-my($aux_info) = $_[4];
+my($commandnameref) = $_[4];
+my($aux_info) = $_[5];
 my($yield) = 1;
 
 our %ENV = map { $_ => $ENV{$_} } grep { /^(?:USER|SHELL|PATH|TERM|EXIM_TEST_.*)$/ } keys %ENV;
 
-if (/^(\d+)\s*$/)                # Handle unusual return code
+if (/^(~)?(\d+)\s*(?:([A-Z]+)=(\S+))?$/)                # Handle unusual return code
   {
-  my($r) = $_[2];
-  $$r = $1 << 8;
+  my($r, $rn) = ($_[2], $_[3]);
+  $$r = $2 << 8;
+  $$rn = 1 if (defined $1);
+  $ENV{$3} = $4 if (defined $3);
   $_ = <SCRIPT>;
   return 4 if !defined $_;       # Missing command
   $lineno++;
@@ -2297,7 +2697,7 @@ if ($debug) { printf ">> $_\n"; }
 ###################
 
 # The "dbmbuild" command runs exim_dbmbuild. This is used both to test the
-# utility and to make DBM files for testing DBM lookups.
+# utility and to make hintsdb files for testing hintsdb lookups.
 
 if (/^dbmbuild\s+(\S+)\s+(\S+)/)
   {
@@ -2310,7 +2710,7 @@ if (/^dbmbuild\s+(\S+)\s+(\S+)/)
 
 # The "dump" command runs exim_dumpdb. On different systems, the output for
 # some types of dump may appear in a different order because it's just hauled
-# out of the DBM file. We can solve this by sorting. Ignore the leading
+# out of the hintsdb file. We can solve this by sorting. Ignore the leading
 # date/time, as it will be flattened later during munging.
 
 if (/^dump\s+(\S+)/)
@@ -2334,6 +2734,7 @@ if (/^dump\s+(\S+)/)
                #map  { [ (split)[0] =~ s/\Q$parm_ipv4/ip4.ip4.ip4.ip4/gr, $_ ] }  # this is too modern for 5.10.1
                map  {
                 (my $k = (split)[0]) =~ s/\Q$parm_ipv4\E/ip4.ip4.ip4.ip4/g;
+		$k =~ s/$parm_port_n/PORT_N/;
                 [ $k, $_ ]
                }
                do { local $/ = "\n  "; <$in> };
@@ -2453,6 +2854,17 @@ if (/^eximstats\s+(.*)/)
   }
 
 
+# The "exim_id_update" command runs exim_id_update on the current spool
+
+if (/^exim_id_update(\s+.*)?$/)
+  {
+  run_system("(sudo ./eximdir/exim_id_update" . ($1 || '') . " $parm_cwd/spool/input;" .
+    "echo exim_id_update exit code = \$?)" .
+    ">>test-stdout 2>>test-stderr");
+  return 1;
+  }
+
+
 # The "gnutls" command makes a copy of saved GnuTLS parameter data in the
 # spool directory, to save Exim from re-creating it each time.
 
@@ -2544,9 +2956,15 @@ if (/^sleep\s+(.*)$/)
 # Various Unix management commands are recognized
 
 if (/^(ln|ls|du|mkdir|mkfifo|touch|cp|cat)\s/ ||
-    /^sudo\s(rmdir|rm|mv|chown|chmod)\s/)
+    /^sudo\s(mkdir|rmdir|rm|mv|cp|chown|chmod)\s/)
   {
   run_system("$_ >>test-stdout 2>>test-stderr");
+  return 1;
+  }
+if (/^cat2\s/)
+  {
+  s/^cat2/cat/;
+  run_system("$_ 2>&1 >test-stderr");
   return 1;
   }
 
@@ -2673,6 +3091,10 @@ if (/^(cat)?write\s+(\S+)(?:\s+(.*))?\s*$/)
 
 if (/^client/ || /^(sudo\s+)?perl\b/)
   {
+  if (defined($tls)) {
+    s/^client-anytls/client-ssl/ if ($tls eq 'openssl');
+    s/^client-anytls/client-gnutls/ if ($tls eq 'gnutls');
+    }
   s"client"./bin/client";
   $cmd = "$_ >>test-stdout 2>>test-stderr";
   }
@@ -2726,15 +3148,15 @@ elsif (/^((?i:[A-Z\d_]+=\S+\s+)+)?(\d+)?\s*(sudo(?:\s+-u\s+(\w+))?\s+)?exim(_\S+
 
     if (defined $queuespec)
       {
-      @listcmd  = ("$parm_cwd/eximdir/exim", '-bp',
+      @listcmd  = ("$parm_cwd/$exim_server", '-bp',
 		   $queuespec,
-                   "-DEXIM_PATH=$parm_cwd/eximdir/exim",
+                   "-DEXIM_PATH=$parm_cwd$exim_server",
                    -C => "$parm_cwd/test-config");
       }
     else
       {
-      @listcmd  = ("$parm_cwd/eximdir/exim", '-bp',
-                   "-DEXIM_PATH=$parm_cwd/eximdir/exim",
+      @listcmd  = ("$parm_cwd/$exim_server", '-bp',
+                   "-DEXIM_PATH=$parm_cwd/$exim_server",
                    -C => "$parm_cwd/test-config");
       }
     print ">> Getting queue list from:\n>>    @listcmd\n" if $debug;
@@ -2766,11 +3188,24 @@ elsif (/^((?i:[A-Z\d_]+=\S+\s+)+)?(\d+)?\s*(sudo(?:\s+-u\s+(\w+))?\s+)?exim(_\S+
 
   my $opt_valgrind = $valgrind ? "valgrind --leak-check=yes --suppressions=$parm_cwd/aux-fixed/valgrind.supp " : '';
 
-  $cmd = "$envset$sudo$opt_valgrind" .
-         "$parm_cwd/eximdir/exim$special$optargs " .
-         "-DEXIM_PATH=$parm_cwd/eximdir/exim$special " .
-         "-C $parm_cwd/test-config $args " .
+  $cmd = "$envset$sudo$opt_valgrind";
+
+  if ($special ne '') {
+    $cmd .= "$parm_cwd/eximdir/exim$special$optargs " .
+	    "-DEXIM_PATH=$parm_cwd/eximdir/exim$special ";
+    }
+  elsif ($args =~ /(^|\s)-DSERVER=server\s/) {
+    $cmd .= "$parm_cwd/$exim_server$optargs " .
+	    "-DEXIM_PATH=$parm_cwd/$exim_server ";
+    }
+  else {
+    $cmd .= "$parm_cwd/$exim_client$optargs " .
+	    "-DEXIM_PATH=$parm_cwd/$exim_client ";
+    }
+
+  $cmd .= "-C $parm_cwd/test-config $args " .
          ">>test-stdout 2>>test-stderr";
+
   # If the command is starting an Exim daemon, we run it in the same
   # way as the "server" command above, that is, we don't want to wait
   # for the process to finish. That happens when "killdaemon" is obeyed later
@@ -2949,6 +3384,245 @@ return $yield;            # Ran command and waited
 ###############################################################################
 ###############################################################################
 
+##################################################
+#    Check for SpamAssassin and ClamAV           #
+##################################################
+
+# These are crude tests. If they aren't good enough, we'll have to improve
+# them, for example by actually passing a message through spamc or clamscan.
+
+sub check_running_spamassassin
+{
+my $sock = new FileHandle;
+
+if (system("spamc -h 2>/dev/null >/dev/null") == 0)
+  {
+  print "The spamc command works:\n";
+
+  # This test for an active SpamAssassin is courtesy of John Jetmore.
+  # The tests are hard coded to localhost:783, so no point in making
+  # this test flexible like the clamav test until the test scripts are
+  # changed.  spamd doesn't have the nice PING/PONG protocol that
+  # clamd does, but it does respond to errors in an informative manner,
+  # so use that.
+
+  my($sint,$sport) = ('127.0.0.1',783);
+  eval
+    {
+    my $sin = sockaddr_in($sport, inet_aton($sint))
+	or die "** Failed packing $sint:$sport\n";
+    socket($sock, PF_INET, SOCK_STREAM, getprotobyname('tcp'))
+	or die "** Unable to open socket $sint:$sport\n";
+
+    local $SIG{ALRM} =
+	sub { die "** Timeout while connecting to socket $sint:$sport\n"; };
+    alarm(5);
+    connect($sock, $sin)
+	or die "** Unable to connect to socket $sint:$sport\n";
+    alarm(0);
+
+    select((select($sock), $| = 1)[0]);
+    print $sock "bad command\r\n";
+
+    $SIG{ALRM} =
+	sub { die "** Timeout while reading from socket $sint:$sport\n"; };
+    alarm(10);
+    my $res = <$sock>;
+    alarm(0);
+
+    $res =~ m|^SPAMD/|
+	or die "** Did not get SPAMD from socket $sint:$sport. "
+	      ."It said: $res\n";
+    };
+  alarm(0);
+  if($@)
+    {
+    print "  $@";
+    print "  Assume SpamAssassin (spamd) is not running\n";
+    }
+  else
+    {
+    $parm_running{SpamAssassin} = ' ';
+    print "  SpamAssassin (spamd) seems to be running\n";
+    }
+  }
+else
+  {
+  print "The spamc command failed: assume SpamAssassin (spamd) is not running\n";
+  }
+}
+
+sub check_running_clamav
+{
+my $sock;
+
+# For ClamAV, we need to find the clamd socket for use in the Exim
+# configuration. Search for the clamd configuration file.
+
+if (system("clamscan -h 2>/dev/null >/dev/null") == 0)
+  {
+  my($f, $clamconf, $test_prefix);
+
+  print "The clamscan command works";
+
+  $test_prefix = $ENV{EXIM_TEST_PREFIX};
+  $test_prefix = '' if !defined $test_prefix;
+
+  foreach $f ("$test_prefix/etc/clamd.conf",
+	      "$test_prefix/usr/local/etc/clamd.conf",
+	      "$test_prefix/etc/clamav/clamd.conf", '')
+    {
+    if (-e $f)
+      {
+      $clamconf = $f;
+      last;
+      }
+    }
+
+  # Read the ClamAV configuration file and find the socket interface.
+
+  if ($clamconf ne '')
+    {
+    my $socket_domain;
+    open(IN, "$clamconf") || die "\n** Unable to open $clamconf: $!\n";
+    while (<IN>)
+      {
+      if (/^LocalSocket\s+(.*)/)
+	{
+	$parm_clamsocket = $1;
+	$socket_domain = AF_UNIX;
+	last;
+	}
+      if (/^TCPSocket\s+(\d+)/)
+	{
+	if (defined $parm_clamsocket)
+	  {
+	  $parm_clamsocket .= " $1";
+	  $socket_domain = AF_INET;
+	  last;
+	  }
+	else
+	  {
+	  $parm_clamsocket = " $1";
+	  }
+	}
+      elsif (/^TCPAddr\s+(\S+)/)
+	{
+	if (defined $parm_clamsocket)
+	  {
+	  $parm_clamsocket = $1 . $parm_clamsocket;
+	  $socket_domain = AF_INET;
+	  last;
+	  }
+	else
+	  {
+	  $parm_clamsocket = $1;
+	  }
+	}
+      }
+    close(IN);
+
+    if (defined $socket_domain)
+      {
+      print ":\n  The clamd socket is $parm_clamsocket\n";
+      # This test for an active ClamAV is courtesy of Daniel Tiefnig.
+      eval
+	{
+	my $socket;
+	if ($socket_domain == AF_UNIX)
+	  {
+	  $socket = sockaddr_un($parm_clamsocket) or die "** Failed packing '$parm_clamsocket'\n";
+	  }
+	elsif ($socket_domain == AF_INET)
+	  {
+	  my ($ca_host, $ca_port) = split(/\s+/,$parm_clamsocket);
+	  my $ca_hostent = gethostbyname($ca_host) or die "** Failed to get raw address for host '$ca_host'\n";
+	  $socket = sockaddr_in($ca_port, $ca_hostent) or die "** Failed packing '$parm_clamsocket'\n";
+	  }
+	else
+	  {
+	  die "** Unknown socket domain '$socket_domain' (should not happen)\n";
+	  }
+	socket($sock, $socket_domain, SOCK_STREAM, 0) or die "** Unable to open socket '$parm_clamsocket'\n";
+	local $SIG{ALRM} = sub { die "** Timeout while connecting to socket '$parm_clamsocket'\n"; };
+	alarm(5);
+	connect($sock, $socket) or die "** Unable to connect to socket '$parm_clamsocket'\n";
+	alarm(0);
+
+	my $ofh = select $sock; $| = 1; select $ofh;
+	print $sock "PING\n";
+
+	$SIG{ALRM} = sub { die "** Timeout while reading from socket '$parm_clamsocket'\n"; };
+	alarm(10);
+	my $res = <$sock>;
+	alarm(0);
+
+	$res =~ /PONG/ or die "** Did not get PONG from socket '$parm_clamsocket'. It said: $res\n";
+	};
+      alarm(0);
+
+      if($@)
+	{
+	print "  $@";
+	print "  Assume ClamAV is not running\n";
+	}
+      else
+	{
+	$parm_running{ClamAV} = ' ';
+	print "  ClamAV seems to be running\n";
+	}
+      }
+    else
+      {
+      print ", but the socket for clamd could not be determined\n";
+      print "Assume ClamAV is not running\n";
+      }
+    }
+
+  else
+    {
+    print ", but I can't find a configuration for clamd\n";
+    print "Assume ClamAV is not running\n";
+    }
+  }
+}
+
+
+sub check_running_redis
+{
+if (defined $parm_lookups{redis})
+  {
+  if (system("redis-server -v 2>/dev/null >/dev/null") == 0)
+    {
+    print "The redis-server command works\n";
+    $parm_running{redis} = ' ';
+    }
+  else
+    {
+    print "The redis-server command failed: assume Redis not installed\n";
+    }
+  }
+}
+
+sub check_running_dovecot
+{
+system('dovecot --version >/dev/null 2>&1');
+if ($? == 0)
+  {
+  print "Dovecot appears to be available\n";
+  $parm_running{dovecot} = ' ';
+  }
+else
+  {
+  print "Dovecot not found\n";
+  }
+}
+
+
+
+###############################################################################
+###############################################################################
+
 # Here begins the Main Program ...
 
 ###############################################################################
@@ -3010,7 +3684,9 @@ GetOptions(
     'ipv6!'    => \$have_ipv6,
     'keep'     => \$save_output,
     'slow'     => \$slow,
-    'valgrind' => \$valgrind,
+    'tls=s'    => \my $tls,
+    'portbase=i'	=> \my $portbase,
+    'valgrind'		=> \$valgrind,
     'range=s{2}'       => \my @range_wanted,
     'test=i@'          => \my @tests_wanted,
     'fail-any!'        => \my $fail_any,
@@ -3029,6 +3705,7 @@ GetOptions(
 print "Exim binary is `$parm_exim'\n" if defined $parm_exim;
 
 
+my %wanted;
 my @wanted = sort numerically uniq
   @tests_wanted ? @tests_wanted : (),
   @range_wanted ? $range_wanted[0] .. $range_wanted[1] : (),
@@ -3037,6 +3714,7 @@ my @wanted = sort numerically uniq
           0+$ARGV[0]..0+$ARGV[1]    # add 0 to cope with test numbers starting with zero
         : ();
 @wanted = 1..TEST_TOP if not @wanted;
+map { $wanted{sprintf("%04d",$_)}= $_; } @wanted;
 
 ##################################################
 #        Check for sudo access to root           #
@@ -3206,7 +3884,7 @@ die "CONFIGURE_GROUP ($parm_configure_group) does not match the group invoking $
 	and $parm_configure_group != $);
 
 die "aux-fixed file is group-writeable; best to strip them all, recursively\n"
-	if 0020 & (stat "aux-fixed/0037.f-1")[2];
+	if 0020 & (stat "$parm_cwd/aux-fixed/0002.alias1")[2];
 
 
 open(EXIMINFO, "$parm_exim -d-all+transport -bV -C $parm_cwd/test-config -DDIR=$parm_cwd |") ||
@@ -3230,48 +3908,53 @@ while (<EXIMINFO>)
     }
 
   elsif (/^Support for: (.*)/)
-    {
+    {			# Compile-time features - exim -bV
     print;
     @temp = split /(\s+)/, $1;
     push(@temp, ' ');
     %parm_support = @temp;
     }
 
-  elsif (/^Lookups \(built-in\): (.*)/)
+  elsif (/^Lookups \((?:built-in|dynamic)\):  ?(.*)/)
     {
     print;
     @temp = split /(\s+)/, $1;
     push(@temp, ' ');
-    %parm_lookups = @temp;
+    my %temp_lookups = @temp;
+    @parm_lookups{keys %temp_lookups} = values %temp_lookups;
     }
 
-  elsif (/^Authenticators: (.*)/)
+  elsif (/^Authenticators \((?:built-in|dynamic)\):  ?(.*)/)
     {
     print;
     @temp = split /(\s+)/, $1;
     push(@temp, ' ');
-    %parm_authenticators = @temp;
+    my %temp_auths= @temp;
+    @parm_authenticators{keys %temp_auths} = values %temp_auths;
     }
 
-  elsif (/^Routers: (.*)/)
+  elsif (/^Routers \((?:built-in|dynamic)\):  ?(.*)/)
     {
     print;
     @temp = split /(\s+)/, $1;
     push(@temp, ' ');
-    %parm_routers = @temp;
+    my %temp_routers = @temp;
+    @parm_routers{keys %temp_routers} = values %temp_routers;
     }
 
   # Some transports have options, e.g. appendfile/maildir. For those, ensure
   # that the basic transport name is set, and then the name with each of the
   # options.
 
-  elsif (/^Transports: (.*)/)
+  elsif (/^Transports \((?:built-in|dynamic)\): (.*)/)
     {
     print;
     @temp = split /(\s+)/, $1;
     my($i,$k);
     push(@temp, ' ');
-    %parm_transports = @temp;
+    my %temp_transports = @temp;
+    @parm_transports{keys %temp_transports} = values %temp_transports;
+
     foreach $k (keys %parm_transports)
       {
       if ($k =~ "/")
@@ -3298,220 +3981,15 @@ print "-" x 78, "\n";
 
 unlink("$parm_cwd/test-config");
 
-##################################################
-#    Check for SpamAssassin and ClamAV           #
-##################################################
 
-# These are crude tests. If they aren't good enough, we'll have to improve
-# them, for example by actually passing a message through spamc or clamscan.
 
 if (defined $parm_support{Content_Scanning})
   {
-  my $sock = new FileHandle;
-
-  if (system("spamc -h 2>/dev/null >/dev/null") == 0)
-    {
-    print "The spamc command works:\n";
-
-    # This test for an active SpamAssassin is courtesy of John Jetmore.
-    # The tests are hard coded to localhost:783, so no point in making
-    # this test flexible like the clamav test until the test scripts are
-    # changed.  spamd doesn't have the nice PING/PONG protocol that
-    # clamd does, but it does respond to errors in an informative manner,
-    # so use that.
-
-    my($sint,$sport) = ('127.0.0.1',783);
-    eval
-      {
-      my $sin = sockaddr_in($sport, inet_aton($sint))
-          or die "** Failed packing $sint:$sport\n";
-      socket($sock, PF_INET, SOCK_STREAM, getprotobyname('tcp'))
-          or die "** Unable to open socket $sint:$sport\n";
-
-      local $SIG{ALRM} =
-          sub { die "** Timeout while connecting to socket $sint:$sport\n"; };
-      alarm(5);
-      connect($sock, $sin)
-          or die "** Unable to connect to socket $sint:$sport\n";
-      alarm(0);
-
-      select((select($sock), $| = 1)[0]);
-      print $sock "bad command\r\n";
-
-      $SIG{ALRM} =
-          sub { die "** Timeout while reading from socket $sint:$sport\n"; };
-      alarm(10);
-      my $res = <$sock>;
-      alarm(0);
-
-      $res =~ m|^SPAMD/|
-          or die "** Did not get SPAMD from socket $sint:$sport. "
-                ."It said: $res\n";
-      };
-    alarm(0);
-    if($@)
-      {
-      print "  $@";
-      print "  Assume SpamAssassin (spamd) is not running\n";
-      }
-    else
-      {
-      $parm_running{SpamAssassin} = ' ';
-      print "  SpamAssassin (spamd) seems to be running\n";
-      }
-    }
-  else
-    {
-    print "The spamc command failed: assume SpamAssassin (spamd) is not running\n";
-    }
-
-  # For ClamAV, we need to find the clamd socket for use in the Exim
-  # configuration. Search for the clamd configuration file.
-
-  if (system("clamscan -h 2>/dev/null >/dev/null") == 0)
-    {
-    my($f, $clamconf, $test_prefix);
-
-    print "The clamscan command works";
-
-    $test_prefix = $ENV{EXIM_TEST_PREFIX};
-    $test_prefix = '' if !defined $test_prefix;
-
-    foreach $f ("$test_prefix/etc/clamd.conf",
-                "$test_prefix/usr/local/etc/clamd.conf",
-                "$test_prefix/etc/clamav/clamd.conf", '')
-      {
-      if (-e $f)
-        {
-        $clamconf = $f;
-        last;
-        }
-      }
-
-    # Read the ClamAV configuration file and find the socket interface.
-
-    if ($clamconf ne '')
-      {
-      my $socket_domain;
-      open(IN, "$clamconf") || die "\n** Unable to open $clamconf: $!\n";
-      while (<IN>)
-        {
-        if (/^LocalSocket\s+(.*)/)
-          {
-          $parm_clamsocket = $1;
-          $socket_domain = AF_UNIX;
-          last;
-          }
-        if (/^TCPSocket\s+(\d+)/)
-          {
-          if (defined $parm_clamsocket)
-            {
-            $parm_clamsocket .= " $1";
-            $socket_domain = AF_INET;
-            last;
-            }
-          else
-            {
-            $parm_clamsocket = " $1";
-            }
-          }
-        elsif (/^TCPAddr\s+(\S+)/)
-          {
-          if (defined $parm_clamsocket)
-            {
-            $parm_clamsocket = $1 . $parm_clamsocket;
-            $socket_domain = AF_INET;
-            last;
-            }
-          else
-            {
-            $parm_clamsocket = $1;
-            }
-          }
-        }
-      close(IN);
-
-      if (defined $socket_domain)
-        {
-        print ":\n  The clamd socket is $parm_clamsocket\n";
-        # This test for an active ClamAV is courtesy of Daniel Tiefnig.
-        eval
-          {
-          my $socket;
-          if ($socket_domain == AF_UNIX)
-            {
-            $socket = sockaddr_un($parm_clamsocket) or die "** Failed packing '$parm_clamsocket'\n";
-            }
-          elsif ($socket_domain == AF_INET)
-            {
-            my ($ca_host, $ca_port) = split(/\s+/,$parm_clamsocket);
-            my $ca_hostent = gethostbyname($ca_host) or die "** Failed to get raw address for host '$ca_host'\n";
-            $socket = sockaddr_in($ca_port, $ca_hostent) or die "** Failed packing '$parm_clamsocket'\n";
-            }
-          else
-            {
-            die "** Unknown socket domain '$socket_domain' (should not happen)\n";
-            }
-          socket($sock, $socket_domain, SOCK_STREAM, 0) or die "** Unable to open socket '$parm_clamsocket'\n";
-          local $SIG{ALRM} = sub { die "** Timeout while connecting to socket '$parm_clamsocket'\n"; };
-          alarm(5);
-          connect($sock, $socket) or die "** Unable to connect to socket '$parm_clamsocket'\n";
-          alarm(0);
-
-          my $ofh = select $sock; $| = 1; select $ofh;
-          print $sock "PING\n";
-
-          $SIG{ALRM} = sub { die "** Timeout while reading from socket '$parm_clamsocket'\n"; };
-          alarm(10);
-          my $res = <$sock>;
-          alarm(0);
-
-          $res =~ /PONG/ or die "** Did not get PONG from socket '$parm_clamsocket'. It said: $res\n";
-          };
-        alarm(0);
-
-        if($@)
-          {
-          print "  $@";
-          print "  Assume ClamAV is not running\n";
-          }
-        else
-          {
-          $parm_running{ClamAV} = ' ';
-          print "  ClamAV seems to be running\n";
-          }
-        }
-      else
-        {
-        print ", but the socket for clamd could not be determined\n";
-        print "Assume ClamAV is not running\n";
-        }
-      }
-
-    else
-      {
-      print ", but I can't find a configuration for clamd\n";
-      print "Assume ClamAV is not running\n";
-      }
-    }
+  check_running_spamassassin();
+  check_running_clamav();
   }
-
-
-##################################################
-#       Check for redis                          #
-##################################################
-if (defined $parm_lookups{redis})
-  {
-  if (system("redis-server -v 2>/dev/null >/dev/null") == 0)
-    {
-    print "The redis-server command works\n";
-    $parm_running{redis} = ' ';
-    }
-  else
-    {
-    print "The redis-server command failed: assume Redis not installed\n";
-    }
-  }
+check_running_redis();
+check_running_dovecot();
 
 ##################################################
 #         Test for the basic requirements        #
@@ -3590,6 +4068,13 @@ if (defined $parm_support{Expand_dlfunc} && !-e 'bin/loaded')
 $pwpw = $pwpw;       # Kill Perl warnings
 $pwquota = $pwquota;
 $pwcomm = $pwcomm;
+
+if ($parm_caller_gecos =~ /&/)
+  {
+  my $name = $parm_caller;
+  $name =~ s/^(.)/\u$1/;
+  $parm_caller_gecos =~ s/&/$name/g;
+  }
 
 $parm_caller_group = getgrgid($parm_caller_gid);
 
@@ -3701,6 +4186,8 @@ else
 
 print "IPv4 address is $parm_ipv4\n";
 print "IPv6 address is $parm_ipv6\n";
+printf("Ports %d to %d\n", $portbase, $portbase+5)  if (defined($portbase));
+
 $parm_ipv6 =~ /^[^%\/]*/;
 # drop any %scope from the ipv6, for some uses
 ($parm_ipv6_stripped = $parm_ipv6) =~ s/%.*//g;
@@ -3792,6 +4279,56 @@ else
 die "** Unable to make patched exim: $!\n"
   if (system("sudo ./patchexim $parm_exim") != 0);
 
+# If TLS-library-specific binaries have been made, grab them too
+
+$suff = 'openssl';
+$f = $parm_exim . '_' . $suff;
+if (-f $f) {
+  $exim_openssl = "eximdir/exim_$suff";
+  die "** Unable to make patched exim: $!\n"
+    if (system("sudo ./patchexim -o $exim_openssl $f") != 0);
+  }
+$suff = 'gnutls';
+$f = $parm_exim . '_' . $suff;
+if (-f $f) {
+  $exim_gnutls = "eximdir/exim_$suff";
+  die "** Unable to make patched exim: $!\n"
+    if (system("sudo ./patchexim -o $exim_gnutls $f") != 0);
+  }
+
+if (defined($tls))
+  {
+  die "** Need both $exim_openssl and $exim_gnutls for cross-library teting\n"
+    if ( !defined($exim_openssl) || !defined($exim_gnutls) );
+  if ($tls eq 'openssl')
+    {
+    $exim_client = $exim_openssl;
+    $exim_server = $exim_gnutls;
+    }
+  elsif ($tls eq 'gnutls')
+    {
+    $exim_client = $exim_gnutls;
+    $exim_server = $exim_openssl;
+    }
+  else
+    { die "** need eother openssl or gnutls speified as the client for cross-library testing, saw $tls\n"; }
+  }
+else
+  { $exim_client = $exim_server = 'eximdir/exim'; }
+print ">> \$exim_client <$exim_client>\n";;
+print ">> \$exim_server <$exim_server>\n";;
+
+if (defined($portbase))
+  {
+  printf(">>Ports %d to %d\n", $portbase, $portbase+5)  if $debug;
+  $parm_port_n = $portbase;	# Nothing listening on this port
+  $parm_port_s = $portbase+1;	# Used for the "server" command
+  $parm_port_d = $portbase+2;	# Used for the Exim daemon
+  $parm_port_d2 = $portbase+3;	# Additional for daemon
+  $parm_port_d3 = $portbase+4;	# Additional for daemon
+  $parm_port_d4 = $portbase+5;	# Additional for daemon
+  }
+
 # From this point on, exits from the program must go via the subroutine
 # tests_exit(), so that suitable cleaning up can be done when required.
 # Arrange to catch interrupting signals, to assist with this.
@@ -3807,14 +4344,22 @@ system("sudo cp eximdir/exim eximdir/exim_exim;" .
        "sudo chgrp $parm_eximgroup eximdir/exim_exim;" .
        "sudo chmod 06755 eximdir/exim_exim");
 
+# Copy any libraries that were built for dynamic load
+
+($parm_exim_dir) = $parm_exim =~ m?^(.*)/exim?;
+
+while (my $file = glob("$parm_exim_dir/dynmodules/*.so")) {
+  my $base = basename($file);
+  cp("$file", "eximdir/");
+  system("sudo chmod 755 eximdir/$base");
+  }
+
 ##################################################
 #     Make copies of utilities we might need     #
 ##################################################
 
 # Certain of the tests make use of some of Exim's utilities. We do not need
 # to be root to copy these.
-
-($parm_exim_dir) = $parm_exim =~ m?^(.*)/exim?;
 
 $dbm_build_deleted = 0;
 if (defined $parm_lookups{dbm} && not cp("$parm_exim_dir/exim_dbmbuild", "eximdir/exim_dbmbuild"))
@@ -3823,7 +4368,7 @@ if (defined $parm_lookups{dbm} && not cp("$parm_exim_dir/exim_dbmbuild", "eximdi
   $dbm_build_deleted = 1;
   }
 
-foreach my $tool (qw(exim_dumpdb exim_lock exinext exigrep eximstats exiqgrep)) {
+foreach my $tool (qw(exim_dumpdb exim_lock exinext exigrep eximstats exiqgrep exim_msgdate exim_id_update)) {
   cp("$parm_exim_dir/$tool" => "eximdir/$tool")
     or tests_exit(-1, "Failed to make a copy of $tool: $!");
 }
@@ -3831,7 +4376,7 @@ foreach my $tool (qw(exim_dumpdb exim_lock exinext exigrep eximstats exiqgrep)) 
 # Collect some version information
 print '-' x 78, "\n";
 print "Perl version for runtest: $]\n";
-foreach (map { "./eximdir/$_" } qw(exigrep exinext eximstats exiqgrep)) {
+foreach (map { "./eximdir/$_" } qw(exigrep exinext eximstats exiqgrep exim_msgdate)) {
   # fold (or unfold?) multiline output into a one-liner
   print join(', ', map { chomp; $_ } `$_ --version`), "\n";
 }
@@ -3962,10 +4507,10 @@ DIR: for (my $i = 0; $i < @test_dirs; $i++)
         {
         if (!defined $parm_malware{$1}) { $wantthis = 0; last; }
         }
-      elsif (/^feature (.*)$/)
-        {
+      elsif (/^(not )?feature (.*)$/)
+        {			#a macro name, or lack thereof - -bP macros
 	# move to a subroutine?
-	my $eximinfo = "$parm_exim -C $parm_cwd/test-config -DDIR=$parm_cwd -bP macro $1";
+	my $eximinfo = "$parm_exim -C $parm_cwd/test-config -DDIR=$parm_cwd -bP macro $2";
 
 	open (IN, "$parm_cwd/confs/0000") ||
 	  tests_exit(-1, "Couldn't open $parm_cwd/confs/0000: $!\n");
@@ -3980,10 +4525,10 @@ DIR: for (my $i = 0; $i < @test_dirs; $i++)
 	close(OUT);
 
 	system($eximinfo . " >/dev/null 2>&1");
-	if ($? != 0) {
-	  unlink("$parm_cwd/test-config");
+	if (!defined $1 && $? != 0 || defined $1 && $? == 0) {
 	  $wantthis = 0;
-	  $_ = "feature $1";
+	  unlink("$parm_cwd/test-config");
+	  $_ = $1 || "" . "feature $2";
 	  last;
 	}
 	unlink("$parm_cwd/test-config");
@@ -4015,7 +4560,9 @@ DIR: for (my $i = 0; $i < @test_dirs; $i++)
   # We want the tests from this subdirectory, provided they are in the
   # range that was selected.
 
-  @testlist = grep { $_ ~~ @wanted } grep { /^\d+(?:\.\d+)?$/ } map { basename $_ } glob "scripts/$testdir/*";
+  undef @testlist;
+  map { push @testlist, $_ if exists $wanted{$_} } grep { /^\d+(?:\.\d+)?$/ } map { basename $_ } glob "scripts/$testdir/*";
+
   tests_exit(-1, "Failed to read test scripts from `scripts/$testdir/*': $!")
     if not @testlist;
 
@@ -4079,6 +4626,9 @@ foreach $basedir ("aux-var", "dnszones")
       $" = ' ';
       }
 
+    my $testnum = 0;
+    if ($file =~ /^(\d+)/) { $testnum = $1; }
+
     print ">>Copying $basedir-src/$file to $basedir/$outfile\n" if $debug;
     open(IN, "$parm_cwd/$basedir-src/$file") ||
       tests_exit(-1, "Failed to open $parm_cwd/$basedir-src/$file: $!");
@@ -4086,7 +4636,7 @@ foreach $basedir ("aux-var", "dnszones")
       tests_exit(-1, "Failed to open $parm_cwd/$basedir/$outfile: $!");
     while (<IN>)
       {
-      do_substitute(0);
+      do_substitute($testnum);
       print OUT;
       }
     close(IN);
@@ -4281,11 +4831,14 @@ foreach $test (@test_list)
   # set up the initial sequence strings.
 
   undef %cache;
+  $next_msgid_old = "aX";
   $next_msgid = "aX";
   $next_pid = 1234;
-  $next_port = 1111;
+  $next_port = 10001;
+  $next_conn = 1111;
   $message_skip = 0;
   $msglog_skip = 0;
+  $munge_skip = 0;
   $stderr_skip = 0;
   $stdout_skip = 0;
   $rmfiltertest = 0;
@@ -4305,6 +4858,7 @@ foreach $test (@test_list)
     {
     if (/^no_message_check/) { $message_skip = 1; next; }
     if (/^no_msglog_check/)  { $msglog_skip = 1; next; }
+    if (/^no_munge/)         { $munge_skip = 1; next; }
     if (/^no_stderr_check/)  { $stderr_skip = 1; next; }
     if (/^no_stdout_check/)  { $stdout_skip = 1; next; }
     if (/^rmfiltertest/)     { $rmfiltertest = 1; next; }
@@ -4339,6 +4893,7 @@ foreach $test (@test_list)
       # set above, but doesn't hurt to leave them here.
       if (/^no_message_check/) { $message_skip = 1; next; }
       if (/^no_msglog_check/)  { $msglog_skip = 1; next; }
+      if (/^no_munge/)         { $munge_skip = 1; next; }
       if (/^no_stderr_check/)  { $stderr_skip = 1; next; }
       if (/^no_stdout_check/)  { $stdout_skip = 1; next; }
       if (/^rmfiltertest/)     { $rmfiltertest = 1; next; }
@@ -4397,8 +4952,8 @@ foreach $test (@test_list)
     # was run and not waited for (usually a daemon or server startup).
 
     my($commandname) = '';
-    my($expectrc) = 0;
-    my($rc, $run_extra) = run_command($testno, \$subtestno, \$expectrc, \$commandname, $TEST_STATE);
+    my($expectrc, $expect_not) = (0, 0);
+    my($rc, $run_extra) = run_command($testno, \$subtestno, \$expectrc, \$expect_not, \$commandname, $TEST_STATE);
     my($cmdrc) = $?;
 
     if ($debug) {
@@ -4436,12 +4991,15 @@ foreach $test (@test_list)
     # We ran and waited for a command. Check for the expected result unless
     # it died.
 
-    if ($cmdrc != $expectrc && !$sigpipehappened)
+    if (!$sigpipehappened && ($expect_not ? ($cmdrc == $expectrc) : ($cmdrc != $expectrc)))
       {
       printf("** Command $commandno (\"$commandname\", starting at line $subtest_startline)\n");
       if (($cmdrc & 0xff) == 0)
         {
-        printf("** Return code %d (expected %d)", $cmdrc/256, $expectrc/256);
+	if ($expect_not)
+	  { printf("** Return code %d (expected anything but that)", $cmdrc/256); }
+	else
+	  { printf("** Return code %d (expected %d)", $cmdrc/256, $expectrc/256); }
         }
       elsif (($cmdrc & 0xff00) == 0)
         { printf("** Killed by signal %d", $cmdrc & 255); }
@@ -4641,6 +5199,10 @@ Skip IPv6 related setup and tests (default: use ipv6)
 
 Keep the various output files produced during a test run. (default: don't keep)
 
+=item B<--portbase> I<n>
+
+Use ports starting at the given number for testing. (default: 1223)
+
 =item B<--range> I<n0> I<n1>
 
 Run tests between (including) I<n0> and I<n1>. A "+" may be used to specify the "last
@@ -4653,6 +5215,10 @@ Insert some delays to compensate for a slow host system. (default: off)
 =item B<--test> I<n>
 
 Run the specified test. This option may used multiple times.
+
+=item B<--tls> (gnutls|openssl)
+
+Use the specified version of client server test utility, for cross-library testing. The other library version is used for the server test utility.
 
 =item B<--update>
 
@@ -4667,4 +5233,5 @@ Start Exim wrapped by I<valgrind>. (default: don't use valgrind)
 =cut
 
 
+# vi: aw ai sw=2
 # End of runtest script

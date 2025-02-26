@@ -1,0 +1,83 @@
+# TLS: ALPN
+#
+# XXX Munging for the GnuTLS runs, to match the OpenSSL,
+#     has not been done.  There are many log differences
+#     (but the ALPN feature mainly works, overall)
+#
+gnutls
+exim -DSERVER=server -bd -oX PORT_D:PORT_D2
+****
+#
+# Basic: is good ALPN set on tpt acceptable to server
+exim -DCONTROL=smtp -odf good_alpn@test.ex
+Test message.
+****
+#
+# Bad ALPN rejected
+exim -DCONTROL=http -odf bad_alpn@test.ex
+****
+sudo rm -f DIR/spool/db/retry* DIR/spool/input/*-D DIR/spool/input/*-H
+#
+# Multiple ALPN rejected
+exim -DCONTROL=smtp:smtp -odf multiple_alpn@test.ex
+****
+sudo rm -f DIR/spool/db/retry* DIR/spool/input/*-D DIR/spool/input/*-H
+#
+# Empty client option is ok
+exim -DCONTROL="" -odf empty_client_option@test.ex
+****
+# Content-free client option is ok
+exim -DCONTROL=" " -odf nocontent_client_option@test.ex
+****
+#
+# Really dumb (IOT?) client, offering no TLS extensions at all in the Client Hello
+#
+# We're feeding the TLS protocol packet in manually rather then having
+# the TLS-enabled client do it, we (currently) can only drop the TCP conn after
+# the TLS conn completes (or fails).
+# Expect the server to log "TCP connection closed by peer" for the success case;
+# something else logged counts as bad.
+#
+client 127.0.0.1 PORT_D
+??? 220
+EHLO IOTtester
+??? 250-
+??? 250-SIZE
+??? 250-LIMITS
+??? 250-8BITMIME
+??? 250-PIPELINING
+??? 250-STARTTLS
+??? 250 HELP
+STARTTLS
+??? 220
+>>> \x16\x03\x00\x00\x43\x01\x00\x00\x3f\x03\x02\xff\xff\xff\xff\x92\x3e\x99\x88\xd0\x2b\x8f\xc2\x76\xbd\xcf\x02\xcc\xb6\xfc\x39\x00\xd0\x52\x82\x8c\x65\x0c\xcd\x8c\x02\x00\x40\x00\x00\x18\x00\x33\x00\x39\x00\x45\x00\x88\x00\x16\x00\x35\x00\x84\x00\x2f\x00\x41\x00\x0a\x00\x05\x00\x04\x01\x00
+****
+millisleep 500
+#
+#
+# Bad ALPN rejected, tls-on-connect
+exim -DCONTROL=http -DOPTION -odf bad_alpn@test.ex
+****
+sudo rm -f DIR/spool/db/retry* DIR/spool/input/*-D DIR/spool/input/*-H
+#
+killdaemon
+millisleep 500
+#
+# Server can be told to ignore (bad) ALPN from client
+exim -DSERVER=server -DSTRICT="" -bd -oX PORT_D
+****
+exim -DCONTROL=http -odf bad_alpn_ignored@test.ex
+****
+killdaemon
+#
+# Server can be told custom names list
+exim -DSERVER=server -DSTRICT='${if eq {$sender_host_address}{HOSTIPV4} {smtp:weird} {smtp}}' -bd -oX PORT_D
+****
+exim -DCONTROL=weird -odf custom_alpn@test.ex
+****
+killdaemon
+#
+#
+no_msglog_check
+no_stdout_check
+millisleep 500

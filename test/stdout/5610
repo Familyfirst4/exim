@@ -1,4 +1,4 @@
-Connecting to ip4.ip4.ip4.ip4 port 1225 ... connected
+Connecting to ip4.ip4.ip4.ip4 port PORT_D ... connected
 Certificate file = aux-fixed/cert2
 Key file = aux-fixed/cert2
 ??? 220
@@ -8,6 +8,8 @@ Key file = aux-fixed/cert2
 <<< 250-server1.example.com Hello rhu.barb [ip4.ip4.ip4.ip4]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-
@@ -20,8 +22,8 @@ Key file = aux-fixed/cert2
 ??? 220
 <<< 220 TLS go ahead
 Attempting to start TLS
-Response verify OK
-Succeeded in starting TLS
+OCSP status response: good signature
+Succeeded in starting TLS (with OCSP)
 >>> helo test
 ??? 250
 <<< 250 server1.example.com Hello test [ip4.ip4.ip4.ip4]
@@ -35,7 +37,7 @@ Succeeded in starting TLS
 ??? 221
 <<< 221 server1.example.com closing connection
 End of script
-Connecting to ip4.ip4.ip4.ip4 port 1225 ... connected
+Connecting to ip4.ip4.ip4.ip4 port PORT_D ... connected
 Certificate file = aux-fixed/cert2
 Key file = aux-fixed/cert2
 ??? 220
@@ -45,6 +47,8 @@ Key file = aux-fixed/cert2
 <<< 250-server1.example.com Hello rhu.barb [ip4.ip4.ip4.ip4]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-
@@ -57,10 +61,10 @@ Key file = aux-fixed/cert2
 ??? 220
 <<< 220 TLS go ahead
 Attempting to start TLS
-no response received
-Succeeded in starting TLS
+no OCSP response received
+Succeeded in starting TLS (with OCSP)
 End of script
-Connecting to ip4.ip4.ip4.ip4 port 1225 ... connected
+Connecting to ip4.ip4.ip4.ip4 port PORT_D ... connected
 Certificate file = aux-fixed/cert2
 Key file = aux-fixed/cert2
 ??? 220
@@ -70,6 +74,8 @@ Key file = aux-fixed/cert2
 <<< 250-server1.example.com Hello rhu.barb [ip4.ip4.ip4.ip4]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-
@@ -82,10 +88,10 @@ Key file = aux-fixed/cert2
 ??? 220
 <<< 220 TLS go ahead
 Attempting to start TLS
-no response received
-Succeeded in starting TLS
+no OCSP response received
+Succeeded in starting TLS (with OCSP)
 End of script
-Connecting to ip4.ip4.ip4.ip4 port 1225 ... connected
+Connecting to ip4.ip4.ip4.ip4 port PORT_D ... connected
 Certificate file = aux-fixed/cert2
 Key file = aux-fixed/cert2
 ??? 220
@@ -95,6 +101,8 @@ Key file = aux-fixed/cert2
 <<< 250-server1.example.com Hello rhu.barb [ip4.ip4.ip4.ip4]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-
@@ -113,6 +121,8 @@ Succeeded in starting TLS
 <<< 250-server1.example.com Hello rhu.barb.tls [ip4.ip4.ip4.ip4]
 ??? 250-
 <<< 250-SIZE 52428800
+??? 250-
+<<< 250-LIMITS MAILMAX=1000 RCPTMAX=50000
 ??? 250-
 <<< 250-8BITMIME
 ??? 250-

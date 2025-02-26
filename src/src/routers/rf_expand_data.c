@@ -2,8 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "../exim.h"
@@ -30,7 +32,7 @@ uschar *
 rf_expand_data(address_item *addr, uschar *s, int *prc)
 {
 uschar *yield = expand_string(s);
-if (yield != NULL) return yield;
+if (yield) return yield;
 if (f.expand_string_forcedfail)
   {
   DEBUG(D_route) debug_printf("forced failure for expansion of \"%s\"\n", s);

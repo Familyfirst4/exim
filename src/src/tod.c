@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* Copyright (c) The Exim Maintainers 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* A function for returning the time of day in various formats */
 
@@ -168,6 +169,7 @@ switch(type)
 	    diff_min += (local.tm_yday > gmt->tm_yday) ? 1440 : -1440;
 	  diff_hour = diff_min/60;
 	  diff_min  = abs(diff_min - diff_hour*60);
+	  diff_min &= 63;			/* compiler quietening */
 	  }
 	else					/* subminute offset, eg. TAI */
 	  {

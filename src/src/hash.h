@@ -1,6 +1,7 @@
 /*
  *  Exim - an Internet mail transport agent
  *  Copyright (c) The Exim Maintainers 1995 - 2022
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *
  *  Hash interface functions
  */
@@ -18,10 +19,6 @@
 # include <gnutls/crypto.h>
 #elif defined(SHA_GCRYPT)
 # include <gcrypt.h>
-#elif defined(SHA_POLARSSL)
-# include "pdkim/pdkim.h"		/*XXX ugly */
-# include "pdkim/polarssl/sha1.h"
-# include "pdkim/polarssl/sha2.h"
 #endif
 
 
@@ -61,12 +58,6 @@ typedef struct {
 
 #elif defined(SHA_GCRYPT)
   gcry_md_hd_t sha;          /* Either SHA1 or SHA256 block               */
-
-#elif defined(SHA_POLARSSL)
-  union {
-    sha1_context sha1;       /* SHA1 block                                */
-    sha2_context sha2;       /* SHA256 block                              */
-  } u;
 
 #elif defined(SHA_NATIVE)
   sha1 sha1;

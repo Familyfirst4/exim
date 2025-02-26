@@ -6,7 +6,7 @@
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
-LOG: SMTP command timeout on connection from [V4NET.0.0.1]
+LOG: SMTP command timeout on connection from [V4NET.0.0.1] D=qqs
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -15,68 +15,92 @@ LOG: SMTP command timeout on connection from [V4NET.0.0.1]
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 27)
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 27)
 >>> check hosts = :
+>>> host in ":"?
+>>>  list element: 
 >>> host in ":"? no (end of list)
->>> accept: condition test failed in ACL "check_recipient"
->>> processing "deny" (TESTSUITE/test-config 28)
+>>> accept: condition test failed in ACL check_recipient
+>>> processing ACL check_recipient "deny" (TESTSUITE/test-config 28)
 >>>   message: unrouteable address
 >>> check recipients = verify@test.ex
+>>> userx@test.ex in "verify@test.ex"?
+>>>  list element: verify@test.ex
 >>> userx@test.ex in "verify@test.ex"? no (end of list)
->>> deny: condition test failed in ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 31)
+>>> deny: condition test failed in ACL check_recipient
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 31)
 >>> check domains = +local_domains
->>> test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
->>> test.ex in "+local_domains"? yes (matched "+local_domains")
->>> accept: condition test succeeded in ACL "check_recipient"
->>> end of ACL "check_recipient": ACCEPT
-LOG: SMTP data timeout (message abandoned) on connection from (test) [V4NET.0.0.1] F=<userx@test.ex>
+>>> test.ex in "+local_domains"?
+>>>  list element: +local_domains
+>>>   start sublist local_domains
+>>>    test.ex in "test.ex : *.test.ex"?
+>>>    ╎list element: test.ex
+>>>    ╎test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
+>>>   end sublist local_domains
+>>>  data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
+>>>  test.ex in "+local_domains"? yes (matched "+local_domains")
+>>> accept: condition test succeeded in ACL check_recipient
+>>> end of ACL check_recipient: ACCEPT
+LOG: SMTP data timeout (message abandoned) on connection from (test) [V4NET.0.0.1] F=<userx@test.ex> D=qqs
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
+environment after trimming:
+ PATH=<munged>
 adding SSLKEYLOGFILE=TESTSUITE/spool/sslkeys
 configuration file is TESTSUITE/test-config
 admin user
 changed uid/gid: privilege not needed
   uid=EXIM_UID gid=EXIM_GID pid=p1234
+try option gecos_pattern
+try option gecos_name
+try option unknown_login
 originator: uid=CALLER_UID gid=CALLER_GID login=CALLER name=CALLER_NAME
 sender address = CALLER@myhost.test.ex
+try option smtp_active_hostname
 sender_fullhost = [V4NET.0.0.1]
 sender_rcvhost = [V4NET.0.0.1]
 host in hosts_connection_nolog? no (option unset)
 LOG: smtp_connection MAIN
   SMTP connection from [V4NET.0.0.1]
+try option message_size_limit
 host in host_lookup? no (option unset)
 set_process_info: pppp handling incoming connection from [V4NET.0.0.1]
- ╭considering: ${if eq {V4NET.0.0.1} {$sender_host_address} {2} {30}}s
-  ╭considering: V4NET.0.0.1} {$sender_host_address} {2} {30}}s
-  ├───────text: V4NET.0.0.1
-  ├considering: } {$sender_host_address} {2} {30}}s
-  ├──expanding: V4NET.0.0.1
-  ╰─────result: V4NET.0.0.1
-  ╭considering: $sender_host_address} {2} {30}}s
-  ├considering: } {2} {30}}s
-  ├──expanding: $sender_host_address
-  ╰─────result: V4NET.0.0.1
- ├──condition: eq {V4NET.0.0.1} {$sender_host_address}
+ ╭considering: ${if░eq░{V4NET.0.0.1}░{$sender_host_address}░{2}░{30}}s
+  cond: eq
+   ╭considering: V4NET.0.0.1}░{$sender_host_address}░{2}░{30}}s
+   ├───────text: V4NET.0.0.1
+   ├considering: }░{$sender_host_address}░{2}░{30}}s
+   ├───expanded: V4NET.0.0.1
+   ╰─────result: V4NET.0.0.1
+   ╭considering: $sender_host_address}░{2}░{30}}s
+   ├──────value: V4NET.0.0.1
+   ├considering: }░{2}░{30}}s
+   ├───expanded: $sender_host_address
+   ╰─────result: V4NET.0.0.1
+ ├──condition: eq░{V4NET.0.0.1}░{$sender_host_address}
  ├─────result: true
-  ╭considering: 2} {30}}s
+  ╭considering: 2}░{30}}s
   ├───────text: 2
-  ├considering: } {30}}s
-  ├──expanding: 2
+  ├considering: }░{30}}s
+  ├───expanded: 2
   ╰─────result: 2
   ╭───scanning: 30}}s
   ├───────text: 30
   ├───scanning: }}s
-  ├──expanding: 30
-  ├─────result: 30
+  ├───expanded: 30
+  ├─────result:  ◀skipped▶
   ╰───skipping: result is not used
  ├───item-res: 2
  ├considering: s
  ├───────text: s
- ├──expanding: ${if eq {V4NET.0.0.1} {$sender_host_address} {2} {30}}s
+ ├───expanded: ${if░eq░{V4NET.0.0.1}░{$sender_host_address}░{2}░{30}}s
  ╰─────result: 2s
 host in host_reject_connection? no (option unset)
 host in sender_unqualified_hosts? no (option unset)
@@ -84,52 +108,75 @@ host in recipient_unqualified_hosts? no (option unset)
 host in helo_verify_hosts? no (option unset)
 host in helo_try_verify_hosts? no (option unset)
 host in helo_accept_junk_hosts? no (option unset)
- ╭considering: $smtp_active_hostname ESMTP Exim $version_number $tod_full
- ├considering:  ESMTP Exim $version_number $tod_full
- ├───────text:  ESMTP Exim 
- ├considering: $version_number $tod_full
- ├considering:  $tod_full
- ├───────text:  
+try option acl_smtp_connect
+try option smtp_banner
+ ╭considering: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+ ├──────value: myhost.test.ex
+ ├considering: ░ESMTP░Exim░$version_number░$tod_full
+ ├───────text: ░ESMTP░Exim░
+ ├considering: $version_number░$tod_full
+ ├──────value: x.yz
+ ├considering: ░$tod_full
+ ├───────text: ░
  ├considering: $tod_full
- ├──expanding: $smtp_active_hostname ESMTP Exim $version_number $tod_full
- ╰─────result: myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
+ ├──────value: Tue,░2░Mar░1999░09:44:33░+0000
+ ├───expanded: $smtp_active_hostname░ESMTP░Exim░$version_number░$tod_full
+ ╰─────result: myhost.test.ex░ESMTP░Exim░x.yz░Tue,░2░Mar░1999░09:44:33░+0000
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [V4NET.0.0.1]
 sender_rcvhost = [V4NET.0.0.1] (helo=test)
 set_process_info: pppp handling incoming connection from (test) [V4NET.0.0.1]
+try option acl_smtp_helo
 SMTP>> 250 myhost.test.ex Hello test [V4NET.0.0.1]
 SMTP<< mail from:userx@test.ex
 spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 msg_size = 0
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
+try option acl_smtp_mail
 SMTP>> 250 OK
 SMTP<< rcpt to:userx@test.ex
+try option acl_smtp_rcpt
 using ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 27)
+processing ACL check_recipient "accept" (TESTSUITE/test-config 27)
 check hosts = :
+host in ":"?
+ list element: 
 host in ":"? no (end of list)
-accept: condition test failed in ACL "check_recipient"
-processing "deny" (TESTSUITE/test-config 28)
+accept: condition test failed in ACL check_recipient
+processing ACL check_recipient "deny" (TESTSUITE/test-config 28)
   message: unrouteable address
 check recipients = verify@test.ex
-address match test: subject=userx@test.ex pattern=verify@test.ex
+userx@test.ex in "verify@test.ex"?
+ list element: verify@test.ex
+ address match test: subject=userx@test.ex pattern=verify@test.ex
 userx@test.ex in "verify@test.ex"? no (end of list)
-deny: condition test failed in ACL "check_recipient"
-processing "accept" (TESTSUITE/test-config 31)
+deny: condition test failed in ACL check_recipient
+processing ACL check_recipient "accept" (TESTSUITE/test-config 31)
 check domains = +local_domains
-test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
-data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
-test.ex in "+local_domains"? yes (matched "+local_domains")
-accept: condition test succeeded in ACL "check_recipient"
-end of ACL "check_recipient": ACCEPT
+test.ex in "+local_domains"?
+ list element: +local_domains
+  start sublist local_domains
+   test.ex in "test.ex : *.test.ex"?
+   ╎list element: test.ex
+   ╎test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
+  end sublist local_domains
+ data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
+ test.ex in "+local_domains"? yes (matched "+local_domains")
+accept: condition test succeeded in ACL check_recipient
+end of ACL check_recipient: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< data
+try option acl_smtp_predata
 SMTP>> 354 Enter message, ending with "." on a line by itself
 search_tidyup called
 LOG: lost_incoming_connection MAIN
-  SMTP data timeout (message abandoned) on connection from (test) [V4NET.0.0.1] F=<userx@test.ex>
+  SMTP data timeout (message abandoned) on connection from (test) [V4NET.0.0.1] F=<userx@test.ex> D=qqs
+try option acl_smtp_notquit
 SMTP>> 421 myhost.test.ex SMTP incoming data timeout - closing connection.
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=1 >>>>>>>>>>>>>>>>
@@ -143,30 +190,46 @@ exim: timed out while reading - message abandoned
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 27)
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 27)
 >>> check hosts = :
+>>> host in ":"?
+>>>  list element: 
 >>> host in ":"? no (end of list)
->>> accept: condition test failed in ACL "check_recipient"
->>> processing "deny" (TESTSUITE/test-config 28)
+>>> accept: condition test failed in ACL check_recipient
+>>> processing ACL check_recipient "deny" (TESTSUITE/test-config 28)
 >>>   message: unrouteable address
 >>> check recipients = verify@test.ex
->>> test.ex in "test.ex"? yes (matched "test.ex")
->>> verify@test.ex in "verify@test.ex"? yes (matched "verify@test.ex")
+>>> verify@test.ex in "verify@test.ex"?
+>>>  list element: verify@test.ex
+>>>  test.ex in "test.ex"?
+>>>   list element: test.ex
+>>>   test.ex in "test.ex"? yes (matched "test.ex")
+>>>  verify@test.ex in "verify@test.ex"? yes (matched "verify@test.ex")
 >>> check !verify = recipient
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing verify@test.ex
->>> test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
->>> test.ex in "! +local_domains"? no (matched "! +local_domains")
+>>> test.ex in domains?
+>>>  list element: !░+local_domains
+>>>   start sublist local_domains
+>>>    test.ex in "test.ex : *.test.ex"?
+>>>    ╎list element: test.ex
+>>>    ╎test.ex in "test.ex : *.test.ex"? yes (matched "test.ex")
+>>>   end sublist local_domains
+>>>  data from lookup saved for cache for +local_domains: key 'test.ex' value 'test.ex'
+>>>  test.ex in domains? no (matched "! +local_domains")
 >>> calling forward router
 >>> forward router declined for verify@test.ex
 >>> no more routers
 >>> ----------- end verify ------------
->>> deny: condition test succeeded in ACL "check_recipient"
->>> end of ACL "check_recipient": DENY
+>>> deny: condition test succeeded in ACL check_recipient
+>>> end of ACL check_recipient: DENY
 LOG: H=(test) [V4NET.0.0.1] F=<userx@test.ex> rejected RCPT verify@test.ex: Unrouteable address
-LOG: SMTP command timeout on connection from (test) [V4NET.0.0.1]
+LOG: SMTP command timeout on connection from (test) [V4NET.0.0.1] D=qqs
 An error was detected while processing a file of BSMTP input.
 The error message was:
 

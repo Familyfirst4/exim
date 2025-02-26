@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file is the header that is the only Exim header to be included in the
 source for the local_scan.c() function. It contains definitions that are made
@@ -21,6 +22,8 @@ Coders of dlfunc routines should read the notes on tainting at the start of
 store.c
 */
 
+#ifndef LOCAL_SCAN_H
+#define LOCAL_SCAN_H
 
 /* Some basic types that make some things easier, the Exim configuration
 settings, and the store functions. */
@@ -108,12 +111,22 @@ enum { opt_stringptr, opt_int, opt_octint, opt_mkint, opt_Kint, opt_fixed,
 by exim. The external version for use in Received: strings has a leading 'E'
 added to ensure it starts with a letter. */
 
-#define MESSAGE_ID_LENGTH 16
+#define MESSAGE_ID_PID_LEN_OLD		6
+#define MESSAGE_ID_SUBTIME_LEN_OLD	2
+
+/* tttttt-ppppppppppp-ssss */
+# define MESSAGE_ID_TIME_LEN	6	/*III could these be not-exposed to local_scan? */
+# define MESSAGE_ID_PID_LEN	11
+# define MESSAGE_ID_SUBTIME_LEN	4
+
+#define MESSAGE_ID_LENGTH_OLD	(MESSAGE_ID_TIME_LEN+1+MESSAGE_ID_PID_LEN_OLD+1+MESSAGE_ID_SUBTIME_LEN_OLD)
+#define MESSAGE_ID_LENGTH	(MESSAGE_ID_TIME_LEN+1+MESSAGE_ID_PID_LEN    +1+MESSAGE_ID_SUBTIME_LEN)
 
 /* The offset to the start of the data in the data file - this allows for
 the name of the data file to be present in the first line. */
 
-#define SPOOL_DATA_START_OFFSET (MESSAGE_ID_LENGTH+3)
+#define SPOOL_DATA_START_OFFSET_OLD	(MESSAGE_ID_LENGTH_OLD+3)
+#define SPOOL_DATA_START_OFFSET		(MESSAGE_ID_LENGTH+3)
 
 /* Structure definitions that are documented as visible in the function. */
 
@@ -132,7 +145,7 @@ typedef struct {
   union {
     void *	value;
     long	offset;
-    void (*	fn)();
+    void (*	fn)(const uschar *, const uschar *, unsigned);
   } v;
 } optionlist;
 #define OPT_OFF(s, field) {.offset = offsetof(s, field)}
@@ -142,9 +155,9 @@ field is always NULL except for one_time aliases that had errors_to on the
 routers that generated them. */
 
 typedef struct recipient_item {
-  uschar *address;              /* the recipient address */
+  const uschar *address;        /* the recipient address */
   int     pno;                  /* parent number for "one_time" alias, or -1 */
-  uschar *errors_to;            /* the errors_to address or NULL */
+  const uschar *errors_to;      /* the errors_to address or NULL */
   uschar *orcpt;                /* DSN orcpt */
   int     dsn_flags;            /* DSN flags */
 #ifdef EXPERIMENTAL_BRIGHTMAIL
@@ -170,7 +183,7 @@ extern uschar *message_id;             /* Internal id of message being handled *
 extern uschar *received_protocol;      /* Name of incoming protocol */
 extern int     recipients_count;       /* Number of recipients */
 extern recipient_item *recipients_list;/* List of recipient addresses */
-extern unsigned char *sender_address;  /* Sender address */
+extern const unsigned char *sender_address;	/* Sender address */
 extern uschar *sender_host_address;    /* IP address of sender, as chars */
 extern uschar *sender_host_authenticated; /* Name of authentication mechanism */
 extern uschar *sender_host_name;       /* Host name from lookup */
@@ -187,8 +200,8 @@ extern uschar *expand_string(uschar *);
 extern void    header_add(int, const char *, ...);
 extern void    header_add_at_position(BOOL, uschar *, BOOL, int, const char *, ...);
 extern void    header_remove(int, const uschar *);
-extern BOOL    header_testname(header_line *, const uschar *, int, BOOL);
-extern BOOL    header_testname_incomplete(header_line *, const uschar *, int, BOOL);
+extern BOOL    header_testname(const header_line *, const uschar *, int, BOOL);
+extern BOOL    header_testname_incomplete(const header_line *, const uschar *, int, BOOL);
 extern void    log_write(unsigned int, int, const char *format, ...) PRINTF_FUNCTION(3,4);
 extern int     lss_b64decode(uschar *, uschar **);
 extern uschar *lss_b64encode(uschar *, int);
@@ -196,8 +209,8 @@ extern int     lss_match_domain(uschar *, uschar *);
 extern int     lss_match_local_part(uschar *, uschar *, BOOL);
 extern int     lss_match_address(uschar *, uschar *, BOOL);
 extern int     lss_match_host(uschar *, uschar *, uschar *);
-extern void    receive_add_recipient(uschar *, int);
-extern BOOL    receive_remove_recipient(uschar *);
+extern void    receive_add_recipient(const uschar *, int);
+extern BOOL    receive_remove_recipient(const uschar *);
 extern uschar *rfc2047_decode(uschar *, BOOL, const uschar *, int, int *,
 			      uschar **);
 extern int     smtp_fflush(void);
@@ -236,4 +249,5 @@ extern pid_t    child_open_exim2_function(int *, uschar *, uschar *, const uscha
 extern pid_t    child_open_function(uschar **, uschar **, int, int *, int *, BOOL, const uschar *);
 #endif
 
+#endif	/* whole file */
 /* End of local_scan.h */

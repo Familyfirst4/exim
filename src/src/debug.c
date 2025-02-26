@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2015 - 2022 */
+/* Copyright (c) The Exim Maintainers 2015 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "exim.h"
@@ -226,7 +227,7 @@ if (debug_ptr == debug_buffer)
     {
     struct timeval now;
     time_t tmp;
-    struct tm * t;
+    const struct tm * t;
 
     gettimeofday(&now, NULL);
     tmp = now.tv_sec;
@@ -242,10 +243,7 @@ if (debug_ptr == debug_buffer)
   /* Set up prefix if outputting for host checking and not debugging */
 
   if (host_checking && debug_selector == 0)
-    {
-    Ustrcpy(debug_ptr, US">>> ");
-    debug_ptr += 4;
-    }
+    debug_ptr = Ustpcpy(debug_ptr, US">>> ");
 
   debug_prefix_length = debug_ptr - debug_buffer;
   }
@@ -255,19 +253,16 @@ if (indent > 0)
   for (int i = indent >> 2; i > 0; i--)
     DEBUG(D_noutf8)
       {
-      Ustrcpy(debug_ptr, US"   !");
-      debug_ptr += 4;	/* 3 spaces + shriek */
+      debug_ptr = Ustpcpy(debug_ptr, US"   !");
       debug_prefix_length += 4;
       }
     else
       {
-      Ustrcpy(debug_ptr, US"   " UTF8_VERT_2DASH);
-      debug_ptr += 6;	/* 3 spaces + 3 UTF-8 octets */
+      debug_ptr = Ustpcpy(debug_ptr, US"   " UTF8_VERT_2DASH);
       debug_prefix_length += 6;
       }
 
-  Ustrncpy(debug_ptr, US"   ", indent &= 3);
-  debug_ptr += indent;
+  debug_ptr += sprintf(CS debug_ptr, "%.*s", indent &= 3, "   ");
   debug_prefix_length += indent;
   }
 
@@ -283,7 +278,7 @@ we trust that we will never expand the results. */
 		.s = debug_buffer };
   if (!string_vformat(&gs, SVFMT_TAINT_NOCHK, format, ap))
     {
-    uschar * s = US"**** debug string too long - truncated ****\n";
+    const uschar * s = US"**** debug string too long - truncated ****\n";
     uschar * p = gs.s + gs.ptr;
     int maxlen = gs.size - Ustrlen(s) - 2;
     if (p > gs.s + maxlen) p = gs.s + maxlen;
@@ -438,7 +433,7 @@ if (fstat(fd, &s) == 0 && (s.st_mode & S_IFMT) == S_IFSOCK)
       : string_fmt_append(g, " proto %d", val);
     }
 #endif
-  debug_printf_indent(" socket: %s\n", string_from_gstring(g));
+  debug_printf_indent(" socket: %Y\n", g);
   }
 else
   debug_printf_indent(" fd st_mode 0%o\n", s.st_mode);

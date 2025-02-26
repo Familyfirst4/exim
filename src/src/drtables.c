@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 #include "exim.h"
@@ -17,545 +18,262 @@ various macros in config.h that ultimately come from Local/Makefile. They are
 all described in src/EDITME. */
 
 
-lookup_info **lookup_list;
-int lookup_list_count = 0;
+tree_node * lookups_tree = NULL;
+unsigned lookup_list_count = 0;
 
-/* Table of information about all possible authentication mechanisms. All
-entries are always present if any mechanism is declared, but the functions are
-set to NULL for those that are not compiled into the binary. */
+/* Lists of information about which drivers are included in the exim binary. */
 
-#ifdef AUTH_CRAM_MD5
-#include "auths/cram_md5.h"
-#endif
-
-#ifdef AUTH_CYRUS_SASL
-#include "auths/cyrus_sasl.h"
-#endif
-
-#ifdef AUTH_DOVECOT
-#include "auths/dovecot.h"
-#endif
-
-#ifdef AUTH_EXTERNAL
-#include "auths/external.h"
-#endif
-
-#ifdef AUTH_GSASL
-#include "auths/gsasl_exim.h"
-#endif
-
-#ifdef AUTH_HEIMDAL_GSSAPI
-#include "auths/heimdal_gssapi.h"
-#endif
-
-#ifdef AUTH_PLAINTEXT
-#include "auths/plaintext.h"
-#endif
-
-#ifdef AUTH_SPA
-#include "auths/spa.h"
-#endif
-
-#ifdef AUTH_TLS
-#include "auths/tls.h"
-#endif
-
-auth_info auths_available[] = {
-
-/* Checking by an expansion condition on plain text */
-
-#ifdef AUTH_CRAM_MD5
-  {
-  .driver_name =	US"cram_md5",                              /* lookup name */
-  .options =		auth_cram_md5_options,
-  .options_count =	&auth_cram_md5_options_count,
-  .options_block =	&auth_cram_md5_option_defaults,
-  .options_len =	sizeof(auth_cram_md5_options_block),
-  .init =		auth_cram_md5_init,
-  .servercode =		auth_cram_md5_server,
-  .clientcode =		auth_cram_md5_client,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_CYRUS_SASL
-  {
-  .driver_name =	US"cyrus_sasl",
-  .options =		auth_cyrus_sasl_options,
-  .options_count =	&auth_cyrus_sasl_options_count,
-  .options_block =	&auth_cyrus_sasl_option_defaults,
-  .options_len =	sizeof(auth_cyrus_sasl_options_block),
-  .init =		auth_cyrus_sasl_init,
-  .servercode =		auth_cyrus_sasl_server,
-  .clientcode =		NULL,
-  .version_report =	auth_cyrus_sasl_version_report,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_DOVECOT
-  {
-  .driver_name =	US"dovecot",
-  .options =		auth_dovecot_options,
-  .options_count =	&auth_dovecot_options_count,
-  .options_block =	&auth_dovecot_option_defaults,
-  .options_len =	sizeof(auth_dovecot_options_block),
-  .init =		auth_dovecot_init,
-  .servercode =		auth_dovecot_server,
-  .clientcode =		NULL,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_EXTERNAL
-  {
-  .driver_name =	US"external",
-  .options =		auth_external_options,
-  .options_count =	&auth_external_options_count,
-  .options_block =	&auth_external_option_defaults,
-  .options_len =	sizeof(auth_external_options_block),
-  .init =		auth_external_init,
-  .servercode =		auth_external_server,
-  .clientcode =		auth_external_client,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_GSASL
-  {
-  .driver_name =	US"gsasl",
-  .options =		auth_gsasl_options,
-  .options_count =	&auth_gsasl_options_count,
-  .options_block =	&auth_gsasl_option_defaults,
-  .options_len =	sizeof(auth_gsasl_options_block),
-  .init =		auth_gsasl_init,
-  .servercode =		auth_gsasl_server,
-  .clientcode =		auth_gsasl_client,
-  .version_report =	auth_gsasl_version_report,
-  .macros_create =	auth_gsasl_macros,
-  },
-#endif
-
-#ifdef AUTH_HEIMDAL_GSSAPI
-  {
-  .driver_name =	US"heimdal_gssapi",
-  .options =		auth_heimdal_gssapi_options,
-  .options_count =	&auth_heimdal_gssapi_options_count,
-  .options_block =	&auth_heimdal_gssapi_option_defaults,
-  .options_len =	sizeof(auth_heimdal_gssapi_options_block),
-  .init =		auth_heimdal_gssapi_init,
-  .servercode =		auth_heimdal_gssapi_server,
-  .clientcode =		NULL,
-  .version_report =	auth_heimdal_gssapi_version_report,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_PLAINTEXT
-  {
-  .driver_name =	US"plaintext",
-  .options =		auth_plaintext_options,
-  .options_count =	&auth_plaintext_options_count,
-  .options_block =	&auth_plaintext_option_defaults,
-  .options_len =	sizeof(auth_plaintext_options_block),
-  .init =		auth_plaintext_init,
-  .servercode =		auth_plaintext_server,
-  .clientcode =		auth_plaintext_client,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_SPA
-  {
-  .driver_name =	US"spa",
-  .options =		auth_spa_options,
-  .options_count =	&auth_spa_options_count,
-  .options_block =	&auth_spa_option_defaults,
-  .options_len =	sizeof(auth_spa_options_block),
-  .init =		auth_spa_init,
-  .servercode =		auth_spa_server,
-  .clientcode =		auth_spa_client,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-#ifdef AUTH_TLS
-  {
-  .driver_name =	US"tls",
-  .options =		auth_tls_options,
-  .options_count =	&auth_tls_options_count,
-  .options_block =	&auth_tls_option_defaults,
-  .options_len =	sizeof(auth_tls_options_block),
-  .init =		auth_tls_init,
-  .servercode =		auth_tls_server,
-  .clientcode =		NULL,
-  .version_report =	NULL,
-  .macros_create =	NULL,
-  },
-#endif
-
-  { .driver_name = US"" }		/* end marker */
-};
+auth_info * auths_available= NULL;
+router_info * routers_available = NULL;
+transport_info * transports_available = NULL;
 
 
-/* Tables of information about which routers and transports are included in the
-exim binary. */
-
-/* Pull in the necessary header files */
-
-#include "routers/rf_functions.h"
-
-#ifdef ROUTER_ACCEPT
-#include "routers/accept.h"
-#endif
-
-#ifdef ROUTER_DNSLOOKUP
-#include "routers/dnslookup.h"
-#endif
-
-#ifdef ROUTER_MANUALROUTE
-#include "routers/manualroute.h"
-#endif
-
-#ifdef ROUTER_IPLITERAL
-#include "routers/ipliteral.h"
-#endif
-
-#ifdef ROUTER_IPLOOKUP
-#include "routers/iplookup.h"
-#endif
-
-#ifdef ROUTER_QUERYPROGRAM
-#include "routers/queryprogram.h"
-#endif
-
-#ifdef ROUTER_REDIRECT
-#include "routers/redirect.h"
-#endif
-
-#ifdef TRANSPORT_APPENDFILE
-#include "transports/appendfile.h"
-#endif
-
-#ifdef TRANSPORT_AUTOREPLY
-#include "transports/autoreply.h"
-#endif
-
-#ifdef TRANSPORT_LMTP
-#include "transports/lmtp.h"
-#endif
-
-#ifdef TRANSPORT_PIPE
-#include "transports/pipe.h"
-#endif
-
-#ifdef EXPERIMENTAL_QUEUEFILE
-#include "transports/queuefile.h"
-#endif
-
-#ifdef TRANSPORT_SMTP
-#include "transports/smtp.h"
-#endif
-
-
-/* Now set up the structures, terminated by an entry with a null name. */
-
-router_info routers_available[] = {
-#ifdef ROUTER_ACCEPT
-  {
-  .driver_name =	US"accept",
-  .options =		accept_router_options,
-  .options_count =	&accept_router_options_count,
-  .options_block =	&accept_router_option_defaults,
-  .options_len =	sizeof(accept_router_options_block),
-  .init =		accept_router_init,
-  .code =		accept_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		ri_yestransport
-  },
-#endif
-#ifdef ROUTER_DNSLOOKUP
-  {
-  .driver_name =	US"dnslookup",
-  .options =		dnslookup_router_options,
-  .options_count =	&dnslookup_router_options_count,
-  .options_block =	&dnslookup_router_option_defaults,
-  .options_len =	sizeof(dnslookup_router_options_block),
-  .init =		dnslookup_router_init,
-  .code =		dnslookup_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		ri_yestransport
-  },
-#endif
-#ifdef ROUTER_IPLITERAL
-  {
-  .driver_name =	US"ipliteral",
-  .options =		ipliteral_router_options,
-  .options_count =	&ipliteral_router_options_count,
-  .options_block =	&ipliteral_router_option_defaults,
-  .options_len =	sizeof(ipliteral_router_options_block),
-  .init =		ipliteral_router_init,
-  .code =		ipliteral_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		ri_yestransport
-  },
-#endif
-#ifdef ROUTER_IPLOOKUP
-  {
-  .driver_name =	US"iplookup",
-  .options =		iplookup_router_options,
-  .options_count =	&iplookup_router_options_count,
-  .options_block =	&iplookup_router_option_defaults,
-  .options_len =	sizeof(iplookup_router_options_block),
-  .init =		iplookup_router_init,
-  .code =		iplookup_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		ri_notransport
-  },
-#endif
-#ifdef ROUTER_MANUALROUTE
-  {
-  .driver_name =	US"manualroute",
-  .options =		manualroute_router_options,
-  .options_count =	&manualroute_router_options_count,
-  .options_block =	&manualroute_router_option_defaults,
-  .options_len =	sizeof(manualroute_router_options_block),
-  .init =		manualroute_router_init,
-  .code =		manualroute_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		0
-  },
-#endif
-#ifdef ROUTER_QUERYPROGRAM
-  {
-  .driver_name =	US"queryprogram",
-  .options =		queryprogram_router_options,
-  .options_count =	&queryprogram_router_options_count,
-  .options_block =	&queryprogram_router_option_defaults,
-  .options_len =	sizeof(queryprogram_router_options_block),
-  .init =		queryprogram_router_init,
-  .code =		queryprogram_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		0
-  },
-#endif
-#ifdef ROUTER_REDIRECT
-  {
-  .driver_name =	US"redirect",
-  .options =		redirect_router_options,
-  .options_count =	&redirect_router_options_count,
-  .options_block =	&redirect_router_option_defaults,
-  .options_len =	sizeof(redirect_router_options_block),
-  .init =		redirect_router_init,
-  .code =		redirect_router_entry,
-  .tidyup =		NULL,     /* no tidyup entry */
-  .ri_flags =		ri_notransport
-  },
-#endif
-  { US"" }
-};
-
-
-
-transport_info transports_available[] = {
-#ifdef TRANSPORT_APPENDFILE
-  {
-  .driver_name =	US"appendfile",
-  .options =		appendfile_transport_options,
-  .options_count =	&appendfile_transport_options_count,
-  .options_block =	&appendfile_transport_option_defaults,       /* private options defaults */
-  .options_len =	sizeof(appendfile_transport_options_block),
-  .init =		appendfile_transport_init,
-  .code =		appendfile_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		NULL,
-  .local =		TRUE
-  },
-#endif
-#ifdef TRANSPORT_AUTOREPLY
-  {
-  .driver_name =	US"autoreply",
-  .options =		autoreply_transport_options,
-  .options_count =	&autoreply_transport_options_count,
-  .options_block =	&autoreply_transport_option_defaults,
-  .options_len =	sizeof(autoreply_transport_options_block),
-  .init =		autoreply_transport_init,
-  .code =		autoreply_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		NULL,
-  .local =		TRUE
-  },
-#endif
-#ifdef TRANSPORT_LMTP
-  {
-  .driver_name =	US"lmtp",
-  .options =		lmtp_transport_options,
-  .options_count =	&lmtp_transport_options_count,
-  .options_block =	&lmtp_transport_option_defaults,
-  .options_len =	sizeof(lmtp_transport_options_block),
-  .init =		lmtp_transport_init,
-  .code =		lmtp_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		NULL,
-  .local =		TRUE
-  },
-#endif
-#ifdef TRANSPORT_PIPE
-  {
-  .driver_name =	US"pipe",
-  .options =		pipe_transport_options,
-  .options_count =	&pipe_transport_options_count,
-  .options_block =	&pipe_transport_option_defaults,
-  .options_len =	sizeof(pipe_transport_options_block),
-  .init =		pipe_transport_init,
-  .code =		pipe_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		NULL,
-  .local =		TRUE
-  },
-#endif
-#ifdef EXPERIMENTAL_QUEUEFILE
-  {
-  .driver_name =	US"queuefile",
-  .options =		queuefile_transport_options,
-  .options_count =	&queuefile_transport_options_count,
-  .options_block =	&queuefile_transport_option_defaults,
-  .options_len =	sizeof(queuefile_transport_options_block),
-  .init =		queuefile_transport_init,
-  .code =		queuefile_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		NULL,
-  .local =		TRUE
-  },
-#endif
-#ifdef TRANSPORT_SMTP
-  {
-  .driver_name =	US"smtp",
-  .options =		smtp_transport_options,
-  .options_count =	&smtp_transport_options_count,
-  .options_block =	&smtp_transport_option_defaults,
-  .options_len =	sizeof(smtp_transport_options_block),
-  .init =		smtp_transport_init,
-  .code =		smtp_transport_entry,
-  .tidyup =		NULL,
-  .closedown =		smtp_transport_closedown,
-  .local =		FALSE
-  },
-#endif
-  { US"" }
-};
 
 #ifndef MACRO_PREDEF
 
 gstring *
 auth_show_supported(gstring * g)
 {
-g = string_cat(g, US"Authenticators:");
-for (auth_info * ai = auths_available; ai->driver_name[0]; ai++)
-       	g = string_fmt_append(g, " %s", ai->driver_name);
-return string_cat(g, US"\n");
+uschar * b = US""               /* static-build authenticatornames */
+#if defined(AUTH_CRAM_MD5) && AUTH_CRAM_MD5!=2
+  " cram_md5"
+#endif
+#if defined(AUTH_CYRUS_SASL) && AUTH_CYRUS_SASL!=2
+  " cyrus_sasl"
+#endif
+#if defined(AUTH_DOVECOT) && AUTH_DOVECOT!=2
+  " dovecot"
+#endif
+#if defined(AUTH_EXTERNAL) && AUTH_EXTERNAL!=2
+  " external"
+#endif
+#if defined(AUTH_GSASL) && AUTH_GSASL!=2
+  " gsasl"
+#endif
+#if defined(AUTH_HEIMDAL_GSSAPI) && AUTH_HEIMDAL_GSSAPI!=2
+  " heimdal_gssapi"
+#endif
+#if defined(AUTH_PLAINTEXT) && AUTH_PLAINTEXT!=2
+  " plaintext"
+#endif
+#if defined(AUTH_SPA) && AUTH_SPA!=2
+  " spa"
+#endif
+#if defined(AUTH_TLS) && AUTH_TLS!=2
+  " tls"
+#endif
+  ;
+
+uschar * d = US""		/* dynamic-module authenticator names */
+#if defined(AUTH_CRAM_MD5) && AUTH_CRAM_MD5==2
+  " cram_md5"
+#endif
+#if defined(AUTH_CYRUS_SASL) && AUTH_CYRUS_SASL==2
+  " cyrus_sasl"
+#endif
+#if defined(AUTH_DOVECOT) && AUTH_DOVECOT==2
+  " dovecot"
+#endif
+#if defined(AUTH_EXTERNAL) && AUTH_EXTERNAL==2
+  " external"
+#endif
+#if defined(AUTH_GSASL) && AUTH_GSASL==2
+  " gsasl"
+#endif
+#if defined(AUTH_HEIMDAL_GSSAPI) && AUTH_HEIMDAL_GSSAPI==2
+  " heimdal_gssapi"
+#endif
+#if defined(AUTH_PLAINTEXT) && AUTH_PLAINTEXT==2
+  " plaintext"
+#endif
+#if defined(AUTH_SPA) && AUTH_SPA==2
+  " spa"
+#endif
+#if defined(AUTH_TLS) && AUTH_TLS==2
+  " tls"
+#endif
+  ;
+
+if (*b) g = string_fmt_append(g, "Authenticators (built-in):%s\n", b);
+if (*d) g = string_fmt_append(g, "Authenticators (dynamic): %s\n", d);
+return g;
 }
 
 gstring *
 route_show_supported(gstring * g)
 {
-g = string_cat(g, US"Routers:");
-for (router_info * rr = routers_available; rr->driver_name[0]; rr++)
-       	g = string_fmt_append(g, " %s", rr->driver_name);
-return string_cat(g, US"\n");
+uschar * b = US""		/* static-build router names */
+#if defined(ROUTER_ACCEPT) && ROUTER_ACCEPT!=2
+  " accept"
+#endif
+#if defined(ROUTER_DNSLOOKUP) && ROUTER_DNSLOOKUP!=2
+  " dnslookup"
+#endif
+# if defined(ROUTER_IPLITERAL) && ROUTER_IPLITERAL!=2
+  " ipliteral"
+#endif
+#if defined(ROUTER_IPLOOKUP) && ROUTER_IPLOOKUP!=2
+  " iplookup"
+#endif
+#if defined(ROUTER_MANUALROUTE) && ROUTER_MANUALROUTE!=2
+  " manualroute"
+#endif
+#if defined(ROUTER_REDIRECT) && ROUTER_REDIRECT!=2
+  " redirect"
+#endif
+#if defined(ROUTER_QUERYPROGRAM) && ROUTER_QUERYPROGRAM!=2
+  " queryprogram"
+#endif
+  ;
+
+uschar * d = US""		/* dynamic-module router names */
+#if defined(ROUTER_ACCEPT) && ROUTER_ACCEPT==2
+  " accept"
+#endif
+#if defined(ROUTER_DNSLOOKUP) && ROUTER_DNSLOOKUP==2
+  " dnslookup"
+#endif
+# if defined(ROUTER_IPLITERAL) && ROUTER_IPLITERAL==2
+  " ipliteral"
+#endif
+#if defined(ROUTER_IPLOOKUP) && ROUTER_IPLOOKUP==2
+  " iplookup"
+#endif
+#if defined(ROUTER_MANUALROUTE) && ROUTER_MANUALROUTE==2
+  " manualroute"
+#endif
+#if defined(ROUTER_REDIRECT) && ROUTER_REDIRECT==2
+  " redirect"
+#endif
+#if defined(ROUTER_QUERYPROGRAM) && ROUTER_QUERYPROGRAM==2
+  " queryprogram"
+#endif
+  ;
+
+if (*b) g = string_fmt_append(g, "Routers (built-in):%s\n", b);
+if (*d) g = string_fmt_append(g, "Routers (dynamic): %s\n", d);
+return g;
 }
 
 gstring *
 transport_show_supported(gstring * g)
 {
-g = string_cat(g, US"Transports:");
-#ifdef TRANSPORT_APPENDFILE
-  g = string_cat(g, US" appendfile");
-  #ifdef SUPPORT_MAILDIR
-    g = string_cat(g, US"/maildir");	/* damn these subclasses */
-  #endif
-  #ifdef SUPPORT_MAILSTORE
-    g = string_cat(g, US"/mailstore");
-  #endif
-  #ifdef SUPPORT_MBX
-    g = string_cat(g, US"/mbx");
-  #endif
+uschar * b = US""		/* static-build transportnames */
+#if defined(TRANSPORT_APPENDFILE) && TRANSPORT_APPENDFILE!=2
+  " appendfile"
+# ifdef SUPPORT_MAILDIR
+    "/maildir"
+# endif
+# ifdef SUPPORT_MAILSTORE
+    "/mailstore"
+# endif
+# ifdef SUPPORT_MBX
+    "/mbx"
+# endif
 #endif
-#ifdef TRANSPORT_AUTOREPLY
-  g = string_cat(g, US" autoreply");
+#if defined(TRANSPORT_AUTOREPLY) && TRANSPORT_AUTOREPLY!=2
+  " autoreply"
 #endif
-#ifdef TRANSPORT_LMTP
-  g = string_cat(g, US" lmtp");
+#if defined(TRANSPORT_LMTP) && TRANSPORT_LMTP!=2
+  " lmtp"
 #endif
-#ifdef TRANSPORT_PIPE
-  g = string_cat(g, US" pipe");
+#if defined(TRANSPORT_PIPE) && TRANSPORT_PIPE!=2
+  " pipe"
 #endif
-#ifdef EXPERIMENTAL_QUEUEFILE
-  g = string_cat(g, US" queuefile");
+#if defined(EXPERIMENTAL_QUEUEFILE) && EXPERIMENTAL_QUEUEFILE!=2
+  " queuefile"
 #endif
-#ifdef TRANSPORT_SMTP
-  g = string_cat(g, US" smtp");
+#if defined(TRANSPORT_SMTP) && TRANSPORT_SMTP!=2
+  " smtp"
 #endif
-return string_cat(g, US"\n");
+  ;
+
+uschar * d = US""		/* dynamic-module transportnames */
+#if defined(TRANSPORT_APPENDFILE) && TRANSPORT_APPENDFILE==2
+  " appendfile"
+# ifdef SUPPORT_MAILDIR
+    "/maildir"
+# endif
+# ifdef SUPPORT_MAILSTORE
+    "/mailstore"
+# endif
+# ifdef SUPPORT_MBX
+    "/mbx"
+# endif
+#endif
+#if defined(TRANSPORT_AUTOREPLY) && TRANSPORT_AUTOREPLY==2
+  " autoreply"
+#endif
+#if defined(TRANSPORT_LMTP) && TRANSPORT_LMTP==2
+  " lmtp"
+#endif
+#if defined(TRANSPORT_PIPE) && TRANSPORT_PIPE==2
+  " pipe"
+#endif
+#if defined(EXPERIMENTAL_QUEUEFILE) && EXPERIMENTAL_QUEUEFILE==2
+  " queuefile"
+#endif
+#if defined(TRANSPORT_SMTP) && TRANSPORT_SMTP==2
+  " smtp"
+#endif
+  ;
+
+if (*b) g = string_fmt_append(g, "Transports (built-in):%s\n", b);
+if (*d) g = string_fmt_append(g, "Transports (dynamic): %s\n", d);
+return g;
 }
 
 
-
-struct lookupmodulestr
-{
-  void *dl;
-  struct lookup_module_info *info;
-  struct lookupmodulestr *next;
-};
-
-static struct lookupmodulestr *lookupmodules = NULL;
 
 static void
-addlookupmodule(void *dl, struct lookup_module_info *info)
+add_lookup_to_tree(lookup_info * li)
 {
-struct lookupmodulestr *p = store_get(sizeof(struct lookupmodulestr), GET_UNTAINTED);
-
-p->dl = dl;
-p->info = info;
-p->next = lookupmodules;
-lookupmodules = p;
-lookup_list_count += info->lookupcount;
+tree_node * new = store_get_perm(sizeof(tree_node) + Ustrlen(li->name),
+							GET_UNTAINTED);
+new->data.ptr = (void *)li;
+Ustrcpy(new->name, li->name);
+if (tree_insertnode(&lookups_tree, new))
+  li->acq_num = lookup_list_count++;
+else
+  log_write(0, LOG_MAIN|LOG_PANIC, "Duplicate lookup name '%s'", li->name);
 }
 
-/* only valid after lookup_list and lookup_list_count are assigned */
+
+/* Add all the lookup types provided by the module */
 static void
-add_lookup_to_list(lookup_info *info)
+addlookupmodule(const struct lookup_module_info * lmi)
 {
-/* need to add the lookup to lookup_list, sorted */
-int pos = 0;
-
-/* strategy is to go through the list until we find
-either an empty spot or a name that is higher.
-this can't fail because we have enough space. */
-
-while (lookup_list[pos] && (Ustrcmp(lookup_list[pos]->name, info->name) <= 0))
-  pos++;
-
-if (lookup_list[pos])
-  {
-  /* need to insert it, so move all the other items up
-  (last slot is still empty, of course) */
-
-  memmove(&lookup_list[pos+1], &lookup_list[pos],
-	  sizeof(lookup_info *) * (lookup_list_count-pos-1));
-  }
-lookup_list[pos] = info;
+for (int j = 0; j < lmi->lookupcount; j++)
+  add_lookup_to_tree(lmi->lookups[j]);
 }
+
+
+
+/* Hunt for the lookup with the given acquisition number */
+
+static unsigned hunt_acq;
+
+static void
+acq_cb(uschar * name, uschar * ptr, void * ctx)
+{
+lookup_info * li = (lookup_info *)ptr;
+if (li->acq_num == hunt_acq) *(lookup_info **)ctx = li;
+}
+
+const lookup_info *
+lookup_with_acq_num(unsigned k)
+{
+const lookup_info * li = NULL;
+hunt_acq = k;
+tree_walk(lookups_tree, acq_cb, &li);
+return li;
+}
+
 
 
 /* These need to be at file level for old versions of gcc (2.95.2 reported),
- * which give parse errors on an extern in function scope.  Each entry needs
- * to also be invoked in init_lookup_list() below  */
+which give parse errors on an extern in function scope.  Each entry needs
+to also be invoked in init_lookup_list() below  */
 
 #if defined(LOOKUP_CDB) && LOOKUP_CDB!=2
 extern lookup_module_info cdb_lookup_module_info;
@@ -572,10 +290,10 @@ extern lookup_module_info dsearch_lookup_module_info;
 #if defined(LOOKUP_IBASE) && LOOKUP_IBASE!=2
 extern lookup_module_info ibase_lookup_module_info;
 #endif
-#if defined(LOOKUP_JSON)
+#if defined(LOOKUP_JSON) && LOOKUP_JSON!=2
 extern lookup_module_info json_lookup_module_info;
 #endif
-#if defined(LOOKUP_LDAP)
+#if defined(LOOKUP_LDAP) && LOOKUP_LDAP!=2
 extern lookup_module_info ldap_lookup_module_info;
 #endif
 #if defined(LOOKUP_LSEARCH) && LOOKUP_LSEARCH!=2
@@ -602,11 +320,11 @@ extern lookup_module_info pgsql_lookup_module_info;
 #if defined(LOOKUP_REDIS) && LOOKUP_REDIS!=2
 extern lookup_module_info redis_lookup_module_info;
 #endif
-#if defined(LOOKUP_LMDB)
+#if defined(LOOKUP_LMDB) && LOOKUP_LMDB!=2
 extern lookup_module_info lmdb_lookup_module_info;
 #endif
 #if defined(SUPPORT_SPF)
-extern lookup_module_info spf_lookup_module_info;
+extern lookup_module_info spf_lookup_module_info;	/* see below */
 #endif
 #if defined(LOOKUP_SQLITE) && LOOKUP_SQLITE!=2
 extern lookup_module_info sqlite_lookup_module_info;
@@ -621,198 +339,472 @@ extern lookup_module_info whoson_lookup_module_info;
 extern lookup_module_info readsock_lookup_module_info;
 
 
+#ifdef LOOKUP_MODULE_DIR
+static void *
+mod_open(const uschar * name, const uschar * class, uschar ** errstr)
+{
+const uschar * path = string_sprintf(
+  LOOKUP_MODULE_DIR "/%s_%s." DYNLIB_FN_EXT, name, class);
+void * dl;
+if (!(dl = dlopen(CS path, RTLD_NOW)))
+  {
+  if (errstr)
+    *errstr = string_sprintf("Error loading %s: %s", name, dlerror());
+  else
+    (void) dlerror();		/* clear out error state */
+  return NULL;
+  }
+
+/* FreeBSD nsdispatch() can trigger dlerror() errors about
+_nss_cache_cycle_prevention_function; we need to clear the dlerror()
+state before calling dlsym(), so that any error afterwards only comes
+from dlsym().  */
+
+(void) dlerror();
+return dl;
+}
+
+
+/* Try to load a lookup module with the given name.
+
+Arguments:
+    name		name of the lookup
+    errstr		if not NULL, place "open fail" error message here
+
+Return: boolean success
+*/
+
+static BOOL
+lookup_mod_load(const uschar * name, uschar ** errstr)
+{
+void * dl;
+struct lookup_module_info * info;
+const char * errormsg;
+
+if (!(dl = mod_open(name, US"lookup", errstr)))
+  return FALSE;
+
+info = (struct lookup_module_info *) dlsym(dl, "_lookup_module_info");
+if ((errormsg = dlerror()))
+  {
+  fprintf(stderr, "%s does not appear to be a lookup module (%s)\n", name, errormsg);
+  log_write(0, LOG_MAIN|LOG_PANIC, "%s does not appear to be a lookup module (%s)", name, errormsg);
+  dlclose(dl);
+  return FALSE;
+  }
+if (info->magic != LOOKUP_MODULE_INFO_MAGIC)
+  {
+  fprintf(stderr, "Lookup module %s is not compatible with this version of Exim\n", name);
+  log_write(0, LOG_MAIN|LOG_PANIC, "Lookup module %s is not compatible with this version of Exim", name);
+  dlclose(dl);
+  return FALSE;
+  }
+
+addlookupmodule(info);
+DEBUG(D_lookup) debug_printf_indent("Loaded \"%s\" (%d lookup type%s)\n",
+				    name, info->lookupcount,
+				    info->lookupcount > 1 ? "s" : "");
+return TRUE;
+}
+
+
+/* Try to load a lookup module, assuming the module name is the same
+as the lookup type name.  This will only work for single-method modules.
+Other have to be always-load (see the RE in init_lookup_list() below).
+*/
+
+BOOL
+lookup_one_mod_load(const uschar * name, uschar ** errstr)
+{
+if (!lookup_mod_load(name, errstr)) return FALSE;
+/*XXX notify daemon? */
+return TRUE;
+}
+
+#endif	/*LOOKUP_MODULE_DIR*/
+
+
+
+misc_module_info * misc_module_list = NULL;
+
+static void
+misc_mod_add(misc_module_info * mi)
+{
+mi->next = misc_module_list;
+misc_module_list = mi;
+
+if (mi->init && !mi->init(mi))
+  DEBUG(D_any)
+    debug_printf_indent("module init call failed for %s\n", mi->name);
+
+DEBUG(D_any) if (mi->lib_vers_report)
+  debug_printf_indent("%Y", mi->lib_vers_report(NULL));
+
+/* fprintf(stderr,"misc_mod_add: added %s\n", mi->name); */
+}
+
+
+#ifdef LOOKUP_MODULE_DIR
+
+/* Load a "misc" module, and add to list */
+
+static misc_module_info *
+misc_mod_load(const uschar * name, uschar ** errstr)
+{
+void * dl;
+struct misc_module_info * mi;
+const char * errormsg;
+
+DEBUG(D_any) debug_printf_indent("loading module '%s'\n", name);
+if (!(dl = mod_open(name, US"miscmod", errstr)))
+  {
+  DEBUG(D_any) if (errstr) debug_printf_indent(" mod_open: %s\n", *errstr);
+  return NULL;
+  }
+
+mi = (struct misc_module_info *) dlsym(dl,
+				    CS string_sprintf("%s_module_info", name));
+if ((errormsg = dlerror()))
+  {
+  fprintf(stderr, "%s does not appear to be a '%s' module (%s)\n",
+	  name, name, errormsg);
+  log_write(0, LOG_MAIN|LOG_PANIC,
+    "%s does not contain the expected module info symbol (%s)", name, errormsg);
+  dlclose(dl);
+  return NULL;
+  }
+if (mi->dyn_magic != MISC_MODULE_MAGIC)
+  {
+  fprintf(stderr, "Module %s is not compatible with this version of Exim\n", name);
+  log_write(0, LOG_MAIN|LOG_PANIC, "Module %s is not compatible with this version of Exim", name);
+  dlclose(dl);
+  return FALSE;
+  }
+
+DEBUG(D_lookup) debug_printf_indent("Loaded \"%s\"\n", name);
+misc_mod_add(mi);
+return mi;
+}
+
+#endif	/*LOOKUP_MODULE_DIR*/
+
+
+/* Find a "misc" module by name, if loaded.
+For now use a linear search down a linked list.  If the number of
+modules gets large, we might consider a tree.
+*/
+
+misc_module_info *
+misc_mod_findonly(const uschar * name)
+{
+for (misc_module_info * mi = misc_module_list; mi; mi = mi->next)
+  if (Ustrcmp(name, mi->name) == 0)
+    return mi;
+return NULL;
+}
+
+/* Find a "misc" module, possibly already loaded, by name. */
+
+misc_module_info *
+misc_mod_find(const uschar * name, uschar ** errstr)
+{
+misc_module_info * mi;
+if ((mi = misc_mod_findonly(name))) return mi;
+#ifdef LOOKUP_MODULE_DIR
+return misc_mod_load(name, errstr);
+#else
+return NULL;
+#endif	/*LOOKUP_MODULE_DIR*/
+}
+
+
+/* For any "misc" module having a connection-init routine, call it. */
+
+int
+misc_mod_conn_init(const uschar * sender_helo_name,
+  const uschar * sender_host_address)
+{
+for (const misc_module_info * mi = misc_module_list; mi; mi = mi->next)
+  if (mi->conn_init)
+    if ((mi->conn_init) (sender_helo_name, sender_host_address) != OK)
+      return FAIL;
+return OK;
+}
+
+/* Ditto, smtp-reset */
+
+void
+misc_mod_smtp_reset(void)
+{
+for (const misc_module_info * mi = misc_module_list; mi; mi = mi->next)
+  if (mi->smtp_reset)
+    (mi->smtp_reset)();
+}
+
+/* Ditto, msg-init */
+
+int
+misc_mod_msg_init(void)
+{
+for (const misc_module_info * mi = misc_module_list; mi; mi = mi->next)
+  if (mi->msg_init)
+    if ((mi->msg_init)() != OK)
+      return FAIL;
+return OK;
+}
+
+/* Ditto, authres.  Having to sort the responses (mainly for the testsuite)
+is pretty painful - maybe we should sort the modules on insertion to
+the list? */
+
+gstring *
+misc_mod_authres(gstring * g)
+{
+typedef struct {
+  const uschar * name;
+  gstring *	 res;
+} pref;
+pref prefs[] = {
+  {US"spf", NULL}, {US"dkim", NULL}, {US"dmarc", NULL}, {US"arc", NULL}
+};
+gstring * others = NULL;
+
+for (const misc_module_info * mi = misc_module_list; mi; mi = mi->next)
+  if (mi->authres)
+    {
+    pref * p;
+    for (p = prefs; p < prefs + nelem(prefs); p++)
+      if (Ustrcmp(p->name, mi->name) == 0) break;
+
+    if (p) p->res = (mi->authres)(NULL);
+    else   others = (mi->authres)(others);
+    }
+
+for (pref * p = prefs; p < prefs + nelem(prefs); p++)
+  g = gstring_append(g, p->res);
+return gstring_append(g, others);
+}
+
+
+
+
+
+
 void
 init_lookup_list(void)
 {
 #ifdef LOOKUP_MODULE_DIR
-DIR *dd;
-struct dirent *ent;
+DIR * dd;
 int countmodules = 0;
-int moduleerrors = 0;
 #endif
 static BOOL lookup_list_init_done = FALSE;
-rmark reset_point;
 
 if (lookup_list_init_done)
   return;
-reset_point = store_mark();
 lookup_list_init_done = TRUE;
 
 #if defined(LOOKUP_CDB) && LOOKUP_CDB!=2
-addlookupmodule(NULL, &cdb_lookup_module_info);
+addlookupmodule(&cdb_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_DBM) && LOOKUP_DBM!=2
-addlookupmodule(NULL, &dbmdb_lookup_module_info);
+addlookupmodule(&dbmdb_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_DNSDB) && LOOKUP_DNSDB!=2
-addlookupmodule(NULL, &dnsdb_lookup_module_info);
+addlookupmodule(&dnsdb_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_DSEARCH) && LOOKUP_DSEARCH!=2
-addlookupmodule(NULL, &dsearch_lookup_module_info);
+addlookupmodule(&dsearch_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_IBASE) && LOOKUP_IBASE!=2
-addlookupmodule(NULL, &ibase_lookup_module_info);
+addlookupmodule(&ibase_lookup_module_info);
 #endif
 
-#ifdef LOOKUP_LDAP
-addlookupmodule(NULL, &ldap_lookup_module_info);
+#if defined(LOOKUP_LDAP) && LOOKUP_LDAP!=2
+addlookupmodule(&ldap_lookup_module_info);
 #endif
 
-#ifdef LOOKUP_JSON
-addlookupmodule(NULL, &json_lookup_module_info);
+#if defined(LOOKUP_JSON) && LOOKUP_JSON!=2
+addlookupmodule(&json_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_LSEARCH) && LOOKUP_LSEARCH!=2
-addlookupmodule(NULL, &lsearch_lookup_module_info);
+addlookupmodule(&lsearch_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_MYSQL) && LOOKUP_MYSQL!=2
-addlookupmodule(NULL, &mysql_lookup_module_info);
+addlookupmodule(&mysql_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_NIS) && LOOKUP_NIS!=2
-addlookupmodule(NULL, &nis_lookup_module_info);
+addlookupmodule(&nis_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_NISPLUS) && LOOKUP_NISPLUS!=2
-addlookupmodule(NULL, &nisplus_lookup_module_info);
+addlookupmodule(&nisplus_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_ORACLE) && LOOKUP_ORACLE!=2
-addlookupmodule(NULL, &oracle_lookup_module_info);
+addlookupmodule(&oracle_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_PASSWD) && LOOKUP_PASSWD!=2
-addlookupmodule(NULL, &passwd_lookup_module_info);
+addlookupmodule(&passwd_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_PGSQL) && LOOKUP_PGSQL!=2
-addlookupmodule(NULL, &pgsql_lookup_module_info);
+addlookupmodule(&pgsql_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_REDIS) && LOOKUP_REDIS!=2
-addlookupmodule(NULL, &redis_lookup_module_info);
+addlookupmodule(&redis_lookup_module_info);
 #endif
 
-#ifdef LOOKUP_LMDB
-addlookupmodule(NULL, &lmdb_lookup_module_info);
-#endif
-
-#ifdef SUPPORT_SPF
-addlookupmodule(NULL, &spf_lookup_module_info);
+#if defined(LOOKUP_LMDB) && LOOKUP_LMDB!=2
+addlookupmodule(&lmdb_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_SQLITE) && LOOKUP_SQLITE!=2
-addlookupmodule(NULL, &sqlite_lookup_module_info);
+addlookupmodule(&sqlite_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_TESTDB) && LOOKUP_TESTDB!=2
-addlookupmodule(NULL, &testdb_lookup_module_info);
+addlookupmodule(&testdb_lookup_module_info);
 #endif
 
 #if defined(LOOKUP_WHOSON) && LOOKUP_WHOSON!=2
-addlookupmodule(NULL, &whoson_lookup_module_info);
+addlookupmodule(&whoson_lookup_module_info);
 #endif
 
-addlookupmodule(NULL, &readsock_lookup_module_info);
+/* This is provided by the spf "misc" module, and the lookup aspect is always
+linked statically whether or not the "misc" module (and hence libspf2) is
+dynamic-load. */
+
+#if defined(SUPPORT_SPF)
+addlookupmodule(&spf_lookup_module_info);
+#endif
+
+/* This is a custom expansion, and not available as either
+a list-syntax lookup or a lookup expansion. However, it is
+implemented by a lookup module. */
+
+addlookupmodule(&readsock_lookup_module_info);
+
+DEBUG(D_lookup) debug_printf("Total %d built-in lookups\n", lookup_list_count);
+
 
 #ifdef LOOKUP_MODULE_DIR
-if (!(dd = exim_opendir(LOOKUP_MODULE_DIR)))
+if (!(dd = exim_opendir(CUS LOOKUP_MODULE_DIR)))
   {
   DEBUG(D_lookup) debug_printf("Couldn't open %s: not loading lookup modules\n", LOOKUP_MODULE_DIR);
-  log_write(0, LOG_MAIN, "Couldn't open %s: not loading lookup modules\n", LOOKUP_MODULE_DIR);
+  log_write(0, LOG_MAIN|LOG_PANIC,
+	  "Couldn't open %s: not loading lookup modules\n", LOOKUP_MODULE_DIR);
   }
 else
   {
+  /* Look specifically for modules we know offer several lookup types and
+  load them now, since we cannot load-on-first-use. */
+
+  struct dirent * ent;
   const pcre2_code * regex_islookupmod = regex_must_compile(
-    US"\\." DYNLIB_FN_EXT "$", MCS_NOFLAGS, TRUE);
+    US"(lsearch|ldap|nis)_lookup\\." DYNLIB_FN_EXT "$", MCS_NOFLAGS, TRUE);
 
   DEBUG(D_lookup) debug_printf("Loading lookup modules from %s\n", LOOKUP_MODULE_DIR);
   while ((ent = readdir(dd)))
     {
     char * name = ent->d_name;
     int len = (int)strlen(name);
-    if (regex_match(regex_islookupmod, US name, len, NULL))
+    if (regex_match_and_setup(regex_islookupmod, US name, 0, 0))
       {
-      int pathnamelen = len + (int)strlen(LOOKUP_MODULE_DIR) + 2;
-      void *dl;
-      struct lookup_module_info *info;
-      const char *errormsg;
-
-      /* SRH: am I being paranoid here or what? */
-      if (pathnamelen > big_buffer_size)
+      uschar * errstr;
+      if (lookup_mod_load(expand_nstring[1], &errstr))
+	countmodules++;
+      else
 	{
-	fprintf(stderr, "Loading lookup modules: %s/%s: name too long\n", LOOKUP_MODULE_DIR, name);
-	log_write(0, LOG_MAIN|LOG_PANIC, "%s/%s: name too long\n", LOOKUP_MODULE_DIR, name);
-	continue;
+	fprintf(stderr, "%s\n", errstr);
+	log_write(0, LOG_MAIN|LOG_PANIC, "%s", errstr);
 	}
-
-      /* SRH: snprintf here? */
-      sprintf(CS big_buffer, "%s/%s", LOOKUP_MODULE_DIR, name);
-
-      if (!(dl = dlopen(CS big_buffer, RTLD_NOW)))
-	{
-	errormsg = dlerror();
-	fprintf(stderr, "Error loading %s: %s\n", name, errormsg);
-	log_write(0, LOG_MAIN|LOG_PANIC, "Error loading lookup module %s: %s\n", name, errormsg);
-	moduleerrors++;
-	continue;
-	}
-
-      /* FreeBSD nsdispatch() can trigger dlerror() errors about
-      _nss_cache_cycle_prevention_function; we need to clear the dlerror()
-      state before calling dlsym(), so that any error afterwards only comes
-      from dlsym().  */
-
-      errormsg = dlerror();
-
-      info = (struct lookup_module_info*) dlsym(dl, "_lookup_module_info");
-      if ((errormsg = dlerror()))
-	{
-	fprintf(stderr, "%s does not appear to be a lookup module (%s)\n", name, errormsg);
-	log_write(0, LOG_MAIN|LOG_PANIC, "%s does not appear to be a lookup module (%s)\n", name, errormsg);
-	dlclose(dl);
-	moduleerrors++;
-	continue;
-	}
-      if (info->magic != LOOKUP_MODULE_INFO_MAGIC)
-	{
-	fprintf(stderr, "Lookup module %s is not compatible with this version of Exim\n", name);
-	log_write(0, LOG_MAIN|LOG_PANIC, "Lookup module %s is not compatible with this version of Exim\n", name);
-	dlclose(dl);
-	moduleerrors++;
-	continue;
-	}
-
-      addlookupmodule(dl, info);
-      DEBUG(D_lookup) debug_printf("Loaded \"%s\" (%d lookup types)\n", name, info->lookupcount);
-      countmodules++;
       }
     }
-  store_free((void*)regex_islookupmod);
   closedir(dd);
   }
 
 DEBUG(D_lookup) debug_printf("Loaded %d lookup modules\n", countmodules);
 #endif
-
-DEBUG(D_lookup) debug_printf("Total %d lookups\n", lookup_list_count);
-
-lookup_list = store_malloc(sizeof(lookup_info *) * lookup_list_count);
-memset(lookup_list, 0, sizeof(lookup_info *) * lookup_list_count);
-
-/* now add all lookups to the real list */
-for (struct lookupmodulestr * p = lookupmodules; p; p = p->next)
-  for (int j = 0; j < p->info->lookupcount; j++)
-    add_lookup_to_list(p->info->lookups[j]);
-store_reset(reset_point);
-/* just to be sure */
-lookupmodules = NULL;
 }
+
+
+/* Add module info struct to the modules list for those that are
+built as static */
+
+#if !defined(DISABLE_DKIM) && (!defined(SUPPORT_DKIM) || SUPPORT_DKIM!=2)
+extern misc_module_info dkim_module_info;
+#endif
+#if defined(SUPPORT_DMARC) && SUPPORT_DMARC!=2
+extern misc_module_info dmarc_module_info;
+#endif
+#if defined(SUPPORT_SPF) && SUPPORT_SPF!=2
+extern misc_module_info spf_module_info;
+#endif
+#if defined(EXPERIMENTAL_ARC) && (!defined(SUPPORT_ARC) || SUPPORT_ARC!=2)
+extern misc_module_info arc_module_info;
+#endif
+#if defined(RADIUS_CONFIG_FILE) && (!defined(SUPPORT_RADIUS) || SUPPORT_RADIUS!=2)
+extern misc_module_info radius_module_info;
+#endif
+#if defined(SUPPORT_PAM) && SUPPORT_PAM!=2
+extern misc_module_info pam_module_info;
+#endif
+#if defined(EXIM_PERL) && (!defined(SUPPORT_PERL) || SUPPORT_PERL!=2)
+extern misc_module_info perl_module_info;
+#endif
+#if !defined(DISABLE_EXIM_FILTER) && (!defined(SUPPORT_EXIM_FILTER) || SUPPORT_EXIM_FILTER!=2)
+extern misc_module_info exim_filter_module_info;
+#endif
+#if !defined(DISABLE_SIEVE_FILTER) && (!defined(SUPPORT_SIEVE_FILTER) || SUPPORT_SIEVE_FILTER!=2)
+extern misc_module_info sieve_filter_module_info;
+#endif
+
+void
+init_misc_mod_list(void)
+{
+static BOOL onetime = FALSE;
+if (onetime) return;
+onetime = TRUE;
+
+#if !defined(DISABLE_DKIM) && (!defined(SUPPORT_DKIM) || SUPPORT_DKIM!=2)
+  misc_mod_add(&dkim_module_info);
+#endif
+#if defined(SUPPORT_SPF) && SUPPORT_SPF!=2
+  misc_mod_add(&spf_module_info);
+#endif
+#if defined(SUPPORT_DMARC) && SUPPORT_DMARC!=2
+/* dmarc depends on spf so this add must go after, for the both-static case */
+  misc_mod_add(&dmarc_module_info);
+#endif
+#if defined(EXPERIMENTAL_ARC) && (!defined(SUPPORT_ARC) || SUPPORT_ARC!=2)
+  misc_mod_add(&arc_module_info);
+#endif
+#if defined(RADIUS_CONFIG_FILE) && (!defined(SUPPORT_RADIUS) || SUPPORT_RADIUS!=2)
+  misc_mod_add(&radius_module_info);
+#endif
+#if defined(SUPPORT_PAM) && SUPPORT_PAM!=2
+  misc_mod_add(&pam_module_info);
+#endif
+#if defined(EXIM_PERL) && (!defined(SUPPORT_PERL) || SUPPORT_PERL!=2)
+  misc_mod_add(&perl_module_info);
+#endif
+#if !defined(DISABLE_EXIM_FILTER) && (!defined(SUPPORT_EXIM_FILTER) || SUPPORT_EXIM_FILTER!=2)
+  misc_mod_add(&exim_filter_module_info);
+#endif
+#if !defined(DISABLE_SIEVE_FILTER) && (!defined(SUPPORT_SIEVE_FILTER) || SUPPORT_SIEVE_FILTER!=2)
+  misc_mod_add(&sieve_filter_module_info);
+#endif
+}
+
 
 #endif	/*!MACRO_PREDEF*/
 /* End of drtables.c */

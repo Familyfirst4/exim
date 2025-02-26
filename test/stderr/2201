@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1236
 seeking password data for user "CALLER": cache not available
@@ -21,37 +22,43 @@ routing test.ex@test.ex
 --------> r0 router <--------
 local_part=test.ex domain=test.ex
 checking senders
-address match test: subject=CALLER@myhost.test.ex pattern=a@shorthost.test.ex
-CALLER@myhost.test.ex in "a@shorthost.test.ex"? no (end of list)
+CALLER@myhost.test.ex in senders?
+ list element: a@shorthost.test.ex
+ address match test: subject=CALLER@myhost.test.ex pattern=a@shorthost.test.ex
+CALLER@myhost.test.ex in senders? no (end of list)
 r0 router skipped: senders mismatch
 --------> r1 router <--------
 local_part=test.ex domain=test.ex
 checking domains
-search_open: dnsdb "NULL"
-search_find: file="NULL"
-  key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="test.ex" opts=NULL
-database lookup required for test.ex
-                             (tainted)
-dnsdb key: test.ex
-DNS lookup of test.ex (TXT) using fakens
-DNS lookup of test.ex (TXT) succeeded
-creating new cache entry
-lookup yielded: A TXT record for test.ex.
-test.ex in "dnsdb;test.ex"? yes (matched "dnsdb;test.ex")
+test.ex in domains?
+ list element: dnsdb;test.ex
+ search_open: dnsdb "NULL"
+ search_find: file="NULL"
+   key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="test.ex" opts=NULL
+ database lookup required for test.ex
+                              (tainted)
+ dnsdb key: test.ex
+ DNS lookup of test.ex (TXT) using fakens
+ DNS lookup of test.ex (TXT) succeeded
+ creating new cache entry
+ lookup yielded: A░TXT░record░for░test.ex.
+ test.ex in domains? yes (matched "dnsdb;test.ex")
 checking local_parts
-search_open: dnsdb "NULL"
-  cached open
-search_find: file="NULL"
-  key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="test.ex" opts=NULL
-cached data used for lookup of test.ex
-lookup yielded: A TXT record for test.ex.
-test.ex in "dnsdb;test.ex"? yes (matched "dnsdb;test.ex")
+test.ex in local_parts?
+ list element: dnsdb;test.ex
+ search_open: dnsdb "NULL"
+   cached open
+ search_find: file="NULL"
+   key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="test.ex" opts=NULL
+ cached data used for lookup of test.ex
+ lookup yielded: A░TXT░record░for░test.ex.
+ test.ex in local_parts? yes (matched "dnsdb;test.ex")
 calling r1 router
 r1 router called for test.ex@test.ex
   domain = test.ex
@@ -61,8 +68,8 @@ domain = test.ex
   errors_to=NULL
   domain_data=A TXT record for test.ex. local_part_data=A TXT record for test.ex.
 routed by r1 router
-  envelope to: test.ex@test.ex
-  transport: local_delivery
+  envelope to:	test.ex@test.ex
+  transport:	local_delivery
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Testing unknown@test.ex
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -72,71 +79,81 @@ routing unknown@test.ex
 --------> r0 router <--------
 local_part=unknown domain=test.ex
 checking senders
-address match test: subject=CALLER@myhost.test.ex pattern=a@shorthost.test.ex
-CALLER@myhost.test.ex in "a@shorthost.test.ex"? no (end of list)
+CALLER@myhost.test.ex in senders?
+ list element: a@shorthost.test.ex
+ address match test: subject=CALLER@myhost.test.ex pattern=a@shorthost.test.ex
+CALLER@myhost.test.ex in senders? no (end of list)
 r0 router skipped: senders mismatch
 --------> r1 router <--------
 local_part=unknown domain=test.ex
 checking domains
-search_open: dnsdb "NULL"
-  cached open
-search_find: file="NULL"
-  key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="test.ex" opts=NULL
-cached data used for lookup of test.ex
-lookup yielded: A TXT record for test.ex.
-test.ex in "dnsdb;test.ex"? yes (matched "dnsdb;test.ex")
+test.ex in domains?
+ list element: dnsdb;test.ex
+ search_open: dnsdb "NULL"
+   cached open
+ search_find: file="NULL"
+   key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="test.ex" opts=NULL
+ cached data used for lookup of test.ex
+ lookup yielded: A░TXT░record░for░test.ex.
+ test.ex in domains? yes (matched "dnsdb;test.ex")
 checking local_parts
-search_open: dnsdb "NULL"
-  cached open
-search_find: file="NULL"
-  key="unknown" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="unknown" opts=NULL
-database lookup required for unknown
-                             (tainted)
-dnsdb key: unknown
-DNS lookup of unknown (TXT) using fakens
-DNS lookup of unknown (TXT) gave HOST_NOT_FOUND
-returning DNS_NOMATCH
-faking res_search(TXT) response length as 65535
- writing neg-cache entry for unknown-TXT-xxxx, ttl 3000
-creating new cache entry
-lookup failed
-unknown in "dnsdb;unknown"? no (end of list)
+unknown in local_parts?
+ list element: dnsdb;unknown
+ search_open: dnsdb "NULL"
+   cached open
+ search_find: file="NULL"
+   key="unknown" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="unknown" opts=NULL
+ database lookup required for unknown
+                              (tainted)
+ dnsdb key: unknown
+ DNS lookup of unknown (TXT) using fakens
+ DNS lookup of unknown (TXT) gave HOST_NOT_FOUND
+ returning DNS_NOMATCH
+ faking res_search(TXT) response length as 65535
+  writing neg-cache entry for unknown-TXT-xxxx, ttl 3000
+ creating new cache entry
+ lookup failed
+unknown in local_parts? no (end of list)
 r1 router skipped: local_parts mismatch
 --------> r2 router <--------
 local_part=unknown domain=test.ex
 checking domains
-search_open: dnsdb "NULL"
-  cached open
-search_find: file="NULL"
-  key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="test.ex" opts=NULL
-cached data used for lookup of test.ex
-lookup yielded: A TXT record for test.ex.
-test.ex in "dnsdb;test.ex"? yes (matched "dnsdb;test.ex")
+test.ex in domains?
+ list element: dnsdb;test.ex
+ search_open: dnsdb "NULL"
+   cached open
+ search_find: file="NULL"
+   key="test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="test.ex" opts=NULL
+ cached data used for lookup of test.ex
+ lookup yielded: A░TXT░record░for░test.ex.
+ test.ex in domains? yes (matched "dnsdb;test.ex")
 checking senders
-address match test: subject=CALLER@myhost.test.ex pattern=dnsdb;A=myhost.test.ex
-search_open: dnsdb "NULL"
-  cached open
-search_find: file="NULL"
-  key="A=myhost.test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
-LRU list:
-internal_search_find: file="NULL"
-  type=dnsdb key="A=myhost.test.ex" opts=NULL
-database lookup required for A=myhost.test.ex
-dnsdb key: myhost.test.ex
-DNS lookup of myhost.test.ex (A) using fakens
-DNS lookup of myhost.test.ex (A) succeeded
-creating new cache entry
-lookup yielded: V4NET.10.10.10
-CALLER@myhost.test.ex in "dnsdb;A=myhost.test.ex"? yes (matched "dnsdb;A=myhost.test.ex")
+CALLER@myhost.test.ex in senders?
+ list element: dnsdb;A=myhost.test.ex
+ address match test: subject=CALLER@myhost.test.ex pattern=dnsdb;A=myhost.test.ex
+ search_open: dnsdb "NULL"
+   cached open
+ search_find: file="NULL"
+   key="A=myhost.test.ex" partial=-1 affix=NULL starflags=0 opts=NULL
+ LRU list:
+ internal_search_find: file="NULL"
+   type=dnsdb key="A=myhost.test.ex" opts=NULL
+ database lookup required for A=myhost.test.ex
+ dnsdb key: myhost.test.ex
+ DNS lookup of myhost.test.ex (A) using fakens
+ DNS lookup of myhost.test.ex (A) succeeded
+ creating new cache entry
+ lookup yielded: V4NET.10.10.10
+ CALLER@myhost.test.ex in senders? yes (matched "dnsdb;A=myhost.test.ex")
 calling r2 router
 r2 router called for unknown@test.ex
   domain = test.ex
@@ -146,11 +163,12 @@ domain = test.ex
   errors_to=NULL
   domain_data=A TXT record for test.ex. local_part_data=NULL
 routed by r2 router
-  envelope to: unknown@test.ex
-  transport: local_delivery
+  envelope to:	unknown@test.ex
+  transport:	local_delivery
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -196,12 +214,13 @@ search_tidyup called
 
 ******** SERVER ********
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
 dropping to exim gid; retaining priv uid
 daemon_smtp_port overridden by -oX:
-  <: 1225
+  <: PORT_D
 creating notifier socket
  TESTSUITE/spool/exim_daemon_notify
 listening on all interfaces (IPv4) port PORT_D
@@ -209,12 +228,11 @@ pid written to TESTSUITE/spool/exim-daemon.pid
 LOG: MAIN
   exim x.yz daemon started: pid=p1235, no queue runs, listening for SMTP on port PORT_D
 daemon running with uid=EXIM_UID gid=EXIM_GID euid=EXIM_UID egid=EXIM_GID
-Listening...
 Connection request from 127.0.0.1 port sssss
 p1238 Process p1238 is handling incoming connection from [127.0.0.1]
 p1238 Process p1238 is ready for new message
-p1240 SMTP accept process running
-Listening...
+1 SMTP accept process running
+p1238 host in chunking_advertise_hosts? no (end of list)
 p1238 dnslists check: rbl.test.ex/V4NET.11.12.14
 p1238 new DNS lookup for 14.12.11.V4NET.rbl.test.ex
 p1238 dnslists: wrote cache entry, ttl=2
@@ -230,14 +248,13 @@ p1238 dnslists: wrote cache entry, ttl=2
 p1238 DNS lookup for 14.12.11.V4NET.rbl.test.ex succeeded (yielding 127.0.0.2)
 p1238 => that means V4NET.11.12.14 is listed at rbl.test.ex
 LOG: MAIN
-  <= a@shorthost.test.ex H=localhost (myhost.test.ex) [127.0.0.1] P=esmtp S=sss id=E10HmaX-0005vi-00@myhost.test.ex
+  <= a@shorthost.test.ex H=localhost (myhost.test.ex) [127.0.0.1] P=esmtp S=sss id=E10HmaX-000000005vi-0000@myhost.test.ex
 Process p1238 is ready for new message
 LOG: smtp_connection MAIN
-  SMTP connection from localhost (myhost.test.ex) [127.0.0.1] closed by QUIT
+  SMTP connection from localhost (myhost.test.ex) [127.0.0.1] D=qqs closed by QUIT
 >>>>>>>>>>>>>>>> Exim pid=p1238 (daemon-accept) terminating with rc=0 >>>>>>>>>>>>>>>>
 p1235 child p1238 ended: status=0x0
 p1235   normal exit, 0
 p1235 0 SMTP accept processes now running
-p1235 Listening...
 p1235 SIGTERM/SIGINT seen
 p1235 >>>>>>>>>>>>>>>> Exim pid=p1235 (daemon) terminating with rc=0 >>>>>>>>>>>>>>>>

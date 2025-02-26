@@ -2,11 +2,12 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
+/* Copyright (c) University of Cambridge 1995 - 2018 */
 /* Copyright (c) Tom Kistner <tom@duncanthrax.net> 2004, 2015 */
 /* License: GPL */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
-/* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
 /* See the file NOTICE for conditions of use and distribution. */
 
 
@@ -36,7 +37,7 @@ static unsigned char mime_b64[256]={
 
 /* decode base64 MIME part */
 ssize_t
-mime_decode_base64(FILE * in, FILE * out, uschar * boundary)
+mime_decode_base64(FILE * in, FILE * out, const uschar * boundary)
 {
 uschar ibuf[MIME_MAX_LINE_LENGTH], obuf[MIME_MAX_LINE_LENGTH];
 uschar *opos;
@@ -47,7 +48,7 @@ opos = obuf;
 
 while (Ufgets(ibuf, MIME_MAX_LINE_LENGTH, in) != NULL)
   {
-  if (boundary != NULL
+  if (boundary
      && Ustrncmp(ibuf, "--", 2) == 0
      && Ustrncmp((ibuf+2), boundary, Ustrlen(boundary)) == 0
      )
@@ -151,7 +152,7 @@ static uschar dec64table[] = {
 };
 
 int
-b64decode(const uschar *code, uschar **ptr)
+b64decode(const uschar * code, uschar ** ptr, const void * proto_mem)
 {
 
 int x, y;
@@ -159,7 +160,7 @@ uschar *result;
 
  {
   int l = Ustrlen(code);
-  *ptr = result = store_get(1 + l/4 * 3 + l%4, code);
+  *ptr = result = store_get(1 + l/4 * 3 + l%4, proto_mem);
  }
 
 /* Each cycle of the loop handles a quantum of 4 input bytes. For the last

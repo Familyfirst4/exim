@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "rf_functions.h"
@@ -46,6 +47,7 @@ rf_get_transport(uschar *tpname, transport_instance **tpptr, address_item *addr,
 uschar *ss;
 BOOL expandable;
 
+GET_OPTION("transport");
 if (!tpname)
   {
   if (!require_name) return TRUE;
@@ -56,7 +58,7 @@ if (!tpname)
   }
 
 expandable = Ustrchr(tpname, '$') != NULL;
-if (*tpptr != NULL && !expandable) return TRUE;
+if (*tpptr && !expandable) return TRUE;
 
 if (expandable)
   {
@@ -80,8 +82,8 @@ if (expandable)
 else
   ss = tpname;
 
-for (transport_instance * tp = transports; tp; tp = tp->next)
-  if (Ustrcmp(tp->name, ss) == 0)
+for (transport_instance * tp = transports; tp; tp = tp->drinst.next)
+  if (Ustrcmp(tp->drinst.name, ss) == 0)
     {
     DEBUG(D_route) debug_printf("set transport %s\n", ss);
     *tpptr = tp;

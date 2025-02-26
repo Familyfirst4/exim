@@ -1,0 +1,19 @@
+# event on dnsdb lookup fail
+#
+exim -bd -DSERVER=server -oX PORT_D
+****
+client 127.0.0.1 PORT_D
+??? 220
+HELO nonexistent.test.ex
+??? 250
+HELO badcname.test.ex
+??? 250
+HELO test.again.dns
+??? 250
+HELO localhost
+??? 250
+QUIT
+??? 221
+****
+killdaemon
+no_stderr_check

@@ -1,10 +1,12 @@
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
 created log directory TESTSUITE/spool/log
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -22,7 +24,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   message_suffix=\n
   maildir_use_size_file=no
   locking by lockfile fcntl 
-de-tainting path 'TESTSUITE/test-mail/userx'
+below-home: de-tainting path 'TESTSUITE/test-mail/userx'
 lock name: TESTSUITE/test-mail/userx.lock
 hitch name: TESTSUITE/test-mail/userx.lock.test.ex.dddddddd.pppppppp
 lock file created
@@ -41,6 +43,7 @@ writing data block fd=dddd size=sss timeout=0
 end of filtering transport writing: yield=1
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
+>>>>>>>>>>>>>>>> Exim pid=p1237 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 t1 transport returned OK for userx@test.ex
 LOG: MAIN
   => userx <userx@test.ex> R=r1 T=t1
@@ -49,11 +52,13 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> Exim pid=p1235 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -69,7 +74,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   message_suffix=\n
   maildir_use_size_file=no
   locking by lockfile fcntl 
-de-tainting path 'TESTSUITE/test-mail/userx'
+below-home: de-tainting path 'TESTSUITE/test-mail/userx'
 lock name: TESTSUITE/test-mail/userx.lock
 hitch name: TESTSUITE/test-mail/userx.lock.test.ex.dddddddd.pppppppp
 lock file created
@@ -80,19 +85,22 @@ cannot use sendfile for body: spoolfile not wireformat
 writing data block fd=dddd size=sss timeout=0
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
+>>>>>>>>>>>>>>>> Exim pid=p1240 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 t1 transport returned OK for userx@test.ex
 LOG: MAIN
   => userx <userx@test.ex> R=r1 T=t1
 LOG: MAIN
   Completed
->>>>>>>>>>>>>>>> Exim pid=p1238 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> Exim pid=p1237 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1239 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1238 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 admin user
 LOG: MAIN
   <= CALLER@test.ex U=CALLER P=local S=sss
 Exim version x.yz ....
+Hints DB:
 configuration file is TESTSUITE/test-config
 trusted user
 admin user
@@ -110,7 +118,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   message_suffix=\n
   maildir_use_size_file=no
   locking by lockfile fcntl 
-de-tainting path 'TESTSUITE/test-mail/userx'
+below-home: de-tainting path 'TESTSUITE/test-mail/userx'
 lock name: TESTSUITE/test-mail/userx.lock
 hitch name: TESTSUITE/test-mail/userx.lock.test.ex.dddddddd.pppppppp
 lock file created
@@ -121,10 +129,11 @@ cannot use sendfile for body: spoolfile not wireformat
 writing data block fd=dddd size=sss timeout=0
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
+>>>>>>>>>>>>>>>> Exim pid=p1243 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 t1 transport returned OK for userx@test.ex
 LOG: MAIN
   => userx <userx@test.ex> R=r1 T=t1
 LOG: MAIN
   Completed
->>>>>>>>>>>>>>>> Exim pid=p1240 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> Exim pid=p1239 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1242 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Exim pid=p1241 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

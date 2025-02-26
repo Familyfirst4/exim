@@ -26,7 +26,9 @@ dmarc_tld_file =
 .endif
 
 pipelining_connect_advertise_hosts = *
+.ifdef SERVER
 queue_only
+.endif
 
 acl_smtp_rcpt = accept
 
@@ -40,7 +42,7 @@ server:
 
 client:
   driver =	manualroute
-  route_data =	127.0.0.1::PORT_D
+  route_data =	HOSTIPV4::PORT_D
   self =	send
   transport =	smtp
 

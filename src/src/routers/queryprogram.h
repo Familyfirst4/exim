@@ -4,6 +4,7 @@
 
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* Private structure for the private options. */
@@ -35,6 +36,6 @@ extern int queryprogram_router_entry(router_instance *, address_item *,
   struct passwd *, int, address_item **, address_item **,
   address_item **, address_item **);
 
-extern void queryprogram_router_init(router_instance *);
+extern void queryprogram_router_init(driver_instance *);
 
 /* End of routers/queryprogram.h */

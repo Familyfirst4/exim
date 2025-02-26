@@ -5,6 +5,7 @@
 /* Copyright (c) The Exim Maintainers 2020 - 2022 */
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Header for Exim's memory allocation functions */
 
@@ -49,8 +50,9 @@ tracing information for debugging. */
 #define store_free(addr) \
 	store_free_3(addr, __FUNCTION__, __LINE__)
 /* store_get & store_get_perm are in local_scan.h */
-#define store_get_quoted(size, proto_mem, quoter) \
-	store_get_quoted_3((size), (proto_mem), (quoter), __FUNCTION__, __LINE__)
+#define store_get_quoted(size, proto_mem, quoter, quoter_name) \
+	store_get_quoted_3((size), (proto_mem), (quoter), (quoter_name), \
+			  __FUNCTION__, __LINE__)
 #define store_malloc(size) \
 	store_malloc_3(size, __FUNCTION__, __LINE__)
 #define store_mark(void) \
@@ -69,7 +71,8 @@ typedef void ** rmark;
 extern BOOL    store_extend_3(void *, int, int, const char *, int);
 extern void    store_free_3(void *, const char *, int);
 /* store_get_3 & store_get_perm_3 are in local_scan.h */
-extern void *  store_get_quoted_3(int, const void *, unsigned, const char *, int);
+extern void *  store_get_quoted_3(int, const void *, unsigned, const uschar *,
+		  const char *, int);
 extern void *  store_malloc_3(size_t, const char *, int)		ALLOC ALLOC_SIZE(1) WARN_UNUSED_RESULT;
 extern rmark   store_mark_3(const char *, int);
 extern void *  store_newblock_3(void *, int, int, const char *, int);
@@ -79,8 +82,8 @@ extern rmark   store_reset_3(rmark, const char *, int);
 #define GET_UNTAINTED	(const void *)0
 #define GET_TAINTED	(const void *)1
 
-extern int	quoter_for_address(const void *);
-extern BOOL	is_quoted_like(const void *, unsigned);
+extern int	quoter_for_address(const void *, const uschar **);
+extern BOOL	is_quoted_like(const void *, const void *);
 extern BOOL	is_real_quoter(int);
 extern void	debug_print_taint(const void * p);
 

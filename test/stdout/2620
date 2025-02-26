@@ -1,5 +1,37 @@
+The files belonging to this database system will be owned by user "CALLER".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default database encoding has accordingly been set to "SQL_ASCII".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory TESTSUITE/pgsql/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Europe/London
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+
+Success. You can now start the database server using:
+
+    TESTSUITE/bin.sys/pg_ctl -D TESTSUITE/pgsql/data -l logfile start
+
 pg_ctl: server is running (PID: p1234)
-POSTGRES "-D" "TESTSUITE/pgsql/data" "-p" "1223" "-k" "TESTSUITE/pgsql"
+POSTGRES "-D" "TESTSUITE/pgsql/data" "-p" "PORT_N" "-k" "TESTSUITE/pgsql"
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
 INSERT 0 1
 > Philip Hazel
 > Philip Hazel
@@ -14,7 +46,10 @@ after" id=newline
 > name='stquot id=quote1 
 > Failed: lookup of "servers=x:localhost; select name from them where id='ph10';" gave DEFER: PostgreSQL server "x" not found in pgsql_servers
 > Philip Hazel
-> Philip Hazel
+> name: Philip Hazel
+> ipv4: Philip Hazel
+> oldsyntax ipv6: Philip Hazel
+> newsyntax ipv6: Philip Hazel
 > Philip Hazel
 > x
 > Philip Hazel

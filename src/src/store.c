@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim maintainers 2019 - 2022 */
+/* Copyright (c) The Exim maintainers 2019 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Exim gets and frees all its store through these functions. In the original
 implementation there was a lot of mallocing and freeing of small bits of store.
@@ -131,6 +132,7 @@ typedef struct pooldesc {
 typedef struct quoted_pooldesc {
   pooldesc			pool;
   unsigned			quoter;
+  const unsigned char *		quoter_name;
   struct quoted_pooldesc *	next;
 } quoted_pooldesc;
 
@@ -246,7 +248,7 @@ return US p >= bc && US p < bc + b->length;
 static pooldesc *
 pool_current_for_pointer(const void * p)
 {
-storeblock * b;
+const storeblock * b;
 
 for (quoted_pooldesc * qp = quoted_pools; qp; qp = qp->next)
   if ((b = qp->pool.current_block) && is_pointer_in_block(b, p))
@@ -274,7 +276,10 @@ for (pp = paired_pools; pp < paired_pools + N_PAIRED_POOLS; pp++)
   for (b = pp->chainbase; b; b = b->next)
     if (is_pointer_in_block(b, p)) return pp;
 
-log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+#ifndef COMPILE_UTILITY
+stackdump();
+#endif
+log_write_die(0, LOG_MAIN,
   "bad memory reference; pool not found, at %s %d", func, linenumber);
 return NULL;
 }
@@ -322,7 +327,7 @@ return FALSE;
 void
 die_tainted(const uschar * msg, const uschar * func, int line)
 {
-log_write(0, LOG_MAIN|LOG_PANIC_DIE, "Taint mismatch, %s: %s %d\n",
+log_write_die(0, LOG_MAIN, "Taint mismatch, %s: %s %d\n",
 	msg, func, line);
 }
 
@@ -331,24 +336,27 @@ log_write(0, LOG_MAIN|LOG_PANIC_DIE, "Taint mismatch, %s: %s %d\n",
 /* Return the pool for the given quoter, or null */
 
 static pooldesc *
-pool_for_quoter(unsigned quoter)
+pool_for_quoter(unsigned quoter, const uschar ** namep)
 {
 for (quoted_pooldesc * qp = quoted_pools; qp; qp = qp->next)
   if (qp->quoter == quoter)
+    {
+    if (namep) *namep = qp->quoter_name;
     return &qp->pool;
+    }
 return NULL;
 }
 
 /* Allocate/init a new quoted-pool and return the pool */
 
 static pooldesc *
-quoted_pool_new(unsigned quoter)
+quoted_pool_new(unsigned quoter, const uschar * quoter_name)
 {
-// debug_printf("allocating quoted-pool\n");
 quoted_pooldesc * qp = store_get_perm(sizeof(quoted_pooldesc), GET_UNTAINTED);
 
 pool_init(&qp->pool);
 qp->quoter = quoter;
+qp->quoter_name = quoter_name;
 qp->next = quoted_pools;
 quoted_pools = qp;
 return &qp->pool;
@@ -379,7 +387,7 @@ does this to return a current watermark value for a later release of
 allocated store. */
 
 if (size < 0 || size >= INT_MAX/2)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
             "bad memory allocation requested (%d bytes) from %s %d",
             size, func, linenumber);
 
@@ -435,7 +443,7 @@ if (size > pp->yield_length)
       int err = posix_memalign((void **)&newblock,
 				pgsize, (mlength + pgsize - 1) & ~(pgsize - 1));
       if (err)
-	log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+	log_write_die(0, LOG_MAIN,
 	  "failed to alloc (using posix_memalign) %d bytes of memory: '%s'"
 	  "called from line %d in %s",
 	  size, strerror(err), linenumber, func);
@@ -500,13 +508,14 @@ void *
 store_get_3(int size, const void * proto_mem, const char * func, int linenumber)
 {
 #ifndef COMPILE_UTILITY
-int quoter = quoter_for_address(proto_mem);
+const uschar * quoter_name;
+int quoter = quoter_for_address(proto_mem, &quoter_name);
 #endif
 pooldesc * pp;
 void * yield;
 
 #ifndef COMPILE_UTILITY
-if (!is_real_quoter(quoter))
+if (!quoter_name)
 #endif
   {
   BOOL tainted = is_tainted(proto_mem);
@@ -529,7 +538,8 @@ else
   DEBUG(D_memory)
     debug_printf("allocating quoted-block for quoter %u (from %s %d)\n",
       quoter, func, linenumber);
-  if (!(pp = pool_for_quoter(quoter))) pp = quoted_pool_new(quoter);
+  if (!(pp = pool_for_quoter(quoter, NULL)))
+    pp = quoted_pool_new(quoter, quoter_name);
   yield = pool_get(pp, size, FALSE, func, linenumber);
   DEBUG(D_memory)
     debug_printf("---QQ Get %6p %5d %-14s %4d\n",
@@ -588,16 +598,16 @@ Return:	allocated memory block
 */
 
 static void *
-store_force_get_quoted(int size, unsigned quoter,
+store_force_get_quoted(int size, unsigned quoter, const uschar * quoter_name,
   const char * func, int linenumber)
 {
-pooldesc * pp = pool_for_quoter(quoter);
+pooldesc * pp = pool_for_quoter(quoter, NULL);
 void * yield;
 
 DEBUG(D_memory)
   debug_printf("allocating quoted-block for quoter %u (from %s %d)\n", quoter, func, linenumber);
 
-if (!pp) pp = quoted_pool_new(quoter);
+if (!pp) pp = quoted_pool_new(quoter, quoter_name);
 yield = pool_get(pp, size, FALSE, func, linenumber);
 
 DEBUG(D_memory)
@@ -612,43 +622,63 @@ prototype memory is tainted. Otherwise, get plain memory.
 */
 void *
 store_get_quoted_3(int size, const void * proto_mem, unsigned quoter,
-  const char * func, int linenumber)
+  const uschar * quoter_name, const char * func, int linenumber)
 {
-// debug_printf("store_get_quoted_3: quoter %u\n", quoter);
 return is_tainted(proto_mem)
-  ? store_force_get_quoted(size, quoter, func, linenumber)
+  ? store_force_get_quoted(size, quoter, quoter_name, func, linenumber)
   : store_get_3(size, proto_mem, func, linenumber);
 }
 
 /* Return quoter for given address, or -1 if not in a quoted-pool. */
 int
-quoter_for_address(const void * p)
+quoter_for_address(const void * p, const uschar ** namep)
 {
-for (quoted_pooldesc * qp = quoted_pools; qp; qp = qp->next)
+const quoted_pooldesc * qp;
+for (qp = quoted_pools; qp; qp = qp->next)
   {
-  pooldesc * pp = &qp->pool;
+  const pooldesc * pp = &qp->pool;
   storeblock * b;
 
   if (b = pp->current_block)
     if (is_pointer_in_block(b, p))
-      return qp->quoter;
+      goto found;
 
   for (b = pp->chainbase; b; b = b->next)
     if (is_pointer_in_block(b, p))
-      return qp->quoter;
+      goto found;
   }
+if (namep) *namep = NULL;
 return -1;
+
+found:
+  if (namep) *namep = qp->quoter_name;
+  return qp->quoter;
 }
 
 /* Return TRUE iff the given address is quoted for the given type.
 There is extra complexity to handle lookup providers with multiple
 find variants but shared quote functions. */
 BOOL
-is_quoted_like(const void * p, unsigned quoter)
+is_quoted_like(const void * p, const void * v_q_li)
 {
-int pq = quoter_for_address(p);
-BOOL y =
-  is_real_quoter(pq) && lookup_list[pq]->quote == lookup_list[quoter]->quote;
+const uschar * p_name;
+const lookup_info * p_li, * q_li = v_q_li;
+const void * p_qfn, * q_qfn;
+
+(void) quoter_for_address(p, &p_name);
+
+if (!p_name)
+  {
+  DEBUG(D_any) debug_printf("No quoter name for addr\n");
+  return FALSE;
+  }
+
+p_li = search_findtype(p_name, Ustrlen(p_name));
+p_qfn = p_li ? p_li->quote : NULL;
+q_qfn = q_li ? q_li->quote : NULL;
+
+BOOL y = p_qfn == q_qfn;
+
 /* debug_printf("is_quoted(%p, %u): %c\n", p, quoter, y?'T':'F'); */
 return y;
 }
@@ -659,6 +689,7 @@ is_real_quoter(int quoter)
 {
 return quoter >= 0;
 }
+
 
 /* Return TRUE if the "new" data requires that the "old" data
 be recopied to new-class memory.  We order the classes as
@@ -677,8 +708,8 @@ is_incompatible_fn(const void * old, const void * new)
 int oq, nq;
 unsigned oi, ni;
 
-ni = is_real_quoter(nq = quoter_for_address(new)) ? 1 : is_tainted(new) ? 2 : 0;
-oi = is_real_quoter(oq = quoter_for_address(old)) ? 1 : is_tainted(old) ? 2 : 0;
+ni = is_real_quoter(nq = quoter_for_address(new, NULL)) ? 1 : is_tainted(new) ? 2 : 0;
+oi = is_real_quoter(oq = quoter_for_address(old, NULL)) ? 1 : is_tainted(old) ? 2 : 0;
 return ni > oi || ni == oi && nq != oq;
 }
 
@@ -719,7 +750,7 @@ int inc = newsize - oldsize;
 int rounded_oldsize = oldsize;
 
 if (oldsize < 0 || newsize < oldsize || newsize >= INT_MAX/2)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
             "bad memory extension requested (%d -> %d bytes) at %s %d",
             oldsize, newsize, func, linenumber);
 
@@ -819,7 +850,7 @@ if (CS ptr < bc || CS ptr > bc + b->length)
     if (CS ptr >= bc && CS ptr <= bc + b->length) break;
     }
   if (!b)
-    log_write(0, LOG_MAIN|LOG_PANIC_DIE, "internal error: store_reset(%p) "
+    log_write_die(0, LOG_MAIN, "internal error: store_reset(%p) "
       "failed: pool=%d %-14s %4d", ptr, pool, func, linenumber);
   }
 
@@ -910,10 +941,10 @@ store_reset_3(rmark r, const char * func, int linenumber)
 void ** ptr = r;
 
 if (store_pool >= POOL_TAINT_BASE)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
     "store_reset called for pool %d: %s %d\n", store_pool, func, linenumber);
 if (!r)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
     "store_reset called with bad mark: %s %d\n", func, linenumber);
 
 internal_store_reset(*ptr, store_pool + POOL_TAINT_BASE, func, linenumber);
@@ -1011,7 +1042,7 @@ DEBUG(D_memory)
 #endif  /* COMPILE_UTILITY */
 
 if (store_pool >= POOL_TAINT_BASE)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
     "store_mark called for pool %d: %s %d\n", store_pool, func, linenumber);
 
 /* Stash a mark for the tainted-twin release, in the untainted twin. Return
@@ -1111,7 +1142,7 @@ BOOL release_ok = !is_tainted(oldblock) && pp->store_last_get == oldblock;		/*XX
 uschar * newblock;
 
 if (len < 0 || len > newsize)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
             "bad memory extension requested (%d -> %d bytes) at %s %d",
             len, newsize, func, linenumber);
 
@@ -1141,15 +1172,15 @@ Returns:      pointer to gotten store (panic on failure)
 */
 
 static void *
-internal_store_malloc(size_t size, const char *func, int line)
+internal_store_malloc(size_t size, const char * func, int line)
 {
 void * yield;
 
-/* Check specifically for a possibly result of conversion from
+/* Check specifically for a possible result of conversion from
 a negative int, to the (unsigned, wider) size_t */
 
 if (size >= INT_MAX/2)
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE,
+  log_write_die(0, LOG_MAIN,
     "bad internal_store_malloc request (" SIZE_T_FMT " bytes) from %s %d",
     size, func, line);
 
@@ -1157,7 +1188,7 @@ size += sizeof(size_t);	/* space to store the size, used under debug */
 if (size < 16) size = 16;
 
 if (!(yield = malloc(size)))
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to malloc " SIZE_T_FMT " bytes of memory: "
+  log_write_die(0, LOG_MAIN, "failed to malloc " SIZE_T_FMT " bytes of memory: "
     "called from line %d in %s", size, line, func);
 
 #ifndef COMPILE_UTILITY
@@ -1251,7 +1282,8 @@ DEBUG(D_memory)
    {
    pooldesc * pp = &qp->pool;
    debug_printf("----Exit  pool Q%d max: %3d kB in %d blocks at order %u\ttainted quoted:%s\n",
-    i, (pp->maxbytes+1023)/1024, pp->maxblocks, pp->maxorder, lookup_list[qp->quoter]->name);
+    i, (pp->maxbytes+1023)/1024, pp->maxblocks, pp->maxorder,
+    qp->quoter_name);
    }
  }
 #endif
@@ -1290,10 +1322,12 @@ store_pool = oldpool;
 void
 debug_print_taint(const void * p)
 {
-int q = quoter_for_address(p);
+const uschar * quoter_name;
 if (!is_tainted(p)) return;
 debug_printf("(tainted");
-if (is_real_quoter(q)) debug_printf(", quoted:%s", lookup_list[q]->name);
+(void) quoter_for_address(p, &quoter_name);
+if (quoter_name)
+  debug_printf(", quoted:%s", quoter_name);
 debug_printf(")\n");
 }
 #endif

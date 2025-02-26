@@ -51,6 +51,8 @@ in fact some of them were inherited from earlier versions.
 accept_8bitmime                      boolean         true          main              1.60 changed to true in 4.80
 acl_not_smtp                         string*         unset         main              4.11
 acl_not_smtp_mime                    string*         unset         main              4.51 with content scan
+acl_smtp_atrn                        string*         unset         main              4.99+
+acl_smtp_atrn                        string*         unset         main              4.99
 acl_smtp_auth                        string*         unset         main              4.00
 acl_smtp_connect                     string*         unset         main              4.11
 acl_smtp_data                        string*         unset         main              4.00
@@ -128,6 +130,7 @@ check_spool_space                    integer         0             main
 check_string                         string          "From "       appendfile        3.03
                                                      unset         pipe              3.03
 check_srv                            string*         unset         dnslookup         4.31
+				     string list*    unset	   dnslookup	     4.99
 client_authz                         string*         unset         gsasl             4.94
 client_condition                     string*         unset         authenticators    4.68
 client_ignore_invalid_base64         boolean         false         plaintext         4.61
@@ -228,7 +231,7 @@ extract_addresses_remove_arguments   boolean         true          main         
 fail_verify                          boolean         false         routers
 fail_verify_recipient                boolean         false         routers           4.00
 fail_verify_sender                   boolean         false         routers           4.00
-fallback_hosts                       string list     unset         routers           4.00
+fallback_hosts                       string list*    unset         routers           4.00 (expanded from 4.99)
                                                      unset         smtp
 file                                 string*         unset         appendfile
                                                      unset         autoreply
@@ -314,8 +317,8 @@ hosts_nopass_tls                     host list       unset         smtp         
 hosts_noproxy_tls                    host list       "*"           smtp              4.90
 hosts_override                       boolean         false         smtp              2.11
 hosts_pipe_connect		     host_list	     unset	   smtp		     4.93 if experimental_pipe_connect
-hosts_randomize                      boolean         false         manualroute       4.00
-                                                     false         smtp              3.14
+hosts_randomize                      boolean*        false         manualroute       4.00 (expanded from 4.99)
+                                                     false         smtp              3.14 (expanded from 4.99)
 hosts_require_auth                   host list       unset         smtp              4.00
 hosts_require_alpn                   host list       unset         main              4.95
 								   smtp              4.95
@@ -343,6 +346,7 @@ keep_malformed                       time            4d            main
 keepalive                            boolean         true          smtp              2.05
 ldap_default_servers                 string list     unset         main              3.02
 ldap_version                         int             2 or 3        main              4.14
+limits_advertise_hosts		     host list	     *		   main		     4.98
 local_from_check                     boolean         true          main              3.14
 local_from_prefix                    string          unset         main              3.14
 local_from_suffix                    string          unset         main              3.14
@@ -366,6 +370,7 @@ log_as_local                         boolean         +             routers      
 log_file_path                        string list     ++            main
 log_defer_output                     boolean         false         pipe              1.89
 log_fail_output                      boolean         false         pipe              1.60
+log_ports			     integer list    *		   main		     4.99
 log_output                           boolean         false         pipe              1.60
 log_selector                         string          unset         main              4.00
 log_timezone                         boolean         false         main              4.11
@@ -474,7 +479,7 @@ receive_timeout                      time            0s            main         
 received_header_text                 string*         +             main
 received_headers_max                 integer         30            main
 recipient_unqualified_hosts          host list       unset         main              4.00 replacing receiver_unqualified_hosts
-recipients_max                       integer         50000         main              1.60 default changed in 4.95 (was 0)
+recipients_max                       integer*        50000         main              1.60 default changed in 4.95 (was 0)
 recipients_max_reject                boolean         false         main              1.70
 redirect_router                      string          unset         routers           4.00
 remote_max_parallel                  integer         1             main
@@ -534,6 +539,11 @@ server_set_id                        string*         unset         authenticator
 set				     string*	     unset	   routers	     4.93
 shadow_condition                     string*         unset         transports
 shadow_transport                     string          unset         transports
+sieve_inbox			     string*	     "inbox"	   redirect	     4.99
+sieve_enotify_mailto_owner	     string*	     "inbox"	   redirect
+sieve_subaddress		     string*	     "inbox"	   redirect
+sieve_useraddress		     string*	     "inbox"	   redirect
+sieve_vacation_directory	     string*	     "inbox"	   redirect
 size_addition                        integer         1024          smtp              1.91
 skip_syntax_errors                   boolean         false         redirect          4.00
 smtp_accept_keepalive                boolean         true          main

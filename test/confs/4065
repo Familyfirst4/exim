@@ -32,8 +32,11 @@ dmarc_tld_file =
 pipelining_connect_advertise_hosts = *
 auth_advertise_hosts = *
 
-log_selector = +received_recipients +pipelining
+log_selector = +received_recipients +pipelining -tls_certificate_verified
+
+.ifdef SERVER
 queue_only
+.endif
 
 acl_smtp_rcpt = accept
 
@@ -60,6 +63,8 @@ smtp:
   port =		PORT_D
   hosts_try_fastopen =	:
   protocol =		smtps
+  tls_verify_certificates = DIR/aux-fixed/cert1
+  tls_verify_cert_hostnames = :
   tls_verify_hosts =
   tls_try_verify_hosts =
   hosts_require_auth =	*

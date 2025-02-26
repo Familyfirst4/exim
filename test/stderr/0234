@@ -6,33 +6,62 @@
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 19)
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 19)
 >>> check domains = +relay_domains
->>> d in "@mx_any"? no (end of list)
+>>> d in "+relay_domains"?
+>>>  list element: +relay_domains
+>>>   start sublist relay_domains
+>>>    d in "@mx_any"?
+>>>    ╎list element: @mx_any
+>>>    ╎check dnssec require list
+>>>    ╎check dnssec request list
+>>>    d in "@mx_any"? no (end of list)
+>>>   end sublist relay_domains
 >>> d in "+relay_domains"? no (end of list)
->>> accept: condition test failed in ACL "check_recipient"
->>> processing "deny" (TESTSUITE/test-config 20)
+>>> accept: condition test failed in ACL check_recipient
+>>> processing ACL check_recipient "deny" (TESTSUITE/test-config 20)
 >>>   message: relay not permitted
->>> deny: condition test succeeded in ACL "check_recipient"
->>> end of ACL "check_recipient": DENY
+>>> deny: condition test succeeded in ACL check_recipient
+>>> end of ACL check_recipient: DENY
 LOG: H=(test) [V4NET.0.0.0] F=<a@b> rejected RCPT <c@d>: relay not permitted
 >>> using ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 19)
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 19)
 >>> check domains = +relay_domains
->>> local host has lowest MX
->>> mxt1.test.ex in "@mx_any"? yes (matched "@mx_any")
->>> mxt1.test.ex in "+relay_domains"? yes (matched "+relay_domains")
->>> accept: condition test succeeded in ACL "check_recipient"
->>> end of ACL "check_recipient": ACCEPT
+>>> mxt1.test.ex in "+relay_domains"?
+>>>  list element: +relay_domains
+>>>   start sublist relay_domains
+>>>    mxt1.test.ex in "@mx_any"?
+>>>    ╎list element: @mx_any
+>>>    ╎check dnssec require list
+>>>    ╎check dnssec request list
+>>>    ╎local host has lowest MX
+>>>    ╎mxt1.test.ex in "@mx_any"? yes (matched "@mx_any")
+>>>   end sublist relay_domains
+>>>  data from lookup saved for cache for +relay_domains: key 'mxt1.test.ex' value '@mx_any'
+>>>  mxt1.test.ex in "+relay_domains"? yes (matched "+relay_domains")
+>>> accept: condition test succeeded in ACL check_recipient
+>>> end of ACL check_recipient: ACCEPT
 >>> using ACL "check_recipient"
->>> processing "accept" (TESTSUITE/test-config 19)
+>>> processing ACL check_recipient "accept" (TESTSUITE/test-config 19)
 >>> check domains = +relay_domains
->>> local host in host list - removed hosts:
->>>   ten-2.test.ex V4NET.0.0.2 6
->>>   eximtesthost.test.ex ip4.ip4.ip4.ip4 6
->>> mxt6.test.ex in "@mx_any"? yes (matched "@mx_any")
->>> mxt6.test.ex in "+relay_domains"? yes (matched "+relay_domains")
->>> accept: condition test succeeded in ACL "check_recipient"
->>> end of ACL "check_recipient": ACCEPT
+>>> mxt6.test.ex in "+relay_domains"?
+>>>  list element: +relay_domains
+>>>   start sublist relay_domains
+>>>    mxt6.test.ex in "@mx_any"?
+>>>    ╎list element: @mx_any
+>>>    ╎check dnssec require list
+>>>    ╎check dnssec request list
+>>>    ╎local host in host list - removed hosts:
+>>>    ╎  ten-2.test.ex V4NET.0.0.2 6
+>>>    ╎  eximtesthost.test.ex ip4.ip4.ip4.ip4 6
+>>>    ╎mxt6.test.ex in "@mx_any"? yes (matched "@mx_any")
+>>>   end sublist relay_domains
+>>>  data from lookup saved for cache for +relay_domains: key 'mxt6.test.ex' value '@mx_any'
+>>>  mxt6.test.ex in "+relay_domains"? yes (matched "+relay_domains")
+>>> accept: condition test succeeded in ACL check_recipient
+>>> end of ACL check_recipient: ACCEPT

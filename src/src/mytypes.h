@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2023 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* This header file contains type definitions and macros that I use as
@@ -29,21 +30,24 @@ local_scan.h includes it and exim.h includes them both (to get this earlier). */
 #endif
 
 
-/* If gcc is being used to compile Exim, we can use its facility for checking
-the arguments of printf-like functions. This is done by a macro.
-OpenBSD has unfortunately taken to objecting to use of %n in printf
-so we have to give up on all of the available parameter checking. */
+/* We gave up on trying to get compilers to check on printf-like functions
+because they are both whiney about value sizes where they cannot do decent
+static analysis, and incapable of handling extensions to printf formats.
+The annotation on functions is still in place but does nothing. */
 
 #if defined(__GNUC__) || defined(__clang__)
-# ifndef __OpenBSD__
-#  define PRINTF_FUNCTION(A,B)	__attribute__((format(printf,A,B)))
-# endif
+/* #  define PRINTF_FUNCTION(A,B)	__attribute__((format(printf,A,B))) */
 # define ARG_UNUSED		__attribute__((__unused__))
 # define FUNC_MAYBE_UNUSED	__attribute__((__unused__))
 # define WARN_UNUSED_RESULT	__attribute__((__warn_unused_result__))
 # define ALLOC			__attribute__((malloc))
-# define ALLOC_SIZE(A)		__attribute__((alloc_size(A)))
 # define NORETURN		__attribute__((noreturn))
+# define UNREACHABLE		__builtin_unreachable()
+# ifndef __clang__
+#  define ALLOC_SIZE(A)		__attribute__((alloc_size(A)))
+# else
+#  define ALLOC_SIZE(A)		/**/
+# endif
 #else
 # define ARG_UNUSED		/**/
 # define FUNC_MAYBE_UNUSED	/**/
@@ -51,6 +55,7 @@ so we have to give up on all of the available parameter checking. */
 # define ALLOC			/**/
 # define ALLOC_SIZE(A)		/**/
 # define NORETURN		/**/
+# define UNREACHABLE		/**/
 #endif
 
 #ifndef PRINTF_FUNCTION
@@ -114,7 +119,7 @@ functions that are called quite often; for other calls to external libraries
 #define Urename(s,t)       rename(CCS(s),CCS(t))
 #define Ustat(s,t)         stat(CCS(s),t)
 #define Ustrchr(s,n)       US strchr(CCS(s),n)
-#define CUstrchr(s,n)      CUS strchr(CCS(s),n)
+#define Ustrchrnul(s,n)    US strchrnul(CCS(s),n)
 #define CUstrerror(n)      CUS strerror(n)
 #define Ustrcmp(s,t)       strcmp(CCS(s),CCS(t))
 #define Ustrcpy_nt(s,t)    strcpy(CS s, CCS t)		/* no taint check */
@@ -144,6 +149,7 @@ functions that are called quite often; for other calls to external libraries
 # define Ustrcpy(s,t)       __Ustrcpy(s, CUS(t), __FUNCTION__, __LINE__)
 # define Ustrncat(s,t,n)    __Ustrncat(s, CUS(t), n, __FUNCTION__, __LINE__)
 # define Ustrncpy(s,t,n)    __Ustrncpy(s, CUS(t), n, __FUNCTION__, __LINE__)
+# define Ustpcpy(s,t)       __Ustpcpy(s, CUS(t), __FUNCTION__, __LINE__)
 #endif
 
 #endif

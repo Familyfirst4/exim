@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #define DELIVER_BUFFER_SIZE 4096
 
@@ -94,6 +95,7 @@ typedef struct {
   BOOL		delay_after_cutoff;
   BOOL		hosts_override;
   BOOL		hosts_randomize;
+  uschar *	expand_hosts_randomize;
   BOOL		keepalive;
   BOOL		lmtp_ignore_quota;
   uschar	*expand_retry_include_ip_address;
@@ -108,6 +110,7 @@ typedef struct {
   uschar	*tls_privatekey;
   uschar	*tls_require_ciphers;
 # ifndef DISABLE_TLS_RESUME
+#  define HNE_DEFAULT US"${if and {{match{$host}{.outlook.com\\$}} {match{$item}{\\N^250-([\\w.]+)\\s\\N}}} {$1}}"
   uschar	*host_name_extract;
   uschar	*tls_resumption_hosts;
 # endif
@@ -138,7 +141,7 @@ typedef struct {
 
 /* smtp connect context */
 typedef struct {
-  uschar *		from_addr;
+  const uschar *	from_addr;
   address_item *	addrlist;
 
   smtp_connect_args	conn_args;
@@ -147,6 +150,10 @@ typedef struct {
   BOOL verify:1;
   BOOL lmtp:1;
   BOOL smtps:1;
+#ifdef EXPERIMENTAL_SRV_SMTPS
+  BOOL require_tls:1;
+#endif
+
   BOOL ok:1;
   BOOL setting_up:1;
 #ifndef DISABLE_PIPE_CONNECT
@@ -164,7 +171,7 @@ typedef struct {
 #endif
   BOOL dsn_all_lasthop:1;
 #if !defined(DISABLE_TLS) && defined(SUPPORT_DANE)
-  BOOL dane_required:1;
+  BOOL dane_required:1;		/* required by transport option */
 #endif
 #ifndef DISABLE_PIPE_CONNECT
   BOOL pending_BANNER:1;
@@ -174,7 +181,7 @@ typedef struct {
   BOOL pending_BDAT:1;
   BOOL RCPT_452:1;
   BOOL good_RCPT:1;
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+#ifndef DISABLE_ESMTP_LIMITS
   BOOL single_rcpt_domain:1;
 #endif
   BOOL completed_addr:1;
@@ -183,7 +190,7 @@ typedef struct {
   BOOL send_tlsclose:1;
 
   unsigned	peer_offered;
-#ifdef EXPERIMENTAL_ESMTP_LIMITS
+#ifndef DISABLE_ESMTP_LIMITS
   unsigned	peer_limit_mail;
   unsigned	peer_limit_rcpt;
   unsigned	peer_limit_rcptdom;
@@ -223,7 +230,7 @@ typedef struct {
 } smtp_context;
 
 extern int smtp_setup_conn(smtp_context *, BOOL);
-extern int smtp_write_mail_and_rcpt_cmds(smtp_context *, int *);
+extern sw_mrc_t smtp_write_mail_and_rcpt_cmds(smtp_context *, int *);
 extern int smtp_reap_early_pipe(smtp_context *, int *);
 
 
@@ -238,15 +245,14 @@ extern smtp_transport_options_block smtp_transport_option_defaults;
 
 /* The main, init, and closedown entry points for the transport */
 
+extern void smtp_transport_init(driver_instance *);
 extern BOOL smtp_transport_entry(transport_instance *, address_item *);
-extern void smtp_transport_init(transport_instance *);
 extern void smtp_transport_closedown(transport_instance *);
 
 
 
 #ifdef SUPPORT_SOCKS
-extern int     socks_sock_connect(host_item *, int, int, uschar *,
-	         transport_instance *, int);
+extern int     socks_sock_connect(smtp_connect_args *, const blob *);
 #endif
 
 /* End of transports/smtp.h */

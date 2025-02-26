@@ -2,9 +2,10 @@
 *                 Exim Monitor                   *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainters 2021 - 2022 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This module contains code for scanning the main log,
 extracting information from it, and displaying a "tail". */
@@ -107,7 +108,9 @@ length = Ustrlen(buffer);
 #ifdef ANONYMIZE
   {
   uschar *p = buffer + 9;
-  if (p[6] == '-' && p[13] == '-') p += 17;
+  if (  p[MESSAGE_ID_TIME_LEN] == '-'
+     && p[MESSAGE_ID_TIME_LEN + MESSAGE_ID_PID_LEN + 1] == '-')
+      p += MESSAGE_ID_LENGTH + 1;
 
   while (p < buffer + length)
     {
@@ -291,7 +294,7 @@ if (LOG != NULL)
 
     if ((p = Ustrstr(buffer, "==")) != NULL)
       {
-      queue_item *qq = find_queue(id, queue_noop, 0);
+      queue_item * qq = find_queue(id, queue_noop, 0);
       if (qq)
         {
         dest_item *d;
@@ -299,14 +302,12 @@ if (LOG != NULL)
         p += 2;
         while (isspace(*p)) p++;
         q = p;
-        while (*p != 0 && !isspace(*p))
+        while (*p && !isspace(*p))
           {
           if (*p++ != '\"') continue;
-          while (*p != 0)
-            {
+          while (*p)
             if (*p == '\\') p += 2;
-              else if (*p++ == '\"') break;
-            }
+            else if (*p++ == '\"') break;
           }
         *p++ = 0;
         if ((r = strstric(q, qualify_domain, FALSE)) != NULL &&

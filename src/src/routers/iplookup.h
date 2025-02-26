@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* Copyright (c) The Exim Maintainers 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 
 /* Private structure for the private options. */
@@ -37,6 +38,6 @@ extern int iplookup_router_entry(router_instance *, address_item *,
   struct passwd *, int, address_item **, address_item **,
   address_item **, address_item **);
 
-extern void iplookup_router_init(router_instance *);
+extern void iplookup_router_init(driver_instance *);
 
 /* End of routers/iplookup.h */

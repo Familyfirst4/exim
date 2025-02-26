@@ -6,6 +6,7 @@ OPT=
 CONNECTCOND=
 
 keep_environment = PATH
+add_environment = SSLKEYLOGFILE=DIR/spool/sslkeys
 exim_path = EXIM_PATH
 host_lookup_order = bydns
 spool_directory = DIR/spool
@@ -39,8 +40,12 @@ tls_require_ciphers = DEFAULT:!kECDHE
 .endif
 
 pipelining_connect_advertise_hosts = CONTROL
-log_selector = +received_recipients +millisec +pipelining
+log_selector = +received_recipients +millisec +pipelining \
+		-tls_certificate_verified
+
+.ifdef SERVER
 queue_only
+.endif
 
 acl_smtp_rcpt = accept
 
@@ -65,6 +70,8 @@ smtp:
   driver =		smtp
   hosts_try_fastopen =	CONNECTCOND
   hosts_pipe_connect =	CONTROL
+  tls_verify_certificates = DIR/aux-fixed/cert1
+  tls_verify_cert_hostnames = :
   tls_verify_hosts =
   tls_try_verify_hosts =
 

@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2009 */
 /* Copyright (c) The Exim Maintainers 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* This file is not part of the main Exim code. There are little bits of test
 code for some of Exim's modules, and when they are used, the module they are
@@ -77,7 +78,7 @@ va_start(ap, format);
 
 if (!string_vformat(g, 0, format, ap))
   {
-  char * s = "**** debug string overflowed buffer ****\n";
+  const char * s = "**** debug string overflowed buffer ****\n";
   char * p = CS g->s + g->ptr;
   int maxlen = g->size - (int)strlen(s) - 3;
   if (p > g->s + maxlen) p = g->s + maxlen;
@@ -112,13 +113,13 @@ sigalrm_seen = TRUE;
 *************************************************/
 
 int
-header_checkname(void *h, char *name, int len)
+header_checkname(const void * h, const char * name, int len)
 {
 return 0;
 }
 
 void
-directory_make(char *parent, char *name, int mode, int panic)
+directory_make(const char * parent, const char * name, int mode, int panic)
 {
 }
 
@@ -129,7 +130,7 @@ host_build_sender_fullhost(void) { }
 
 #ifndef TEST_HOST
 char *
-host_ntoa(int type, const void *arg, char *buffer, int *portptr)
+host_ntoa(int type, const void * arg, const char * buffer, const int * portptr)
 {
 return NULL;
 }

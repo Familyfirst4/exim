@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2023 */
 /* Copyright (c) Jeremy Harris 2020 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "../exim.h"
 #include "lf_functions.h"
@@ -12,7 +13,7 @@
 
 static int
 internal_readsock_open(client_conn_ctx * cctx, const uschar * sspec,
-  int timeout, BOOL do_tls, uschar ** errmsg)
+  int timeout, const uschar * do_tls, uschar ** errmsg)
 {
 const uschar * server_name;
 host_item host;
@@ -115,27 +116,8 @@ else
 
 #ifndef DISABLE_TLS
 if (do_tls)
-  {
-  union sockaddr_46 interface_sock;
-  EXIM_SOCKLEN_T size = sizeof(interface_sock);
-  smtp_connect_args conn_args = {.host = &host };
-  tls_support tls_dummy = { .sni = NULL };
-  uschar * errstr;
-
-  if (getsockname(cctx->sock, (struct sockaddr *) &interface_sock, &size) == 0)
-    conn_args.sending_ip_address = host_ntoa(-1, &interface_sock, NULL, NULL);
-  else
-    {
-    *errmsg = string_sprintf("getsockname failed: %s", strerror(errno));
+  if (!tls_client_adjunct_start(&host, cctx, do_tls, errmsg))
     goto bad;
-    }
-
-  if (!tls_client_start(cctx, &conn_args, NULL, &tls_dummy, &errstr))
-    {
-    *errmsg = string_sprintf("TLS connect failed: %s", errstr);
-    goto bad;
-    }
-  }
 #endif
 
 DEBUG(D_expand|D_lookup) debug_printf_indent("  connected to socket %s\n", sspec);
@@ -186,10 +168,10 @@ client_conn_ctx * cctx = handle;
 int sep = ',';
 struct {
 	BOOL do_shutdown:1;
-	BOOL do_tls:1;
 	BOOL cache:1;
+	uschar * do_tls;	/* NULL, empty-string, or SNI */
 } lf = {.do_shutdown = TRUE};
-uschar * eol = NULL;
+const uschar * eol = NULL;
 int timeout = 5;
 gstring * yield;
 int ret = DEFER;
@@ -206,8 +188,10 @@ if (opts) for (uschar * s; s = string_nextinlist(&opts, &sep, NULL, 0); )
   else if (Ustrncmp(s, "shutdown=", 9) == 0)
     lf.do_shutdown = Ustrcmp(s + 9, "no") != 0;
 #ifndef DISABLE_TLS
-  else if (Ustrncmp(s, "tls=", 4) == 0 && Ustrcmp(s + 4, US"no") != 0)
-    lf.do_tls = TRUE;
+  else if (Ustrncmp(s, "tls=", 4) == 0 && Ustrcmp(s + 4, US"no") != 0 && !lf.do_tls)
+    lf.do_tls = US"";
+  else if (Ustrncmp(s, "sni=", 4) == 0)
+    lf.do_tls = s + 4;
 #endif
   else if (Ustrncmp(s, "eol=", 4) == 0)
     eol = string_unprinting(s + 4);
@@ -291,6 +275,10 @@ if (!lf.cache) *do_cache = 0;
 
 out:
 
+#ifndef DISABLE_TLS
+if (cctx->tls_ctx) tls_close(cctx->tls_ctx, TLS_SHUTDOWN_NOWAIT);
+#endif
+
 (void) close(cctx->sock);
 cctx->sock = -1;
 return ret;
@@ -310,7 +298,7 @@ readsock_close(void * handle)
 client_conn_ctx * cctx = handle;
 if (cctx->sock < 0) return;
 #ifndef DISABLE_TLS
-if (cctx->tls_ctx) tls_close(cctx->tls_ctx, TRUE);
+if (cctx->tls_ctx) tls_close(cctx->tls_ctx, TLS_SHUTDOWN_NOWAIT);
 #endif
 close(cctx->sock);
 cctx->sock = -1;

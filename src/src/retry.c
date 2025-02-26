@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions concerned with retrying unsuccessful deliveries. */
 
@@ -30,7 +31,7 @@ Returns:        TRUE if the ultimate timeout has been reached
 */
 
 BOOL
-retry_ultimate_address_timeout(uschar *retry_key, const uschar *domain,
+retry_ultimate_address_timeout(const uschar * retry_key, const uschar *domain,
   dbdata_retry *retry_record, time_t now)
 {
 BOOL address_timeout;
@@ -72,6 +73,29 @@ DEBUG(D_retry)
 return address_timeout;
 }
 
+
+
+const uschar *
+retry_host_key_build(const host_item * host, BOOL incl_ip,
+  const uschar * portstring)
+{
+const uschar * s = host->name;
+gstring * g = string_is_ip_address(s, NULL)
+  ? string_fmt_append(NULL, "T:[%s]", s)    /* wrap a name which is a bare ip */
+  : string_fmt_append(NULL, "T:%s",   s);
+
+s = host->address;
+if (incl_ip)
+  g = Ustrchr(s, ':')
+    ? string_fmt_append(g, ":[%s]", s)	    /* wrap an ipv6  */
+    : string_fmt_append(g, ":%s",   s);
+
+if (portstring)
+  g = string_cat(g, portstring);
+
+gstring_release_unused(g);
+return string_from_gstring(g);
+}
 
 
 /*************************************************
@@ -122,34 +146,36 @@ Returns:    TRUE if the host has expired but is usable because
 */
 
 BOOL
-retry_check_address(const uschar *domain, host_item *host, uschar *portstring,
-  BOOL include_ip_address, uschar **retry_host_key, uschar **retry_message_key)
+retry_check_address(const uschar * domain, host_item * host,
+  const uschar * portstring, BOOL include_ip_address,
+  const uschar ** retry_host_key, const uschar ** retry_message_key)
 {
 BOOL yield = FALSE;
 time_t now = time(NULL);
-uschar * host_key, * message_key;
-open_db dbblock, * dbm_file;
+const uschar * host_key, * message_key;
+open_db dbblock, * dbm_file = NULL;
 tree_node * node;
 dbdata_retry * host_retry_record, * message_retry_record;
 
 *retry_host_key = *retry_message_key = NULL;
-
-DEBUG(D_transport|D_retry) debug_printf("checking status of %s\n", host->name);
 
 /* Do nothing if status already set; otherwise initialize status as usable. */
 
 if (host->status != hstatus_unknown) return FALSE;
 host->status = hstatus_usable;
 
+DEBUG(D_transport|D_retry)
+  {
+  debug_printf_indent("checking retry status of %s\n", host->name);
+  acl_level++;
+  }
+
 /* Generate the host key for the unusable tree and the retry database. Ensure
-host names are lower cased (that's what %S does). */
+host names are lower cased (that's what %S does).
+Generate the message-specific key too.
+Be sure to maintain lack-of-spaces in retry keys; exinext depends on it. */
 
-host_key = include_ip_address
-  ? string_sprintf("T:%S:%s%s", host->name, host->address, portstring)
-  : string_sprintf("T:%S%s", host->name, portstring);
-
-/* Generate the message-specific key */
-
+host_key = retry_host_key_build(host, include_ip_address, portstring);
 message_key = string_sprintf("%s:%s", host_key, message_id);
 
 /* Search the tree of unusable IP addresses. This is filled in when deliveries
@@ -160,46 +186,62 @@ the retry database when it is updated). */
 
 if ((node = tree_search(tree_unusable, host_key)))
   {
-  DEBUG(D_transport|D_retry) debug_printf("found in tree of unusables\n");
-  host->status = (node->data.val > 255)?
-    hstatus_unusable_expired : hstatus_unusable;
+  DEBUG(D_transport|D_retry)
+    debug_printf_indent("found in tree of unusables\n");
+  host->status = node->data.val > 255
+    ? hstatus_unusable_expired : hstatus_unusable;
   host->why = node->data.val & 255;
-  return FALSE;
+  goto out;
   }
 
 /* Open the retry database, giving up if there isn't one. Otherwise, search for
 the retry records, and then close the database again. */
 
-if (!(dbm_file = dbfn_open(US"retry", O_RDONLY, &dbblock, FALSE, TRUE)))
+if (!continue_retry_db)
+  dbm_file = dbfn_open(US"retry", O_RDONLY, &dbblock, FALSE, TRUE);
+else if (continue_retry_db != (open_db *)-1)
+  {
+  DEBUG(D_hints_lookup)
+    debug_printf_indent(" using cached retry hintsdb handle\n");
+  dbm_file = continue_retry_db;
+  }
+else DEBUG(D_hints_lookup)
+    debug_printf_indent(" using cached retry hintsdb nonpresence\n");
+
+if (!dbm_file)
   {
   DEBUG(D_deliver|D_retry|D_hints_lookup)
-    debug_printf("no retry data available\n");
-  return FALSE;
+    debug_printf_indent("no retry data available\n");
+  goto out;
   }
 host_retry_record = dbfn_read(dbm_file, host_key);
 message_retry_record = dbfn_read(dbm_file, message_key);
-dbfn_close(dbm_file);
+if (!continue_retry_db)
+  dbfn_close(dbm_file);
+else
+  DEBUG(D_hints_lookup) debug_printf_indent("retaining retry hintsdb handle\n");
 
 /* Ignore the data if it is too old - too long since it was written */
 
 if (!host_retry_record)
   {
-  DEBUG(D_transport|D_retry) debug_printf("no host retry record\n");
+  DEBUG(D_transport|D_retry) debug_printf_indent("no host retry record\n");
   }
 else if (now - host_retry_record->time_stamp > retry_data_expire)
   {
   host_retry_record = NULL;
-  DEBUG(D_transport|D_retry) debug_printf("host retry record too old\n");
+  DEBUG(D_transport|D_retry) debug_printf_indent("host retry record too old\n");
   }
 
 if (!message_retry_record)
   {
-  DEBUG(D_transport|D_retry) debug_printf("no message retry record\n");
+  DEBUG(D_transport|D_retry) debug_printf_indent("no message retry record\n");
   }
 else if (now - message_retry_record->time_stamp > retry_data_expire)
   {
   message_retry_record = NULL;
-  DEBUG(D_transport|D_retry) debug_printf("message retry record too old\n");
+  DEBUG(D_transport|D_retry)
+    debug_printf_indent("message retry record too old\n");
   }
 
 /* If there's a host-specific retry record, check for reaching the retry
@@ -221,7 +263,7 @@ if (host_retry_record)
     if (!host_retry_record->expired &&
         retry_ultimate_address_timeout(host_key, domain,
           host_retry_record, now))
-      return FALSE;
+      goto out;
 
     /* We have not hit the ultimate address timeout; host is unusable. */
 
@@ -229,7 +271,7 @@ if (host_retry_record)
       hstatus_unusable_expired : hstatus_unusable;
     host->why = hwhy_retry;
     host->last_try = host_retry_record->last_try;
-    return FALSE;
+    goto out;
     }
 
   /* Host is usable; set return TRUE if expired. */
@@ -252,10 +294,12 @@ if (message_retry_record)
       host->status = hstatus_unusable;
       host->why = hwhy_retry;
       }
-    return FALSE;
+    yield = FALSE; goto out;
     }
   }
 
+out:
+DEBUG(D_transport|D_retry) acl_level--;
 return yield;
 }
 
@@ -289,7 +333,7 @@ Returns:  nothing
 */
 
 void
-retry_add_item(address_item *addr, uschar *key, int flags)
+retry_add_item(address_item * addr, const uschar * key, int flags)
 {
 retry_item * rti = store_get(sizeof(retry_item), GET_UNTAINTED);
 host_item * host = addr->host_used;
@@ -307,7 +351,9 @@ rti->flags = flags;
 DEBUG(D_transport|D_retry)
   {
   int letter = rti->more_errno & 255;
-  debug_printf("added retry item for %s: errno=%d more_errno=", rti->key,
+  debug_printf("added retry %sitem for %s: errno=%d more_errno=",
+    flags & rf_delete ? "delete-" : "",
+    rti->key,
     rti->basic_errno);
   if (letter == 'A' || letter == 'M')
     debug_printf("%d,%c", (rti->more_errno >> 8) & 255, letter);
@@ -342,11 +388,11 @@ Returns:       pointer to retry rule, or NULL
 */
 
 retry_config *
-retry_find_config(const uschar *key, const uschar *alternate, int basic_errno,
+retry_find_config(const uschar * key, const uschar * alternate, int basic_errno,
   int more_errno)
 {
-const uschar *colon = Ustrchr(key, ':');
-retry_config *yield;
+const uschar * colon = Ustrchr(key, ':');
+retry_config * yield;
 
 /* If there's a colon in the key, there are two possibilities:
 
@@ -354,7 +400,8 @@ retry_config *yield;
 
       hostname:ip+port
 
-    In this case, we copy the host name.
+    In this case, we copy the host name (which could be an [ip], including
+    being an [ipv6], and we drop the []).
 
 (2) This is a key for a pipe, file, or autoreply delivery, in the format
 
@@ -368,6 +415,8 @@ retry_config *yield;
 if (colon)
   key = isalnum(*key)
     ? string_copyn(key, colon-key)	/* the hostname */
+    : *key == '['
+    ? string_copyn(key+1, Ustrchr(key, ']')-1-key)	/* the ip */
     : Ustrrchr(key, ':') + 1;		/* Take from the last colon */
 
 /* Sort out the keys */
@@ -377,11 +426,19 @@ if (alternate)    alternate = string_sprintf("*@%s", alternate);
 
 /* Scan the configured retry items. */
 
+DEBUG(D_retry) acl_level++;
 for (yield = retries; yield; yield = yield->next)
   {
-  const uschar *plist = yield->pattern;
-  const uschar *slist = yield->senders;
+  const uschar * plist = yield->pattern, * slist = yield->senders;
 
+  DEBUG(D_retry)
+    {
+    acl_level--;
+    debug_printf_indent("Check retry rule (%s:%d) '%s'\n",
+				      yield->srcfile, yield->srcline, plist);
+    acl_level++;
+    }
+  
   /* If a specific error is set for this item, check that we are handling that
   specific error, and if so, check any additional error information if
   required. */
@@ -486,6 +543,7 @@ for (yield = retries; yield; yield = yield->next)
      )  )
     break;
   }
+DEBUG(D_retry) acl_level--;
 
 return yield;
 }
@@ -500,6 +558,7 @@ return yield;
 /* Update the retry data for any directing/routing/transporting that was
 deferred, or delete it for those that succeeded after a previous defer. This is
 done all in one go to minimize opening/closing/locking of the database file.
+Called (only) from deliver_message().
 
 Note that, because SMTP delivery involves a list of destinations to try, there
 may be defer-type retry information for some of them even when the message was
@@ -517,14 +576,13 @@ Returns:        nothing
 */
 
 void
-retry_update(address_item **addr_defer, address_item **addr_failed,
-  address_item **addr_succeed)
+retry_update(address_item ** addr_defer, address_item ** addr_failed,
+  address_item ** addr_succeed)
 {
-open_db dbblock;
-open_db *dbm_file = NULL;
+open_db dbblock, * dbm_file = NULL;
 time_t now = time(NULL);
 
-DEBUG(D_retry) debug_printf("Processing retry items\n");
+DEBUG(D_retry) { debug_printf_indent("Processing retry items\n"); acl_level++; }
 
 /* Three-times loop to handle succeeded, failed, and deferred addresses.
 Deferred addresses must be handled after failed ones, because some may be moved
@@ -532,14 +590,17 @@ to the failed chain if they have timed out. */
 
 for (int i = 0; i < 3; i++)
   {
-  address_item *endaddr, *addr;
-  address_item *last_first = NULL;
-  address_item **paddr = i==0 ? addr_succeed :
-    i==1 ? addr_failed : addr_defer;
-  address_item **saved_paddr = NULL;
+  address_item * endaddr, * addr;
+  address_item * last_first = NULL;
+  address_item ** paddr = i==0 ? addr_succeed : i==1 ? addr_failed : addr_defer;
+  address_item ** saved_paddr = NULL;
 
-  DEBUG(D_retry) debug_printf("%s addresses:\n",
-    i == 0 ? "Succeeded" : i == 1 ? "Failed" : "Deferred");
+  DEBUG(D_retry)
+    {
+    debug_printf_indent("%s addresses:\n",
+      i == 0 ? "Succeeded" : i == 1 ? "Failed" : "Deferred");
+    acl_level++;
+    }
 
   /* Loop for each address on the chain. For deferred addresses, the whole
   address times out unless one of its retry addresses has a retry rule that
@@ -557,11 +618,14 @@ for (int i = 0; i < 3; i++)
 
     for (addr = endaddr; addr; addr = addr->parent)
       {
-      int update_count = 0;
-      int timedout_count = 0;
+      int update_count = 0, timedout_count = 0;
 
-      DEBUG(D_retry) debug_printf(" %s%s\n", addr->address,
-       	addr->retries ? "" : ": no retry items");
+      DEBUG(D_retry)
+	{
+	debug_printf_indent("%s%s\n", addr->address,
+			    addr->retries ? "" : ": no retry items");
+	acl_level++;
+	}
 
       /* Loop for each retry item. */
 
@@ -580,14 +644,20 @@ for (int i = 0; i < 3; i++)
         reached their retry next try time. */
 
         if (!dbm_file)
-          dbm_file = dbfn_open(US"retry", O_RDWR, &dbblock, TRUE, TRUE);
-
-        if (!dbm_file)
-          {
-          DEBUG(D_deliver|D_retry|D_hints_lookup)
-            debug_printf("retry database not available for updating\n");
-          return;
-          }
+	  if (continue_retry_db && continue_retry_db != (open_db *)-1)
+	    {
+	    DEBUG(D_hints_lookup)
+	      debug_printf_indent("using cached retry hintsdb handle\n");
+	    dbm_file = continue_retry_db;
+	    }
+	  else if (!(dbm_file = exim_lockfile_needed()
+		    ? dbfn_open(US"retry", O_RDWR|O_CREAT, &dbblock, TRUE, TRUE)
+		    : dbfn_open_multi(US"retry", O_RDWR|O_CREAT, &dbblock)))
+	    {
+	    DEBUG(D_deliver|D_retry|D_hints_lookup)
+	      debug_printf_indent("retry db not available for updating\n");
+	    return;
+	    }
 
         /* If there are no deferred addresses, that is, if this message is
         completing, and the retry item is for a message-specific SMTP error,
@@ -607,7 +677,7 @@ for (int i = 0; i < 3; i++)
           {
           (void)dbfn_delete(dbm_file, rti->key);
           DEBUG(D_retry)
-            debug_printf("deleted retry information for %s\n", rti->key);
+            debug_printf_indent("deleted retry information for %s\n", rti->key);
           continue;
           }
 
@@ -627,7 +697,7 @@ for (int i = 0; i < 3; i++)
              rti->flags & rf_host ? addr->domain : NULL,
              rti->basic_errno, rti->more_errno)))
           {
-          DEBUG(D_retry) debug_printf("No configured retry item for %s%s%s\n",
+          DEBUG(D_retry) debug_printf_indent("No configured retry item for %s%s%s\n",
             rti->key,
             rti->flags & rf_host ? US" or " : US"",
             rti->flags & rf_host ? addr->domain : US"");
@@ -637,11 +707,11 @@ for (int i = 0; i < 3; i++)
 
         DEBUG(D_retry)
           if (rti->flags & rf_host)
-            debug_printf("retry for %s (%s) = %s %d %d\n", rti->key,
+            debug_printf_indent("retry for %s (%s) = %s %d %d\n", rti->key,
               addr->domain, retry->pattern, retry->basic_errno,
               retry->more_errno);
           else
-            debug_printf("retry for %s = %s %d %d\n", rti->key, retry->pattern,
+            debug_printf_indent("retry for %s = %s %d %d\n", rti->key, retry->pattern,
               retry->basic_errno, retry->more_errno);
 
         /* Set up the message for the database retry record. Because DBM
@@ -654,7 +724,19 @@ for (int i = 0; i < 3; i++)
 	  ? US string_printing(rti->message)
 	  : US"unknown error";
         message_length = Ustrlen(message);
-        if (message_length > EXIM_DB_RLIMIT) message_length = EXIM_DB_RLIMIT;
+        if (message_length > EXIM_DB_RLIMIT)
+	  {
+	  DEBUG(D_retry)
+	    debug_printf_indent("truncating message from %u to %u bytes\n",
+				message_length, EXIM_DB_RLIMIT);
+	  message_length = EXIM_DB_RLIMIT;
+	  }
+
+	/* For a transaction-capable DB, open one for the read,write
+	sequence used for this retry record */
+
+	if (!exim_lockfile_needed())
+	  dbfn_transaction_start(dbm_file);
 
         /* Read a retry record from the database or construct a new one.
         Ignore an old one if it is too old since it was last updated. */
@@ -681,7 +763,7 @@ for (int i = 0; i < 3; i++)
         /* Compute how long this destination has been failing */
 
         failing_interval = now - retry_record->first_failed;
-        DEBUG(D_retry) debug_printf("failing_interval=%d message_age=%d\n",
+        DEBUG(D_retry) debug_printf_indent("failing_interval=%d message_age=%d\n",
           failing_interval, message_age);
 
         /* For a non-host error, if the message has been on the queue longer
@@ -763,7 +845,7 @@ for (int i = 0; i < 3; i++)
 	    ;
           if (now - received_time.tv_sec > last_rule->timeout)
             {
-            DEBUG(D_retry) debug_printf("on queue longer than maximum retry\n");
+            DEBUG(D_retry) debug_printf_indent("on queue longer than maximum retry\n");
             timedout_count++;
             rule = NULL;
             }
@@ -827,16 +909,16 @@ for (int i = 0; i < 3; i++)
         retry_record->basic_errno = rti->basic_errno;
         retry_record->more_errno = rti->more_errno;
         Ustrncpy(retry_record->text, message, message_length);
-        retry_record->text[message_length] = 0;
+        retry_record->text[message_length] = 0;	/* nul-term string in db */
 
         DEBUG(D_retry)
           {
           int letter = retry_record->more_errno & 255;
-          debug_printf("Writing retry data for %s\n", rti->key);
-          debug_printf("  first failed=%d last try=%d next try=%d expired=%d\n",
+          debug_printf_indent("Writing retry data for %s\n", rti->key);
+          debug_printf_indent("  first failed=%d last try=%d next try=%d expired=%d\n",
             (int)retry_record->first_failed, (int)retry_record->last_try,
             (int)retry_record->next_try, retry_record->expired);
-          debug_printf("  errno=%d more_errno=", retry_record->basic_errno);
+          debug_printf_indent("  errno=%d more_errno=", retry_record->basic_errno);
           if (letter == 'A' || letter == 'M')
             debug_printf("%d,%c", (retry_record->more_errno >> 8) & 255,
               letter);
@@ -845,9 +927,14 @@ for (int i = 0; i < 3; i++)
           debug_printf(" %s\n", retry_record->text);
           }
 
-        (void)dbfn_write(dbm_file, rti->key, retry_record,
-          sizeof(dbdata_retry) + message_length);
+        if (dbfn_write(dbm_file, rti->key, retry_record,
+		      sizeof(dbdata_retry) + message_length) != 0)
+	  DEBUG(D_retry) debug_printf_indent("retry record write failed\n");
+
+	if (!exim_lockfile_needed())
+	  dbfn_transaction_commit(dbm_file);
         }                            /* Loop for each retry item */
+      DEBUG(D_retry) acl_level--;
 
       /* If all the non-delete retry items are timed out, the address is
       timed out, provided that we didn't skip any hosts because their retry
@@ -856,12 +943,12 @@ for (int i = 0; i < 3; i++)
       if (update_count > 0 && update_count == timedout_count)
         if (!testflag(endaddr, af_retry_skipped))
           {
-          DEBUG(D_retry) debug_printf("timed out: all retries expired\n");
+          DEBUG(D_retry) debug_printf_indent("timed out: all retries expired\n");
           timed_out = TRUE;
           }
         else
           DEBUG(D_retry)
-            debug_printf("timed out but some hosts were skipped\n");
+            debug_printf_indent("timed out but some hosts were skipped\n");
       }     /* Loop for an address and its parents */
 
     /* If this is a deferred address, and retry processing was requested by
@@ -922,13 +1009,24 @@ for (int i = 0; i < 3; i++)
 
     paddr = &(endaddr->next);         /* Advance to next address */
     }                                 /* Loop for all addresses  */
+  DEBUG(D_retry) acl_level--;
   }                                   /* Loop for succeed, fail, defer */
 
 /* Close and unlock the database */
 
-if (dbm_file) dbfn_close(dbm_file);
+if (dbm_file)
+  if (dbm_file != continue_retry_db)
+      if (exim_lockfile_needed())
+	dbfn_close(dbm_file);
+      else
+	dbfn_close_multi(dbm_file);
+  else DEBUG(D_hints_lookup)
+    debug_printf_indent("retaining retry hintsdb handle\n");
 
-DEBUG(D_retry) debug_printf("end of retry processing\n");
+DEBUG(D_retry)
+  { acl_level--; debug_printf_indent("end of retry processing\n"); }
 }
 
 /* End of retry.c */
+/* vi: aw ai sw=2
+*/

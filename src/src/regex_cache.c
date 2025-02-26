@@ -3,8 +3,9 @@
 *************************************************/
 
 /*
- * Copyright (c) The Exim Maintainers 2022
+ * Copyright (c) The Exim Maintainers 2022 - 2023
  * License: GPL
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 /* Caching layers for compiled REs.  There is a local layer in the process,
@@ -91,11 +92,9 @@ return node ? node->data.ptr : NULL;
 static void
 regex_to_cache(const uschar * key, BOOL caseless, const pcre2_code * cre)
 {
-PCRE2_SIZE srelen;
-uschar * sre;
-tree_node * node;
 
-node = store_get(sizeof(tree_node) + Ustrlen(key) + 1, key);	/* we are called with STORE_PERM */
+/* we are called with STORE_PERM */
+tree_node * node = store_get(sizeof(tree_node) + Ustrlen(key) + 1, key);
 Ustrcpy(node->name, key);
 node->data.ptr = (void *)cre;
 
@@ -157,7 +156,7 @@ if (!(yield = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
   {
   uschar errbuf[128];
   pcre2_get_error_message(err, errbuf, sizeof(errbuf));
-  log_write(0, LOG_MAIN|LOG_PANIC_DIE, "regular expression error: "
+  log_write_die(0, LOG_MAIN, "regular expression error: "
     "%s at offset %ld while compiling %s", errbuf, (long)offset, pattern);
   }
 
@@ -238,7 +237,7 @@ regex_at_daemon(const uschar * reqbuf)
 {
 const re_req * req = (const re_req *)reqbuf;
 uschar * errstr;
-const pcre2_code * cre;
+const pcre2_code * cre = NULL;
 
 if (regex_cachesize >= REGEX_CACHESIZE_LIMIT)
   errstr = US"regex cache size limit reached";

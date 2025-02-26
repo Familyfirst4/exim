@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Copyright (c) Twitter Inc 2012
    Author: Phil Pennock <pdp@exim.org> */
@@ -81,11 +82,11 @@ auth_heimdal_gssapi_options_block auth_heimdal_gssapi_option_defaults = {
 #ifdef MACRO_PREDEF
 
 /* Dummy values */
-void auth_heimdal_gssapi_init(auth_instance *ablock) {}
+void auth_heimdal_gssapi_init(driver_instance *ablock) {}
 int auth_heimdal_gssapi_server(auth_instance *ablock, uschar *data) {return 0;}
 int auth_heimdal_gssapi_client(auth_instance *ablock, void * sx,
   int timeout, uschar *buffer, int buffsize) {return 0;}
-gstring * auth_heimdal_gssapi_version_report(gstring * g) {}
+gstring * auth_heimdal_gssapi_version_report(gstring * g) { return NULL; }
 
 #else   /*!MACRO_PREDEF*/
 
@@ -116,8 +117,11 @@ in the init, we mostly just use raw krb5 methods so that we can report
 the keytab contents, for -D+auth debugging. */
 
 void
-auth_heimdal_gssapi_init(auth_instance *ablock)
+auth_heimdal_gssapi_init(driver_instance * a)
 {
+auth_instance * ablock = (auth_instance *)a;
+auth_heimdal_gssapi_options_block * ob =
+  (auth_heimdal_gssapi_options_block *)(a->options_block);
 krb5_context context;
 krb5_keytab keytab;
 krb5_kt_cursor cursor;
@@ -125,8 +129,6 @@ krb5_keytab_entry entry;
 krb5_error_code krc;
 char *principal, *enctype_s;
 const char *k_keytab_typed_name = NULL;
-auth_heimdal_gssapi_options_block *ob =
-  (auth_heimdal_gssapi_options_block *)(ablock->options_block);
 
 ablock->server = FALSE;
 ablock->client = FALSE;
@@ -225,6 +227,8 @@ gss_buffer_desc / *gss_buffer_t: hold/point-to size_t .length & void *value
 int
 auth_heimdal_gssapi_server(auth_instance *ablock, uschar *initial_data)
 {
+auth_heimdal_gssapi_options_block * ob =
+  (auth_heimdal_gssapi_options_block *)(ablock->drinst.options_block);
 gss_name_t gclient = GSS_C_NO_NAME;
 gss_name_t gserver = GSS_C_NO_NAME;
 gss_cred_id_t gcred = GSS_C_NO_CREDENTIAL;
@@ -237,8 +241,6 @@ gss_OID mech_type;
 OM_uint32 maj_stat, min_stat;
 int step, error_out;
 uschar *tmp1, *tmp2, *from_client;
-auth_heimdal_gssapi_options_block *ob =
-  (auth_heimdal_gssapi_options_block *)(ablock->options_block);
 BOOL handled_empty_ir;
 rmark store_reset_point;
 uschar *keytab;
@@ -248,7 +250,7 @@ uschar requested_qop;
 store_reset_point = store_mark();
 
 HDEBUG(D_auth)
-  debug_printf("heimdal: initialising auth context for %s\n", ablock->name);
+  debug_printf("heimdal: initialising auth context for %s\n", ablock->drinst.name);
 
 /* Construct our gss_name_t gserver describing ourselves */
 tmp1 = expand_string(ob->server_service);
@@ -333,7 +335,7 @@ while (step < 4)
       break;
 
     case 1:
-      gbufdesc_in.length = b64decode(from_client, USS &gbufdesc_in.value);
+      gbufdesc_in.length = b64decode(from_client, USS &gbufdesc_in.value, GET_TAINTED);
       if (gclient)
         {
 	maj_stat = gss_release_name(&min_stat, &gclient);
@@ -418,7 +420,7 @@ while (step < 4)
       break;
 
     case 3:
-      gbufdesc_in.length = b64decode(from_client, USS &gbufdesc_in.value);
+      gbufdesc_in.length = b64decode(from_client, USS &gbufdesc_in.value, GET_TAINTED);
       maj_stat = gss_unwrap(&min_stat,
 	  gcontext,
 	  &gbufdesc_in,       /* data from client */
@@ -546,7 +548,7 @@ va_list ap;
 OM_uint32 maj_stat, min_stat;
 OM_uint32 msgcontext = 0;
 gss_buffer_desc status_string;
-gstring * g;
+gstring * g = NULL;
 
 HDEBUG(D_auth)
   {
@@ -564,9 +566,8 @@ do {
   if (!auth_defer_msg)
     auth_defer_msg = string_copy(US status_string.value);
 
-  HDEBUG(D_auth) debug_printf("heimdal %s: %.*s\n",
-      string_from_gstring(g), (int)status_string.length,
-      CS status_string.value);
+  HDEBUG(D_auth) debug_printf("heimdal %Y: %.*s\n",
+      g, (int)status_string.length, CS status_string.value);
   gss_release_buffer(&min_stat, &status_string);
 
   } while (msgcontext != 0);
@@ -609,8 +610,30 @@ build-time and export the result as a string into a header ourselves. */
 
 return string_fmt_append(g, "Library version: Heimdal: Runtime: %s\n"
 			    " Build Info: %s\n",
-	heimdal_version, heimdal_long_version));
+	heimdal_version, heimdal_long_version);
 }
+
+# ifdef DYNLOOKUP
+#  define heimdal_gssapi_auth_info _auth_info
+# endif
+
+auth_info heimdal_gssapi_auth_info = {
+.drinfo = {
+  .driver_name =	US"heimdal_gssapi",                   /* lookup name */
+  .options =		auth_heimdal_gssapi_options,
+  .options_count =	&auth_heimdal_gssapi_options_count,
+  .options_block =	&auth_heimdal_gssapi_option_defaults,
+  .options_len =	sizeof(auth_heimdal_gssapi_options_block),
+  .init =		auth_heimdal_gssapi_init,
+# ifdef DYNLOOKUP
+  .dyn_magic =		AUTH_MAGIC,
+# endif
+  },
+.servercode =		auth_heimdal_gssapi_server,
+.clientcode =		NULL,
+.version_report =	auth_heimdal_gssapi_version_report,
+.macros_create =	NULL,
+};
 
 #endif   /*!MACRO_PREDEF*/
 #endif  /* AUTH_HEIMDAL_GSSAPI */

@@ -1,6 +1,6 @@
 
 ******** SERVER ********
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220
 EHLO myhost.test.ex
@@ -13,9 +13,9 @@ DATA
 334 send more
 Received: from CALLER by myhost.test.ex with local (Exim x.yz)
 	(envelope-from <CALLER@myhost.test.ex>)
-	id 10HmaX-0005vi-00;
+	id 10HmaX-000000005vi-0000;
 	Tue, 2 Mar 1999 09:44:33 +0000
-Message-Id: <E10HmaX-0005vi-00@myhost.test.ex>
+Message-Id: <E10HmaX-000000005vi-0000@myhost.test.ex>
 From: CALLER_NAME <CALLER@myhost.test.ex>
 Date: Tue, 2 Mar 1999 09:44:33 +0000
 
@@ -24,7 +24,7 @@ Date: Tue, 2 Mar 1999 09:44:33 +0000
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220
 EHLO myhost.test.ex
@@ -36,7 +36,7 @@ RCPT TO:<d2@myhost.test.ex>
 QUIT
 250 OK
 Expected EOF read from client
-Listening on port 1224 ... 
+Listening on port PORT_S ... 
 Connection request from [127.0.0.1]
 220
 EHLO myhost.test.ex

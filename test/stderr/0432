@@ -6,9 +6,12 @@
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "mail"
->>> processing "accept" (TESTSUITE/test-config 20)
+>>> processing ACL mail "accept" (TESTSUITE/test-config 20)
 >>> check verify = sender/callout=1s,maxwait=1s
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing x@y
@@ -22,9 +25,10 @@ MUNGED: ::1 will be omitted in what follows
 >>> ... callout omitted by default when host testing
 >>> (Use -bhc if you want the callouts to happen.)
 >>> ----------- end verify ------------
->>> accept: condition test succeeded in ACL "mail"
->>> end of ACL "mail": ACCEPT
+>>> accept: condition test succeeded in ACL mail
+>>> end of ACL mail: ACCEPT
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 configuration file is TESTSUITE/test-config
@@ -49,6 +53,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [1.2.3.4]
 sender_rcvhost = [1.2.3.4] (helo=test)
@@ -58,7 +65,7 @@ SMTP<< mail from:<x@y>
 spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 msg_size = 0
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 using ACL "mail"
-processing "accept" (TESTSUITE/test-config 20)
+processing ACL mail "accept" (TESTSUITE/test-config 20)
 check verify = sender/callout=1s,maxwait=1s
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying x@y
@@ -77,35 +84,34 @@ domain = y
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: x@y
-  transport: t1
+  envelope to:	x@y
+  transport:	t1
 using host_fake_gethostbyname for 127.0.0.1 (IPv4)
 local host found for non-MX address
 MUNGED: ::1 will be omitted in what follows
 get[host|ipnode]byname[2] looked up these IP addresses:
   name=127.0.0.1 address=127.0.0.1
 Attempting full verification using callout
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
  EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
+ hintsdb_open(flags 0x2 mode 0640) No such file or directory
+ returned from EXIM_DBOPEN: (nil)
+ TESTSUITE/spool/db/callout appears not to exist: trying to create
+ EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR|O_CREAT
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR
- dbfn_read: key=y
- callout cache: no domain record found for y
- dbfn_read: key=x@y
- callout cache: no address record found for x@y
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_read: key=y
+dbfn_read: null return
+callout cache: no domain record found for y
+dbfn_read: key=x@y
+dbfn_read: null return
+callout cache: no address record found for x@y
 interface=NULL port=PORT_S
-Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+connected
   SMTP<< 220 server ready
 127.0.0.1 in hosts_avoid_esmtp? no (option unset)
   SMTP>> EHLO myhost.test.ex
 cmd buf flush ddd bytes
   SMTP<< 250 OK
- compiled RE '.outlook.com$' not found in local cache
- compiling RE '.outlook.com$'
- compiled RE '.outlook.com$' saved in local cache
 not using PIPELINING
 not using DSN
 127.0.0.1 in hosts_require_auth? no (option unset)
@@ -121,30 +127,26 @@ cmd buf flush ddd bytes
   SMTP<< 220 OK
   SMTP(close)>>
 cmdlog: '220:EHLO:250:MAIL:250:RCPT:250:QUIT:220'
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR|O_CREAT
+ EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR|O_CREAT
- dbfn_write: key=y
- wrote callout cache domain record for y:
-   result=1 postmaster=0 random=0
- dbfn_write: key=x@y
- wrote positive callout cache address record for x@y
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_write: key=y datalen nn
+wrote callout cache domain record for y:
+  result=1 postmaster=0 random=0
+dbfn_write: key=x@y datalen nn
+wrote positive callout cache address record for x@y
 ----------- end verify ------------
 sender x@y verified ok
-accept: condition test succeeded in ACL "mail"
-end of ACL "mail": ACCEPT
+accept: condition test succeeded in ACL mail
+end of ACL mail: ACCEPT
 SMTP>> 250 OK
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [1.2.3.4] closed by QUIT
+  SMTP connection from (test) [1.2.3.4] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 configuration file is TESTSUITE/test-config
@@ -169,6 +171,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [1.2.3.4]
 sender_rcvhost = [1.2.3.4] (helo=test)
@@ -178,7 +183,7 @@ SMTP<< mail from:<x@y>
 spool directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100 msg_size = 0
 log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 using ACL "mail"
-processing "accept" (TESTSUITE/test-config 20)
+processing ACL mail "accept" (TESTSUITE/test-config 20)
 check verify = sender/callout=1s,maxwait=1s
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Verifying x@y
@@ -197,35 +202,32 @@ domain = y
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: x@y
-  transport: t1
+  envelope to:	x@y
+  transport:	t1
 using host_fake_gethostbyname for 127.0.0.1 (IPv4)
 local host found for non-MX address
 MUNGED: ::1 will be omitted in what follows
 get[host|ipnode]byname[2] looked up these IP addresses:
   name=127.0.0.1 address=127.0.0.1
 Attempting full verification using callout
- locking TESTSUITE/spool/db/callout.lockfile
- locked  TESTSUITE/spool/db/callout.lockfile
  EXIM_DBOPEN: file <TESTSUITE/spool/db/callout> dir <TESTSUITE/spool/db> flags=O_RDWR
  returned from EXIM_DBOPEN: 0xAAAAAAAA
- opened hints database TESTSUITE/spool/db/callout: flags=O_RDWR
- dbfn_read: key=y
- callout cache: found domain record for y
- dbfn_read: key=x@y
- callout cache: found address record for x@y
- callout cache: address record is positive
- EXIM_DBCLOSE(0xAAAAAAAA)
- closed hints database and lockfile
+dbfn_read: key=y
+dbfn_read: size nnn return
+callout cache: found domain record for y
+dbfn_read: key=x@y
+dbfn_read: size nnn return
+callout cache: found address record for x@y
+callout cache: address record is positive
 ----------- end verify ------------
 sender x@y verified ok
-accept: condition test succeeded in ACL "mail"
-end of ACL "mail": ACCEPT
+accept: condition test succeeded in ACL mail
+end of ACL mail: ACCEPT
 SMTP>> 250 OK
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [1.2.3.4] closed by QUIT
+  SMTP connection from (test) [1.2.3.4] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 >>> host in hosts_connection_nolog? no (option unset)
@@ -236,9 +238,12 @@ search_tidyup called
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "mail"
->>> processing "accept" (TESTSUITE/test-config 20)
+>>> processing ACL mail "accept" (TESTSUITE/test-config 20)
 >>> check verify = sender/callout=1s,maxwait=1s
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing x@y
@@ -253,8 +258,8 @@ MUNGED: ::1 will be omitted in what follows
 >>> callout cache: found address record for x@y
 >>> callout cache: address record is positive
 >>> ----------- end verify ------------
->>> accept: condition test succeeded in ACL "mail"
->>> end of ACL "mail": ACCEPT
+>>> accept: condition test succeeded in ACL mail
+>>> end of ACL mail: ACCEPT
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -263,9 +268,12 @@ MUNGED: ::1 will be omitted in what follows
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "mail"
->>> processing "accept" (TESTSUITE/test-config 20)
+>>> processing ACL mail "accept" (TESTSUITE/test-config 20)
 >>> check verify = sender/callout=1s,maxwait=1s
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing a@b
@@ -279,7 +287,8 @@ MUNGED: ::1 will be omitted in what follows
 >>> callout cache: no domain record found for b
 >>> callout cache: no address record found for a@b
 >>> interface=NULL port=PORT_S
->>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+>>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+>>> connected
 >>>   SMTP<< 220 server ready
 >>> 127.0.0.1 in hosts_avoid_esmtp? no (option unset)
 >>>   SMTP>> EHLO myhost.test.ex
@@ -301,8 +310,8 @@ MUNGED: ::1 will be omitted in what follows
 >>>   result=1 postmaster=0 random=0
 >>> wrote positive callout cache address record for a@b
 >>> ----------- end verify ------------
->>> accept: condition test succeeded in ACL "mail"
->>> end of ACL "mail": ACCEPT
+>>> accept: condition test succeeded in ACL mail
+>>> end of ACL mail: ACCEPT
 >>> host in hosts_connection_nolog? no (option unset)
 >>> host in host_lookup? no (option unset)
 >>> host in host_reject_connection? no (option unset)
@@ -311,9 +320,12 @@ MUNGED: ::1 will be omitted in what follows
 >>> host in helo_verify_hosts? no (option unset)
 >>> host in helo_try_verify_hosts? no (option unset)
 >>> host in helo_accept_junk_hosts? no (option unset)
+>>> test in helo_lookup_domains?
+>>>  list element: @
+>>>  list element: @[]
 >>> test in helo_lookup_domains? no (end of list)
 >>> using ACL "mail"
->>> processing "accept" (TESTSUITE/test-config 20)
+>>> processing ACL mail "accept" (TESTSUITE/test-config 20)
 >>> check verify = sender/callout=1s,maxwait=1s
 >>> >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 >>> routing p1@q
@@ -327,7 +339,8 @@ MUNGED: ::1 will be omitted in what follows
 >>> callout cache: no domain record found for q
 >>> callout cache: no address record found for p1@q
 >>> interface=NULL port=PORT_S
->>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...  connected
+>>> Connecting to 127.0.0.1 [127.0.0.1]:PORT_S ...
+>>> connected
 >>>   SMTP<< 220 server ready
 >>> 127.0.0.1 in hosts_avoid_esmtp? no (option unset)
 >>>   SMTP>> EHLO myhost.test.ex
@@ -336,6 +349,6 @@ MUNGED: ::1 will be omitted in what follows
 >>> cmdlog: '220:EHLO'
 >>> SMTP timeout
 >>> ----------- end verify ------------
->>> accept: condition test deferred in ACL "mail"
+>>> accept: condition test deferred in ACL mail
 LOG: H=(test) [1.2.3.4] sender verify defer for <p1@q>: Could not complete sender verify callout: 127.0.0.1 [127.0.0.1] : SMTP timeout after EHLO myhost.test.ex
 LOG: H=(test) [1.2.3.4] temporarily rejected MAIL <p1@q>: Could not complete sender verify callout

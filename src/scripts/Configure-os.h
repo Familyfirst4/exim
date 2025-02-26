@@ -1,4 +1,7 @@
 #! /bin/sh
+# Copyright (c) The Exim Maintainters 2022
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 
 # Shell script to create a link to the appropriate OS-specific header file.
 
@@ -32,13 +35,27 @@ rm -f os.h
 # symlinking it. Otherwise we pollute the clean copy with the fudge.
 cp -p ../OS/os.h-$os os.h || exit 1
 
-# Special-purpose fudge for older versions of Linux (pre 2.1.15) that
-# use the structure name "options" instead of "ip_options".
+# Special-purpose fudges for MUSL and older linuxes, if we are not
+# one of those, then stop here
 
 if [ "$os" != "Linux" -a "$os" != "Linux-libc5" ] ; then exit 0; fi
 
 grep ip_options /usr/include/linux/ip.h >/dev/null
 if [ $? = 0 ] ; then exit 0; fi
+
+grep 'struct ip_opts' /usr/include/netinet/in.h >/dev/null 2>/dev/null
+if [ $? = 0 ]
+then
+
+cat >>os.h <<End
+
+/* Signal that we are actually inside MUSL */
+
+#undef GLIBC_IP_OPTIONS
+#define MUSL_IP_OPTIONS
+End
+
+else
 
 cat >>os.h <<End
 
@@ -48,4 +65,4 @@ for ip_options in /usr/include/linux/ip.h. */
 #define ip_options options
 End
 
-# End of Configure-os.h
+fi

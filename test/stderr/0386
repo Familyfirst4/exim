@@ -1,4 +1,5 @@
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1234
 seeking password data for user "CALLER": cache not available
@@ -28,6 +29,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [V4NET.9.8.7]
 sender_rcvhost = [V4NET.9.8.7] (helo=test)
@@ -39,22 +43,28 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<1@b>
 using ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 18)
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 18)
 check local_parts = 1
-1 in "1"? yes (matched "1")
+1 in "1"?
+ list element: 1
+ 1 in "1"? yes (matched "1")
 check acl = TESTSUITE/aux-fixed/0386.acl1
  read ACL from file TESTSUITE/aux-fixed/0386.acl1
- processing "accept" (TESTSUITE/test-config 44)
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "accept" (TESTSUITE/test-config 18)
  check hosts = :
+  host in ":"?
+  list element: 
   host in ":"? no (end of list)
- accept: condition test failed in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "deny" (TESTSUITE/test-config 44)
+ accept: condition test failed in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "deny" (TESTSUITE/test-config 18)
  check local_parts = ^.*[@%!/|]
- compiled caseless RE '^.*[@%!/|]' not found in local cache
- compiled RE '^.*[@%!/|]' saved in local cache
+ 1 in "^.*[@%!/|]"?
+  list element: ^.*[@%!/|]
+  compiled caseless RE '^.*[@%!/|]' not found in local cache
+  compiled RE '^.*[@%!/|]' saved in local cache
  1 in "^.*[@%!/|]"? no (end of list)
- deny: condition test failed in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "require" (TESTSUITE/test-config 44)
+ deny: condition test failed in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "require" (TESTSUITE/test-config 18)
  l_message: Invalid sender
    message: Couldn't verify the sender
  check verify = sender/defer_ok
@@ -75,16 +85,16 @@ domain = y
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: x@y
-  transport: t1
+  envelope to:	x@y
+  transport:	t1
  ----------- end verify ------------
  sender x@y verified ok
- require: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "deny" (TESTSUITE/test-config 44)
+ require: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "deny" (TESTSUITE/test-config 18)
    message: No such user here
- deny: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl1"
- end of ACL "TESTSUITE/aux-fixed/0386.acl1": DENY
-accept: condition test failed in ACL "chk_rcpt"
+ deny: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl1
+ end of ACL TESTSUITE/aux-fixed/0386.acl1: DENY
+accept: condition test failed in ACL chk_rcpt
 accept: endpass encountered - denying access
 SMTP>> 550 No such user here
 LOG: MAIN REJECT
@@ -97,21 +107,27 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<1@b>
 using ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 18)
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 18)
 check local_parts = 1
-1 in "1"? yes (matched "1")
+1 in "1"?
+ list element: 1
+ 1 in "1"? yes (matched "1")
 check acl = TESTSUITE/aux-fixed/0386.acl1
  using ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "accept" (TESTSUITE/test-config 44)
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "accept" (TESTSUITE/test-config 18)
  check hosts = :
+  host in ":"?
+  list element: 
   host in ":"? no (end of list)
- accept: condition test failed in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "deny" (TESTSUITE/test-config 44)
+ accept: condition test failed in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "deny" (TESTSUITE/test-config 18)
  check local_parts = ^.*[@%!/|]
- compiled caseless RE '^.*[@%!/|]' found in local cache
+ 1 in "^.*[@%!/|]"?
+  list element: ^.*[@%!/|]
+  compiled caseless RE '^.*[@%!/|]' found in local cache
  1 in "^.*[@%!/|]"? no (end of list)
- deny: condition test failed in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "require" (TESTSUITE/test-config 44)
+ deny: condition test failed in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "require" (TESTSUITE/test-config 18)
  l_message: Invalid sender
    message: Couldn't verify the sender
  check verify = sender/defer_ok
@@ -131,16 +147,16 @@ domain = y
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: x@y
-  transport: t1
+  envelope to:	x@y
+  transport:	t1
  ----------- end verify ------------
  sender x@y verified ok
- require: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl1"
- processing "deny" (TESTSUITE/test-config 44)
+ require: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl1
+ processing ACL TESTSUITE/aux-fixed/0386.acl1 "deny" (TESTSUITE/test-config 18)
    message: No such user here
- deny: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl1"
- end of ACL "TESTSUITE/aux-fixed/0386.acl1": DENY
-accept: condition test failed in ACL "chk_rcpt"
+ deny: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl1
+ end of ACL TESTSUITE/aux-fixed/0386.acl1: DENY
+accept: condition test failed in ACL chk_rcpt
 accept: endpass encountered - denying access
 SMTP>> 550 No such user here
 LOG: MAIN REJECT
@@ -148,10 +164,11 @@ LOG: MAIN REJECT
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from (test) [V4NET.9.8.7] closed by QUIT
+  SMTP connection from (test) [V4NET.9.8.7] D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1234 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=CALLER_GID pid=p1235
 seeking password data for user "CALLER": cache not available
@@ -183,6 +200,9 @@ host in helo_accept_junk_hosts? no (option unset)
 SMTP>> 220 myhost.test.ex ESMTP Exim x.yz Tue, 2 Mar 1999 09:44:33 +0000
 smtp_setup_msg entered
 SMTP<< helo test
+test in helo_lookup_domains?
+ list element: @
+ list element: @[]
 test in helo_lookup_domains? no (end of list)
 sender_fullhost = (test) [V4NET.11.12.13]
 sender_rcvhost = [V4NET.11.12.13] (helo=test ident=CALLER)
@@ -194,37 +214,41 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<2@b>
 using ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 18)
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 18)
 check local_parts = 1
+2 in "1"?
+ list element: 1
 2 in "1"? no (end of list)
-accept: condition test failed in ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 21)
+accept: condition test failed in ACL chk_rcpt
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 21)
 check local_parts = 2
-2 in "2"? yes (matched "2")
+2 in "2"?
+ list element: 2
+ 2 in "2"? yes (matched "2")
 check acl = TESTSUITE/aux-fixed/0386.acl2
  read ACL from file TESTSUITE/aux-fixed/0386.acl2
- processing "warn" (TESTSUITE/test-config 44)
+ processing ACL TESTSUITE/aux-fixed/0386.acl2 "warn" (TESTSUITE/test-config 21)
    message: X-Warning: $sender_host_address is listed at $dnslist_domain\nX-Warning: $dnslist_text
  l_message: found in $dnslist_domain: $dnslist_text
  check dnslists = rbl.test.ex 
 dnslists check: rbl.test.ex
 new DNS lookup for 13.12.11.V4NET.rbl.test.ex
-DNS lookup of 13.12.11.V4NET.rbl.test.ex (A) using fakens
-DNS lookup of 13.12.11.V4NET.rbl.test.ex (A) succeeded
+ DNS lookup of 13.12.11.V4NET.rbl.test.ex (A) using fakens
+ DNS lookup of 13.12.11.V4NET.rbl.test.ex (A) succeeded
 dnslists: wrote cache entry, ttl=3
 DNS lookup for 13.12.11.V4NET.rbl.test.ex succeeded (yielding 127.0.0.2)
-DNS lookup of 13.12.11.V4NET.rbl.test.ex (TXT) using fakens
-DNS lookup of 13.12.11.V4NET.rbl.test.ex (TXT) succeeded
+ DNS lookup of 13.12.11.V4NET.rbl.test.ex (TXT) using fakens
+ DNS lookup of 13.12.11.V4NET.rbl.test.ex (TXT) succeeded
 => that means V4NET.11.12.13 is listed at rbl.test.ex
- warn: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl2"
+ warn: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl2
 LOG: MAIN
   H=(test) [V4NET.11.12.13] U=CALLER Warning: found in rbl.test.ex: This is a test blacklisting message
 created log directory TESTSUITE/spool/log
- processing "accept" (TESTSUITE/test-config 44)
- accept: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl2"
- end of ACL "TESTSUITE/aux-fixed/0386.acl2": ACCEPT
-accept: condition test succeeded in ACL "chk_rcpt"
-end of ACL "chk_rcpt": ACCEPT
+ processing ACL TESTSUITE/aux-fixed/0386.acl2 "accept" (TESTSUITE/test-config 21)
+ accept: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl2
+ end of ACL TESTSUITE/aux-fixed/0386.acl2: ACCEPT
+accept: condition test succeeded in ACL chk_rcpt
+end of ACL chk_rcpt: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< data
 SMTP>> 354 Enter message, ending with "." on a line by itself
@@ -232,34 +256,36 @@ search_tidyup called
 >>Headers received:
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
 search_tidyup called
 >>Headers after rewriting and local additions:
 
-Data file name: TESTSUITE/spool//input//10HmaX-0005vi-00-D
-Data file written for message 10HmaX-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+Data file written for message 10HmaX-000000005vi-0000
 >>Generated Received: header line
 P Received: from [V4NET.11.12.13] (helo=test ident=CALLER)
 	by myhost.test.ex with smtp (Exim x.yz)
 	(envelope-from <x@y>)
-	id 10HmaX-0005vi-00
+	id 10HmaX-000000005vi-0000
 	for 2@b;
 	Tue, 2 Mar 1999 09:44:33 +0000
 >>Headers added by MAIL or RCPT ACL:
   X-Warning: V4NET.11.12.13 is listed at rbl.test.ex
   X-Warning: This is a test blacklisting message
 >>
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-0005vi-00
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaX-000000005vi-0000
 DSN: **** SPOOL_OUT - address: <2@b> errorsto: <NULL> orcpt: <NULL> dsn_flags: 0x0
-Renaming spool header file: TESTSUITE/spool//input//10HmaX-0005vi-00-H
+Renaming spool header file: TESTSUITE/spool//input//10HmaX-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= x@y H=(test) [V4NET.11.12.13] U=CALLER P=smtp S=sss
-SMTP>> 250 OK id=10HmaX-0005vi-00
+receive_msg: tidyup
+SMTP>> 250 OK id=10HmaX-000000005vi-0000
 search_tidyup called
-exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-0005vi-00
+exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaX-000000005vi-0000
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=EXIM_GID pid=p1236
 seeking password data for user "CALLER": cache not available
@@ -271,9 +297,9 @@ dropping to exim gid; retaining priv uid
 seeking password data for user "CALLER": using cached result
 getpwnam() succeeded uid=CALLER_UID gid=CALLER_GID
 set_process_info: pppp delivering specified messages
-set_process_info: pppp delivering 10HmaX-0005vi-00
-Trying spool file TESTSUITE/spool//input//10HmaX-0005vi-00-D
-reading spool file 10HmaX-0005vi-00-H
+set_process_info: pppp delivering 10HmaX-000000005vi-0000
+Trying spool file TESTSUITE/spool//input//10HmaX-000000005vi-0000-D
+reading spool file 10HmaX-000000005vi-0000-H
 user=CALLER uid=CALLER_UID gid=CALLER_GID sender=x@y
 sender_fullhost = (test) [V4NET.11.12.13]
 sender_rcvhost = [V4NET.11.12.13] (helo=test ident=CALLER)
@@ -287,17 +313,13 @@ body_linecount=1 message_linecount=8
 DSN: set orcpt:   flags: 0x0
 Delivery address list:
   2@b 
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: 2@b
 unique = 2@b
-no   domain  retry record
-no   address retry record
+checking router retry status
+ no   domain  retry record
+ no   address retry record
 2@b: queued for routing
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing 2@b
@@ -312,8 +334,8 @@ domain = b
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: 2@b
-  transport: t1
+  envelope to:	2@b
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -324,17 +346,12 @@ After routing:
 search_tidyup called
 >>>>>>>>>>>>>>>> Local deliveries >>>>>>>>>>>>>>>>
 --------> 2@b <--------
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 search_tidyup called
 changed uid/gid: local delivery to 2 <2@b> transport=t1
   uid=CALLER_UID gid=CALLER_GID pid=p1237
   home=NULL current=/
-set_process_info: pppp delivering 10HmaX-0005vi-00 to 2 using t1
+set_process_info: pppp delivering 10HmaX-000000005vi-0000 to 2 using t1
 appendfile transport entered
 appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   file=TESTSUITE/test-mail/2 format=unix
@@ -342,7 +359,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   message_suffix=\n
   maildir_use_size_file=no
   locking by lockfile fcntl 
-de-tainting path 'TESTSUITE/test-mail/2'
+below-home: de-tainting path 'TESTSUITE/test-mail/2'
 lock name: TESTSUITE/test-mail/2.lock
 hitch name: TESTSUITE/test-mail/2.lock.test.ex.dddddddd.pppppppp
 lock file created
@@ -354,6 +371,7 @@ writing data block fd=dddd size=sss timeout=0
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
 search_tidyup called
+>>>>>>>>>>>>>>>> Exim pid=p1237 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 journalling 2@b
 t1 transport returned OK for 2@b
 post-process 2@b (0)
@@ -363,12 +381,12 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> deliveries are done >>>>>>>>>>>>>>>>
 changed uid/gid: post-delivery tidying
   uid=EXIM_UID gid=EXIM_GID pid=p1236
-set_process_info: pppp tidying up after delivering 10HmaX-0005vi-00
+set_process_info: pppp tidying up after delivering 10HmaX-000000005vi-0000
 Processing retry items
-Succeeded addresses:
- 2@b: no retry items
-Failed addresses:
-Deferred addresses:
+ Succeeded addresses:
+  2@b: no retry items
+ Failed addresses:
+ Deferred addresses:
 end of retry processing
 DSN: processing router : r1
 DSN: processing successful delivery address: 2@b
@@ -380,7 +398,7 @@ DSN: Remote SMTP server supports DSN: 0
 DSN: not sending DSN success message
 LOG: MAIN
   Completed
-end delivery of 10HmaX-0005vi-00
+end delivery of 10HmaX-000000005vi-0000
 search_tidyup called
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1236 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
@@ -393,16 +411,20 @@ log directory space = nnnnnK inodes = nnnnn check_space = 10240K inodes = 100
 SMTP>> 250 OK
 SMTP<< rcpt to:<2@b>
 using ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 18)
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 18)
 check local_parts = 1
+2 in "1"?
+ list element: 1
 2 in "1"? no (end of list)
-accept: condition test failed in ACL "chk_rcpt"
-processing "accept" (TESTSUITE/test-config 21)
+accept: condition test failed in ACL chk_rcpt
+processing ACL chk_rcpt "accept" (TESTSUITE/test-config 21)
 check local_parts = 2
-2 in "2"? yes (matched "2")
+2 in "2"?
+ list element: 2
+ 2 in "2"? yes (matched "2")
 check acl = TESTSUITE/aux-fixed/0386.acl2
  using ACL "TESTSUITE/aux-fixed/0386.acl2"
- processing "warn" (TESTSUITE/test-config 44)
+ processing ACL TESTSUITE/aux-fixed/0386.acl2 "warn" (TESTSUITE/test-config 21)
    message: X-Warning: $sender_host_address is listed at $dnslist_domain\nX-Warning: $dnslist_text
  l_message: found in $dnslist_domain: $dnslist_text
  check dnslists = rbl.test.ex 
@@ -410,14 +432,14 @@ dnslists check: rbl.test.ex
 dnslists: using result of previous lookup
 DNS lookup for 13.12.11.V4NET.rbl.test.ex succeeded (yielding 127.0.0.2)
 => that means V4NET.11.12.13 is listed at rbl.test.ex
- warn: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl2"
+ warn: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl2
 LOG: MAIN
   H=(test) [V4NET.11.12.13] U=CALLER Warning: found in rbl.test.ex: This is a test blacklisting message
- processing "accept" (TESTSUITE/test-config 44)
- accept: condition test succeeded in ACL "TESTSUITE/aux-fixed/0386.acl2"
- end of ACL "TESTSUITE/aux-fixed/0386.acl2": ACCEPT
-accept: condition test succeeded in ACL "chk_rcpt"
-end of ACL "chk_rcpt": ACCEPT
+ processing ACL TESTSUITE/aux-fixed/0386.acl2 "accept" (TESTSUITE/test-config 21)
+ accept: condition test succeeded in ACL TESTSUITE/aux-fixed/0386.acl2
+ end of ACL TESTSUITE/aux-fixed/0386.acl2: ACCEPT
+accept: condition test succeeded in ACL chk_rcpt
+end of ACL chk_rcpt: ACCEPT
 SMTP>> 250 Accepted
 SMTP<< data
 SMTP>> 354 Enter message, ending with "." on a line by itself
@@ -425,34 +447,36 @@ search_tidyup called
 >>Headers received:
 
 qualify & rewrite recipients list
-global rewrite rules
-rewrite headers
+rewrite rules on sender address
+qualify and rewrite headers
 search_tidyup called
 >>Headers after rewriting and local additions:
 
-Data file name: TESTSUITE/spool//input//10HmaY-0005vi-00-D
-Data file written for message 10HmaY-0005vi-00
+Data file name: TESTSUITE/spool//input//10HmaY-000000005vi-0000-D
+Data file written for message 10HmaY-000000005vi-0000
 >>Generated Received: header line
 P Received: from [V4NET.11.12.13] (helo=test ident=CALLER)
 	by myhost.test.ex with smtp (Exim x.yz)
 	(envelope-from <x@y>)
-	id 10HmaY-0005vi-00
+	id 10HmaY-000000005vi-0000
 	for 2@b;
 	Tue, 2 Mar 1999 09:44:33 +0000
 >>Headers added by MAIL or RCPT ACL:
   X-Warning: V4NET.11.12.13 is listed at rbl.test.ex
   X-Warning: This is a test blacklisting message
 >>
-Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-0005vi-00
+Writing spool header file: TESTSUITE/spool//input//hdr.10HmaY-000000005vi-0000
 DSN: **** SPOOL_OUT - address: <2@b> errorsto: <NULL> orcpt: <NULL> dsn_flags: 0x0
-Renaming spool header file: TESTSUITE/spool//input//10HmaY-0005vi-00-H
+Renaming spool header file: TESTSUITE/spool//input//10HmaY-000000005vi-0000-H
 Size of headers = sss
 LOG: MAIN
   <= x@y H=(test) [V4NET.11.12.13] U=CALLER P=smtp S=sss
-SMTP>> 250 OK id=10HmaY-0005vi-00
+receive_msg: tidyup
+SMTP>> 250 OK id=10HmaY-000000005vi-0000
 search_tidyup called
-exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaY-0005vi-00
+exec TESTSUITE/eximdir/exim -DEXIM_PATH=TESTSUITE/eximdir/exim -C TESTSUITE/test-config -d=0xf7715cfd -MCd local-accept-delivery -odi -Mc 10HmaY-000000005vi-0000
 Exim version x.yz ....
+Hints DB:
 changed uid/gid: forcing real = effective
   uid=uuuu gid=EXIM_GID pid=p1238
 seeking password data for user "CALLER": cache not available
@@ -464,9 +488,9 @@ dropping to exim gid; retaining priv uid
 seeking password data for user "CALLER": using cached result
 getpwnam() succeeded uid=CALLER_UID gid=CALLER_GID
 set_process_info: pppp delivering specified messages
-set_process_info: pppp delivering 10HmaY-0005vi-00
-Trying spool file TESTSUITE/spool//input//10HmaY-0005vi-00-D
-reading spool file 10HmaY-0005vi-00-H
+set_process_info: pppp delivering 10HmaY-000000005vi-0000
+Trying spool file TESTSUITE/spool//input//10HmaY-000000005vi-0000-D
+reading spool file 10HmaY-000000005vi-0000-H
 user=CALLER uid=CALLER_UID gid=CALLER_GID sender=x@y
 sender_fullhost = (test) [V4NET.11.12.13]
 sender_rcvhost = [V4NET.11.12.13] (helo=test ident=CALLER)
@@ -480,17 +504,13 @@ body_linecount=1 message_linecount=8
 DSN: set orcpt:   flags: 0x0
 Delivery address list:
   2@b 
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Considering: 2@b
 unique = 2@b
-no   domain  retry record
-no   address retry record
+checking router retry status
+ no   domain  retry record
+ no   address retry record
 2@b: queued for routing
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 routing 2@b
@@ -505,8 +525,8 @@ domain = b
   errors_to=NULL
   domain_data=NULL local_part_data=NULL
 routed by r1 router
-  envelope to: 2@b
-  transport: t1
+  envelope to:	2@b
+  transport:	t1
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 After routing:
   Local deliveries:
@@ -517,17 +537,12 @@ After routing:
 search_tidyup called
 >>>>>>>>>>>>>>>> Local deliveries >>>>>>>>>>>>>>>>
 --------> 2@b <--------
- locking TESTSUITE/spool/db/retry.lockfile
- locked  TESTSUITE/spool/db/retry.lockfile
- EXIM_DBOPEN: file <TESTSUITE/spool/db/retry> dir <TESTSUITE/spool/db> flags=O_RDONLY
- returned from EXIM_DBOPEN: (nil)
- failed to open DB file TESTSUITE/spool/db/retry: No such file or directory
 no retry data available
 search_tidyup called
 changed uid/gid: local delivery to 2 <2@b> transport=t1
   uid=CALLER_UID gid=CALLER_GID pid=p1239
   home=NULL current=/
-set_process_info: pppp delivering 10HmaY-0005vi-00 to 2 using t1
+set_process_info: pppp delivering 10HmaY-000000005vi-0000 to 2 using t1
 appendfile transport entered
 appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   file=TESTSUITE/test-mail/2 format=unix
@@ -535,7 +550,7 @@ appendfile: mode=600 notify_comsat=0 quota=0 warning=0
   message_suffix=\n
   maildir_use_size_file=no
   locking by lockfile fcntl 
-de-tainting path 'TESTSUITE/test-mail/2'
+below-home: de-tainting path 'TESTSUITE/test-mail/2'
 lock name: TESTSUITE/test-mail/2.lock
 hitch name: TESTSUITE/test-mail/2.lock.test.ex.dddddddd.pppppppp
 lock file created
@@ -547,6 +562,7 @@ writing data block fd=dddd size=sss timeout=0
 writing data block fd=dddd size=sss timeout=0
 appendfile yields 0 with errno=dd more_errno=dd
 search_tidyup called
+>>>>>>>>>>>>>>>> Exim pid=p1239 (delivery-local) terminating with rc=0 >>>>>>>>>>>>>>>>
 journalling 2@b
 t1 transport returned OK for 2@b
 post-process 2@b (0)
@@ -556,12 +572,12 @@ LOG: MAIN
 >>>>>>>>>>>>>>>> deliveries are done >>>>>>>>>>>>>>>>
 changed uid/gid: post-delivery tidying
   uid=EXIM_UID gid=EXIM_GID pid=p1238
-set_process_info: pppp tidying up after delivering 10HmaY-0005vi-00
+set_process_info: pppp tidying up after delivering 10HmaY-000000005vi-0000
 Processing retry items
-Succeeded addresses:
- 2@b: no retry items
-Failed addresses:
-Deferred addresses:
+ Succeeded addresses:
+  2@b: no retry items
+ Failed addresses:
+ Deferred addresses:
 end of retry processing
 DSN: processing router : r1
 DSN: processing successful delivery address: 2@b
@@ -573,7 +589,7 @@ DSN: Remote SMTP server supports DSN: 0
 DSN: not sending DSN success message
 LOG: MAIN
   Completed
-end delivery of 10HmaY-0005vi-00
+end delivery of 10HmaY-000000005vi-0000
 search_tidyup called
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1238 (local-accept-delivery) terminating with rc=0 >>>>>>>>>>>>>>>>
@@ -581,6 +597,6 @@ smtp_setup_msg entered
 SMTP<< quit
 SMTP>> 221 myhost.test.ex closing connection
 LOG: smtp_connection MAIN
-  SMTP connection from CALLER closed by QUIT
+  SMTP connection from CALLER D=qqs closed by QUIT
 search_tidyup called
 >>>>>>>>>>>>>>>> Exim pid=p1235 (fresh-exec) terminating with rc=0 >>>>>>>>>>>>>>>>

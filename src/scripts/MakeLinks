@@ -3,7 +3,8 @@
 # Script to build links for all the exim source files from the system-
 # specific build directory. It should be run from within that directory.
 #
-# Copyright (c) The Exim Maintainers 1995 - 2022
+# Copyright (c) The Exim Maintainers 1995 - 2024
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 test ! -d ../src && \
   echo "*** $0 should be run in a system-specific subdirectory." && \
@@ -27,67 +28,98 @@ echo ">>> Creating links to source files..."
 # their own Makefile in their sub-directory.
 
 # Firstly the lookups
-mkdir lookups
-cd lookups
+d="lookups"
+mkdir $d
+cd $d
 # Makefile is generated
-for f in README cdb.c dbmdb.c dnsdb.c dsearch.c ibase.c json.c ldap.h ldap.c \
+for f in README cdb.c dbmdb.c dnsdb.c dsearch.c ibase.c json.c ldap.c \
   lmdb.c lsearch.c mysql.c nis.c nisplus.c oracle.c passwd.c \
   pgsql.c readsock.c redis.c spf.c sqlite.c testdb.c whoson.c \
   lf_functions.h lf_check_file.c lf_quote.c lf_sqlperform.c
 do
-  ln -s ../../src/lookups/$f $f
+  ln -s ../../src/$d/$f $f
 done
 
 cd ..
 
 # Likewise for the code for the routers
-mkdir routers
-cd routers
-for f in README Makefile accept.h accept.c dnslookup.h dnslookup.c \
+d="routers"
+mkdir $d
+cd $d
+# Makefile is generated
+for f in README accept.h accept.c dnslookup.h dnslookup.c \
   ipliteral.h ipliteral.c iplookup.h iplookup.c manualroute.h \
   manualroute.c queryprogram.h queryprogram.c redirect.h redirect.c \
   rf_functions.h rf_change_domain.c rf_expand_data.c rf_get_errors_address.c \
   rf_get_munge_headers.c rf_get_transport.c rf_get_ugid.c rf_queue_add.c \
   rf_lookup_hostlist.c rf_self_action.c rf_set_ugid.c
 do
-  ln -s ../../src/routers/$f $f
+  ln -s ../../src/$d/$f $f
 done
 
 cd ..
 
 # Likewise for the code for the transports
-mkdir transports
-cd transports
-for f in README Makefile appendfile.h appendfile.c autoreply.h \
+d="transports"
+mkdir $d
+cd $d
+# Makefile is generated
+for f in README appendfile.h appendfile.c autoreply.h \
   autoreply.c lmtp.h lmtp.c pipe.h pipe.c queuefile.c queuefile.h \
   smtp.h smtp.c smtp_socks.c tf_maildir.c tf_maildir.h
 do
-  ln -s ../../src/transports/$f $f
+  ln -s ../../src/$d/$f $f
 done
 
 cd ..
 
 # Likewise for the code for the authentication drivers
-mkdir auths
-cd auths
-for f in README Makefile call_pam.c call_pwcheck.c \
-  call_radius.c check_serv_cond.c cyrus_sasl.c cyrus_sasl.h gsasl_exim.c \
-  gsasl_exim.h get_data.c get_no64_data.c heimdal_gssapi.c heimdal_gssapi.h \
-  xtextencode.c xtextdecode.c cram_md5.c cram_md5.h plaintext.c plaintext.h \
-  pwcheck.c pwcheck.h auth-spa.c auth-spa.h dovecot.c dovecot.h sha1.c spa.c \
+d="auths"
+mkdir $d
+cd $d
+# Makefile is generated
+for f in README call_pwcheck.c \
+  check_serv_cond.c cyrus_sasl.c cyrus_sasl.h gsasl.c \
+  gsasl.h get_data.c get_no64_data.c heimdal_gssapi.c heimdal_gssapi.h \
+  cram_md5.c cram_md5.h plaintext.c plaintext.h \
+  pwcheck.c pwcheck.h auth-spa.c auth-spa.h dovecot.c dovecot.h spa.c \
   spa.h tls.c tls.h external.c external.h
 do
-  ln -s ../../src/auths/$f $f
+  ln -s ../../src/$d/$f $f
 done
 cd ..
 
-# Likewise for the code for the PDKIM library
-mkdir pdkim
-cd pdkim
-for f in README Makefile crypt_ver.h pdkim.c \
-  pdkim.h hash.c hash.h signing.c signing.h blob.h
+# miscellaneous modules
+# Note that the file in the miscmods/pdkim/ source subdir get linked to the 
+# destination miscmods/ dir
+d="miscmods"
+mkdir $d
+cd $d
+# Makefile is generated
+for f in dummy.c \
+	arc.c arc_api.h \
+	dkim.c dkim_transport.c dkim.h dkim_api.h \
+	pdkim/crypt_ver.h pdkim/pdkim.c pdkim/pdkim.h \
+	pdkim/pdkim_hash.h pdkim/signing.c pdkim/signing.h \
+	dmarc.c dmarc.h dmarc_api.h \
+	exim_filter.c exim_filter_api.h \
+	pam.c pam_api.h \
+	perl.c perl_api.h \
+	radius.c radius_api.h \
+	sieve_filter.c sieve_filter_api.h \
+	spf.c spf.h spf_api.h
 do
-  ln -s ../../src/pdkim/$f $f
+  ln -s ../../src/$d/$f `basename $f`
+done
+cd ..
+
+# and the hintsdb implementations
+d="hintsdb"
+mkdir $d
+cd $d
+for f in hints_bdb.h hints_gdbm.h hints_ndbm.h hints_sqlite.h hints_tdb.h
+do
+  ln -s ../../src/$d/$f $f
 done
 cd ..
 
@@ -97,19 +129,19 @@ cd ..
 
 for f in blob.h dbfunctions.h exim.h functions.h globals.h \
   hash.h hintsdb.h hintsdb_structs.h local_scan.h \
-  macros.h mytypes.h osfunctions.h store.h structs.h lookupapi.h sha_ver.h \
+  macros.h mytypes.h osfunctions.h path_max.h store.h \
+  structs.h lookupapi.h sha_ver.h \
   \
-  acl.c buildconfig.c base64.c child.c crypt16.c daemon.c dbfn.c debug.c \
-  deliver.c directory.c dns.c dnsbl.c drtables.c dummies.c enq.c exim.c \
-  exim_dbmbuild.c exim_dbutil.c exim_lock.c expand.c filter.c filtertest.c \
-  globals.c hash.c header.c host.c host_address.c ip.c log.c lss.c match.c md5.c moan.c \
-  parse.c perl.c priv.c queue.c rda.c readconf.c receive.c retry.c rewrite.c \
-  regex_cache.c rfc2047.c route.c search.c setenv.c environment.c \
-  sieve.c smtp_in.c smtp_out.c spool_in.c spool_out.c std-crypto.c store.c \
-  string.c tls.c tlscert-gnu.c tlscert-openssl.c tls-cipher-stdname.c \
+  acl.c atrn.c buildconfig.c base64.c child.c crypt16.c daemon.c dbfn.c \
+  debug.c deliver.c directory.c dns.c dnsbl.c drtables.c dummies.c enq.c \
+  exim.c exim_dbmbuild.c exim_dbutil.c exim_lock.c expand.c filtertest.c \
+  globals.c hash.c header.c host.c host_address.c ip.c log.c lss.c match.c \
+  md5.c moan.c parse.c priv.c proxy.c queue.c rda.c readconf.c receive.c \
+  retry.c rewrite.c regex_cache.c rfc2047.c route.c search.c setenv.c \
+  environment.c smtp_in.c smtp_out.c spool_in.c spool_out.c std-crypto.c \
+  store.c string.c tls.c tlscert-gnu.c tlscert-openssl.c tls-cipher-stdname.c \
   tls-gnu.c tls-openssl.c \
-  tod.c transport.c tree.c verify.c version.c \
-  dkim.c dkim.h dkim_transport.c dmarc.c dmarc.h \
+  tod.c transport.c tree.c verify.c version.c xtextencode.c \
   valgrind.h memcheck.h \
   macro_predef.c macro_predef.h
 do
@@ -123,8 +155,8 @@ do
 done
 
 # EXPERIMENTAL_*
-for f in  arc.c bmi_spam.c bmi_spam.h dcc.c dcc.h dane.c dane-openssl.c \
-  danessl.h imap_utf7.c spf.c spf.h srs.c srs.h utf8.c
+for f in  bmi_spam.c bmi_spam.h dcc.c dcc.h dane.c dane-openssl.c \
+  danessl.h imap_utf7.c utf8.c xclient.c
 do
   ln -s ../src/$f $f
 done

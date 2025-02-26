@@ -2,25 +2,16 @@
 *                  Exim Monitor                  *
 *************************************************/
 
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
-/* Copyright (c) The Exim Maintainers 2020 - 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #define EM_VERSION_C
 
-/* Needed by macros.h */
-/* Some systems have PATH_MAX and some have MAX_PATH_LEN. */
-
-#ifndef PATH_MAX
-# ifdef MAX_PATH_LEN
-#  define PATH_MAX MAX_PATH_LEN
-# else
-#  define PATH_MAX 1024
-# endif
-#endif
-
 #include "mytypes.h"
 #include "store.h"
+#include "path_max.h"
 #include "macros.h"
 #include <string.h>
 #include <stdlib.h>
@@ -33,8 +24,10 @@ extern uschar *version_date;
 void
 version_init(void)
 {
+#ifndef EXIM_BUILD_DATE_OVERRIDE
 int i = 0;
 uschar today[20];
+#endif
 
 version_string = US"2.06";
 

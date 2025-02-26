@@ -5,6 +5,7 @@
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* Copyright (c) The Exim Maintainers 2021 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Functions concerned with serialization. */
 
@@ -36,19 +37,16 @@ Returns:         TRUE if OK to proceed; FALSE otherwise
 BOOL
 enq_start(uschar *key, unsigned lim)
 {
-dbdata_serialize *serial_record;
+const dbdata_serialize * serial_record;
 dbdata_serialize new_record;
 open_db dbblock;
 open_db *dbm_file;
 
 DEBUG(D_transport) debug_printf("check serialized: %s\n", key);
 
-/* Open and lock the waiting information database. The absence of O_CREAT is
-deliberate; the dbfn_open() function - which is an Exim function - always tries
-to create if it can't open a read/write file. It expects only O_RDWR or
-O_RDONLY as its argument. */
+/* Open and lock the waiting information database. */
 
-if (!(dbm_file = dbfn_open(US"misc", O_RDWR, &dbblock, TRUE, TRUE)))
+if (!(dbm_file = dbfn_open(US"misc", O_RDWR|O_CREAT, &dbblock, TRUE, TRUE)))
   return FALSE;
 
 /* See if there is a record for this host or queue run; if there is, we cannot

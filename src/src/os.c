@@ -2,14 +2,18 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2021 - 2022 */
+/* Copyright (c) The Exim Maintainers 2021 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2018 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifdef STAND_ALONE
 # include <signal.h>
 # include <stdio.h>
 # include <time.h>
+#else
+# define IS_DEBUG(x) (debug_selector & (x))
+# define DEBUG(x) if (IS_DEBUG(x))
 #endif
 
 #ifndef CS
@@ -49,9 +53,9 @@ sigemptyset(&(act.sa_mask));
 act.sa_flags = SA_RESTART;
 sigaction(sig, &act, NULL);
 
-#ifdef STAND_ALONE
+# ifdef STAND_ALONE
 printf("Used SA_RESTART\n");
-#endif
+# endif
 
 /* SunOS4 and Ultrix default to non-interruptable signals, with SV_INTERRUPT
 for making them interruptable. This seems to be a dying fashion. */
@@ -59,9 +63,9 @@ for making them interruptable. This seems to be a dying fashion. */
 #elif defined SV_INTERRUPT
 signal(sig, handler);
 
-#ifdef STAND_ALONE
+# ifdef STAND_ALONE
 printf("Used default signal()\n");
-#endif
+# endif
 
 
 /* If neither SA_RESTART nor SV_INTERRUPT is available we don't know how to
@@ -70,9 +74,9 @@ set up a restarting signal, so simply suppress the facility. */
 #else
 signal(sig, SIG_IGN);
 
-#ifdef STAND_ALONE
+# ifdef STAND_ALONE
 printf("Used SIG_IGN\n");
-#endif
+# endif
 
 #endif
 }
@@ -360,9 +364,9 @@ here as there is the -hal variant, and other systems might follow this road one
 day. */
 
 #if !defined(OS_LOAD_AVERAGE) && defined(HAVE_KSTAT)
-#define OS_LOAD_AVERAGE
+# define OS_LOAD_AVERAGE
 
-#include <kstat.h>
+# include <kstat.h>
 
 int
 os_getloadavg(void)
@@ -396,7 +400,7 @@ return avg;
 #if !defined(OS_LOAD_AVERAGE) && defined(HAVE_DEV_KMEM)
 #define OS_LOAD_AVERAGE
 
-#include <nlist.h>
+# include <nlist.h>
 
 static int  avg_kd = -1;
 static long avg_offset;
@@ -480,7 +484,7 @@ Returns:      a chain of ip_address_items, each pointing to a textual
 
 #ifdef HAVE_GETIFADDRS
 
-#include <ifaddrs.h>
+# include <ifaddrs.h>
 
 ip_address_item *
 os_common_find_running_interfaces(void)
@@ -491,7 +495,7 @@ ip_address_item *last = NULL;
 ip_address_item  *next;
 
 if (getifaddrs(&ifalist) != 0)
-  log_write(0, LOG_PANIC_DIE, "Unable to call getifaddrs: %d %s",
+  log_write_die(0, LOG_PANIC_DIE, "Unable to call getifaddrs: %d %s",
     errno, strerror(errno));
 
 for (struct ifaddrs * ifa = ifalist; ifa; ifa = ifa->ifa_next)
@@ -629,14 +633,14 @@ what we want to know. */
 
 if ((vs = socket(FAMILY, SOCK_DGRAM, 0)) < 0)
   {
-  #if HAVE_IPV6
+#if HAVE_IPV6
   DEBUG(D_interface)
     debug_printf("Unable to create IPv6 socket to find interface addresses:\n  "
       "error %d %s\nTrying for an IPv4 socket\n", errno, strerror(errno));
   vs = socket(AF_INET, SOCK_DGRAM, 0);
   if (vs < 0)
-  #endif
-  log_write(0, LOG_PANIC_DIE, "Unable to create IPv4 socket to find interface "
+#endif
+  log_write_die(0, LOG_PANIC_DIE, "Unable to create IPv4 socket to find interface "
     "addresses: %d %s", errno, strerror(errno));
   }
 
@@ -652,7 +656,7 @@ ifc.V_ifc_flags = 0;
 #endif
 
 if (ioctl(vs, V_GIFCONF, CS &ifc) < 0)
-  log_write(0, LOG_PANIC_DIE, "Unable to get interface configuration: %d %s",
+  log_write_die(0, LOG_PANIC_DIE, "Unable to get interface configuration: %d %s",
     errno, strerror(errno));
 
 /* If the buffer is big enough, the ioctl sets the value of ifc.V_ifc_len to
@@ -696,7 +700,7 @@ for (char * cp = buf; cp < buf + ifc.V_ifc_len; cp += len)
           ifreq.ifr_addr.sa_len : sizeof(ifreq.ifr_addr)) +
          sizeof(ifreq.V_ifr_name);
   if (len > sizeof(addrbuf))
-    log_write(0, LOG_PANIC_DIE, "Address for %s interface is absurdly long",
+    log_write_die(0, LOG_PANIC_DIE, "Address for %s interface is absurdly long",
         ifreq.V_ifr_name);
 
   #endif
@@ -733,7 +737,7 @@ for (char * cp = buf; cp < buf + ifc.V_ifc_len; cp += len)
 
   #ifndef SIOCGIFCONF_GIVES_ADDR
   if (ioctl(vs, V_GIFADDR, CS &ifreq) < 0)
-    log_write(0, LOG_PANIC_DIE, "Unable to get IP address for %s interface: "
+    log_write_die(0, LOG_PANIC_DIE, "Unable to get IP address for %s interface: "
       "%d %s", ifreq.V_ifr_name, errno, strerror(errno));
   addrp = &ifreq.V_ifr_addr;
 
@@ -815,7 +819,7 @@ programmer creates their own structs. */
 
 #if !defined(OS_GET_DNS_RESOLVER_RES) && !defined(COMPILE_UTILITY)
 
-#include <resolv.h>
+# include <resolv.h>
 
 /* confirmed that res_state is typedef'd as a struct* on BSD and Linux, will
 find out how unportable it is on other OSes, but most resolver implementations
@@ -874,9 +878,7 @@ os_getcwd(unsigned char * buffer, size_t size)
 return US  getcwd(CS buffer, size);
 }
 #else
-#ifndef PATH_MAX
-# define PATH_MAX 4096
-#endif
+# include "path_max.h"
 unsigned char *
 os_getcwd(unsigned char * buffer, size_t size)
 {
@@ -887,6 +889,34 @@ if (!b && !(b = malloc(size))) return NULL;
 if (!(b = getcwd(b, size))) return NULL;
 return buffer ? buffer : realloc(b, strlen(b) + 1);
 }
+#endif
+
+/* ----------------------------------------------------------------------- */
+/***********************************************************
+*             strchrnul()                                  *
+***********************************************************/
+
+#if !defined(EXIM_HAVE_STRCHRNUL)
+char *
+strchrnul(const char * s, int c)
+{
+while (*s != c && *s) s++;
+return CS s;
+}
+#endif
+
+
+/* ----------------------------------------------------------------------- */
+/* stpcpy() */
+
+#ifdef MISSING_POSIX_STPCPY
+char *
+stpcpy(char * restrict dst, const char * restrict src)
+{
+while ((*dst = *src++)) dst++;
+return dst;
+}
+
 #endif
 
 /* ----------------------------------------------------------------------- */

@@ -2,9 +2,10 @@
 *     Exim - an Internet mail transport agent    *
 *************************************************/
 
-/* Copyright (c) The Exim Maintainers 2020 - 2022 */
+/* Copyright (c) The Exim Maintainers 2020 - 2024 */
 /* Copyright (c) University of Cambridge 1995 - 2015 */
 /* See the file NOTICE for conditions of use and distribution. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* Interface to an Oracle database. This code was originally supplied by
 Paul Kelly, but I have hacked it around for various reasons, and tried to add
@@ -407,9 +408,9 @@ while (cda->rc != NO_DATA_FOUND)  /* Loop for each row */
   else for (int i = 0; i < num_fields; i++)
     {
     int slen;
-    uschar *s = US desc[i].buf;
+    uschar * s = US desc[i].buf;
 
-    while (*s != 0 && isspace(*s)) s++;
+    Uskip_whitespace(&s);
     slen = Ustrlen(s);
     while (slen > 0 && isspace(s[slen-1])) slen--;
     result = string_catn(result, s, slen);
@@ -559,7 +560,7 @@ if (opt) return NULL;    /* No options are recognized */
 while ((c = *t++))
   if (strchr("\n\t\r\b\'\"\\", c) != NULL) count++;
 
-t = quoted = store_get_quoted((int)Ustrlen(s) + count + 1, s, idx);
+t = quoted = store_get_quoted((int)Ustrlen(s) + count + 1, s, idx, US"oracle");
 
 while ((c = *s++))
   {
